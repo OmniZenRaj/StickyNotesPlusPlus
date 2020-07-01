@@ -1,0 +1,241 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+    <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>        
+    <NoWarn>NU1701</NoWarn>	
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.111.0" />
+    <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
+    <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
+    <PackageReference Include="WindowsAPICodePack-ShellExtensions" Version="1.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Images\ic_add.png" />
+    <Resource Include="Assets\Images\ic_add_2x.png" />
+    <Resource Include="Assets\Images\ic_add_3x.png" />
+    <Resource Include="Assets\Images\ic_add_alert.png" />
+    <Resource Include="Assets\Images\ic_add_alert_2x.png" />
+    <Resource Include="Assets\Images\ic_add_alert_3x.png" />
+    <Resource Include="Assets\Images\ic_add_a_photo.png" />
+    <Resource Include="Assets\Images\ic_add_a_photo_2x.png" />
+    <Resource Include="Assets\Images\ic_add_a_photo_3x.png" />
+    <Resource Include="Assets\Images\ic_add_box.png" />
+    <Resource Include="Assets\Images\ic_add_box_2x.png" />
+    <Resource Include="Assets\Images\ic_add_box_3x.png" />
+    <Resource Include="Assets\Images\ic_add_circle.png" />
+    <Resource Include="Assets\Images\ic_add_circle_2x.png" />
+    <Resource Include="Assets\Images\ic_add_circle_3x.png" />
+    <Resource Include="Assets\Images\ic_add_circle_outline.png" />
+    <Resource Include="Assets\Images\ic_add_circle_outline_2x.png" />
+    <Resource Include="Assets\Images\ic_add_circle_outline_3x.png" />
+    <Resource Include="Assets\Images\ic_alarm_add_36pt.png" />
+    <Resource Include="Assets\Images\ic_alarm_add_36pt_2x.png" />
+    <Resource Include="Assets\Images\ic_alarm_add_36pt_3x.png" />
+    <Resource Include="Assets\Images\ic_archive_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_archive_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_archive_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_attach_file_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_attach_file_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_attach_file_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_backspace_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_backspace_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_backspace_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_border_all_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_border_all_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_border_all_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_border_color_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_border_color_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_border_color_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_done_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_done_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_done_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_download_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_download_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_cloud_download_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_content_cut_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_content_cut_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_content_cut_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_content_paste_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_content_paste_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_content_paste_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_create_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_create_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_create_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_create_new_folder_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_create_new_folder_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_create_new_folder_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_delete_forever_36pt.png" />
+    <Resource Include="Assets\Images\ic_delete_forever_36pt_2x.png" />
+    <Resource Include="Assets\Images\ic_delete_forever_36pt_3x.png" />
+    <Resource Include="Assets\Images\ic_drafts_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_drafts_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_drafts_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_event_note.png" />
+    <Resource Include="Assets\Images\ic_event_note_2x.png" />
+    <Resource Include="Assets\Images\ic_event_note_3x.png" />
+    <Resource Include="Assets\Images\ic_flag_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_flag_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_flag_black_32dp.png" />
+    <Resource Include="Assets\Images\ic_folder_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_folder_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_folder_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_folder_open_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_folder_open_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_folder_open_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_folder_shared_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_folder_shared_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_folder_shared_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_font_download_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_font_download_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_font_download_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_format_align_right_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_format_align_right_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_format_align_right_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_format_bold_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_format_bold_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_format_bold_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_fill_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_fill_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_fill_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_reset_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_reset_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_format_color_reset_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_format_indent_increase_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_format_indent_increase_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_format_indent_increase_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_forward_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_forward_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_forward_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_group_add.png" />
+    <Resource Include="Assets\Images\ic_group_add_2x.png" />
+    <Resource Include="Assets\Images\ic_group_add_3x.png" />
+    <Resource Include="Assets\Images\ic_highlight_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_highlight_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_highlight_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_inbox_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_inbox_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_inbox_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_insert_comment_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_insert_comment_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_insert_comment_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_insert_drive_file_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_insert_drive_file_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_insert_drive_file_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_insert_emoticon_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_insert_emoticon_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_insert_emoticon_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_insert_photo_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_insert_photo_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_insert_photo_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_library_books.png" />
+    <Resource Include="Assets\Images\ic_library_books_2x.png" />
+    <Resource Include="Assets\Images\ic_library_books_3x.png" />
+    <Resource Include="Assets\Images\ic_link_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_link_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_link_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_lock.png" />
+    <Resource Include="Assets\Images\ic_lock_2x.png" />
+    <Resource Include="Assets\Images\ic_lock_3x.png" />
+    <Resource Include="Assets\Images\ic_lock_open.png" />
+    <Resource Include="Assets\Images\ic_lock_open_2x.png" />
+    <Resource Include="Assets\Images\ic_lock_open_3x.png" />
+    <Resource Include="Assets\Images\ic_lock_outline.png" />
+    <Resource Include="Assets\Images\ic_lock_outline_2x.png" />
+    <Resource Include="Assets\Images\ic_lock_outline_3x.png" />
+    <Resource Include="Assets\Images\ic_low_priority_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_low_priority_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_low_priority_black_32dp.png" />
+    <Resource Include="Assets\Images\ic_mode_comment_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_mode_comment_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_mode_comment_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_mode_edit_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_mode_edit_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_mode_edit_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_next_week_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_next_week_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_next_week_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_note.png" />
+    <Resource Include="Assets\Images\ic_note_2x.png" />
+    <Resource Include="Assets\Images\ic_note_3x.png" />
+    <Resource Include="Assets\Images\ic_note_add.png" />
+    <Resource Include="Assets\Images\ic_note_add_2x.png" />
+    <Resource Include="Assets\Images\ic_note_add_3x.png" />
+    <Resource Include="Assets\Images\ic_perm_data_setting.png" />
+    <Resource Include="Assets\Images\ic_perm_data_setting_2x.png" />
+    <Resource Include="Assets\Images\ic_perm_data_setting_3x.png" />
+    <Resource Include="Assets\Images\ic_phonelink_lock.png" />
+    <Resource Include="Assets\Images\ic_phonelink_lock_2x.png" />
+    <Resource Include="Assets\Images\ic_phonelink_lock_3x.png" />
+    <Resource Include="Assets\Images\ic_photo_library.png" />
+    <Resource Include="Assets\Images\ic_photo_library_2x.png" />
+    <Resource Include="Assets\Images\ic_photo_library_3x.png" />
+    <Resource Include="Assets\Images\ic_pie_chart_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_pie_chart_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_pie_chart_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_redo_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_redo_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_redo_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_refresh.png" />
+    <Resource Include="Assets\Images\ic_refresh_2x.png" />
+    <Resource Include="Assets\Images\ic_refresh_3x.png" />
+    <Resource Include="Assets\Images\ic_reply_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_reply_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_reply_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_save_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_save_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_save_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_security.png" />
+    <Resource Include="Assets\Images\ic_security_2x.png" />
+    <Resource Include="Assets\Images\ic_security_3x.png" />
+    <Resource Include="Assets\Images\ic_select_all_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_select_all_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_select_all_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_send_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_send_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_send_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_settings.png" />
+    <Resource Include="Assets\Images\ic_settings_2x.png" />
+    <Resource Include="Assets\Images\ic_settings_3x.png" />
+    <Resource Include="Assets\Images\ic_settings_applications.png" />
+    <Resource Include="Assets\Images\ic_settings_applications_2x.png" />
+    <Resource Include="Assets\Images\ic_settings_applications_3x.png" />
+    <Resource Include="Assets\Images\ic_settings_backup_restore.png" />
+    <Resource Include="Assets\Images\ic_settings_backup_restore_2x.png" />
+    <Resource Include="Assets\Images\ic_settings_backup_restore_3x.png" />
+    <Resource Include="Assets\Images\ic_settings_voice.png" />
+    <Resource Include="Assets\Images\ic_settings_voice_2x.png" />
+    <Resource Include="Assets\Images\ic_settings_voice_3x.png" />
+    <Resource Include="Assets\Images\ic_sort_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_sort_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_sort_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_speaker_notes.png" />
+    <Resource Include="Assets\Images\ic_speaker_notes_2x.png" />
+    <Resource Include="Assets\Images\ic_speaker_notes_3x.png" />
+    <Resource Include="Assets\Images\ic_text_format_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_text_format_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_text_format_black_36dp.png" />
+    <Resource Include="Assets\Images\ic_weekend_black_18dp.png" />
+    <Resource Include="Assets\Images\ic_weekend_black_24dp.png" />
+    <Resource Include="Assets\Images\ic_weekend_black_36dp.png" />
+    <Resource Include="Assets\Images\information%402x.png" />
+    <Resource Include="Assets\Images\information.png" />
+    <Resource Include="Assets\Images\informationDialog%402x_dark.png" />
+    <Resource Include="Assets\Images\informationDialog_dark.png" />
+    <Resource Include="Assets\Images\pin_tab%402x.png" />
+    <Resource Include="Assets\Images\pin_tab.png" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
+</Project>

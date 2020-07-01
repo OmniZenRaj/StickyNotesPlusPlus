@@ -1,0 +1,151 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Width="256" Height="256" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" MouseWheel="OnMouseWheel" Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type Image}">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+        </Style>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="{x:Null}" />
+            <Setter Property="BorderBrush" Value="{x:Null}" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <EventSetter Event="UIElement.MouseEnter" Handler="OnButton_MouseEnter" />
+            <EventSetter Event="UIElement.MouseLeave" Handler="OnButton_MouseLeave" />
+        </Style>
+        <Style TargetType="{x:Type ToggleButton}">
+            <Setter Property="Background" Value="{x:Null}" />
+            <Setter Property="BorderBrush" Value="{x:Null}" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+        </Style>        
+
+        <Style TargetType="{x:Type xctk:PropertyGrid}">
+            <Setter Property="FontFamily" Value="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" />
+            <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" />
+            <Setter Property="FontStyle" Value="{DynamicResource {x:Static SystemFonts.MenuFontStyleKey}}" />
+        </Style>
+        <Style TargetType="{x:Type xctk:TimePicker}">
+            <Setter Property="ShowButtonSpinner" Value="False" />
+        </Style>
+        <Style TargetType="{x:Type xctk:DateTimePicker}">
+            <Setter Property="ShowButtonSpinner" Value="False" />
+        </Style>
+
+        <Image x:Key="Add_Note" Source="Assets/Images/ic_add.png" x:Shared="False" />
+        <Image x:Key="Del_Note" Source="assets/images/ic_delete_forever_36pt.png" x:Shared="False" />
+        <Image x:Key="TextFormat" Source="assets/images/ic_text_format_black_18dp.png" x:Shared="False" />
+        <Image x:Key="FillBackground" Source="assets/images/ic_format_color_fill_black_18dp.png" x:Shared="False" />
+        <Image x:Key="Alerts" Source="assets/images/ic_add_alert.png" x:Shared="False" />
+        <Image x:Key="Info" Source="assets/images/informationDialog_dark.png" x:Shared="False" />
+        <Image x:Key="Save" Source="assets/images/ic_save_black_18dp.png" x:Shared="False" />
+        <Image x:Key="Security" Source="assets/images/ic_security.png" x:Shared="False" />
+        <Image x:Key="Settings" Source="assets/images/ic_settings.png" x:Shared="False" />
+        <Image x:Key="PinTab" Source="assets/images/pin_tab@2x.png" x:Shared="False" />        
+
+    </Window.Resources>
+
+    <Grid x:Name="uxLayoutRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <DockPanel x:Name="uxToolBar" Grid.Row="0">
+            <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                <Button x:Name="uxAddNoteButton" Click="OnAddNoteButton_Click" Content="{StaticResource Add_Note}" />
+            </StackPanel>
+            <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" FontSize="12" FontWeight="Bold" />
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Expander x:Name="uxOptionsExpander" Height="24" Margin="8,0,8,0" Padding="8,0,8,0" ExpandDirection="Left" Background="{x:Null}">
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                        <ToggleButton x:Name="uxPinTab" Click="OnPinTabButton_Click" Content="{StaticResource PinTab}" />
+                        <Separator Margin="4,0,0,0" />
+                        <Button x:Name="uxAlertsButton" Click="OnAlertsButton_Click" Content="{StaticResource Alerts}" />
+                        <Separator Margin="4,0,0,0" />
+                        <Button x:Name="uxInfoButton" Click="OnInfoButton_Click" Content="{StaticResource Info}" />
+                        <Separator Margin="8,0,0,0" />
+                        <xctk:ColorPicker x:Name="uxColorPicker" Width="40" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged" />
+                        <Separator Margin="4,0,0,0" />
+                        <Button x:Name="uxTextFormatButton" Click="OnTextFormatButton_Click" Content="{StaticResource TextFormat}" />
+                    </StackPanel>
+                </Expander>
+                <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note}" />
+            </StackPanel>
+        </DockPanel>
+        <StackPanel Grid.Row="1">
+            <StackPanel x:Name="uxAlertPanel" Visibility="Collapsed" KeyDown="uxAlertPanel_KeyDown" IsVisibleChanged="uxAlertPanel_IsVisibleChanged">
+                <xctk:PropertyGrid x:Name="uxAlertPropertyGrid" AutoGenerateProperties="False" ShowSearchBox="False" ShowSortOptions="False" ShowSummary="False" IsCategorized="True" ShowTitle="False" PropertyValueChanged="uxAlertPropertyGrid_PropertyValueChanged" FontFamily="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" FontSize="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" IsMiscCategoryLabelHidden="True">
+                <xctk:PropertyGrid.PropertyDefinitions>
+                
+                    <xctk:PropertyDefinition TargetProperties="Todo" DisplayOrder="0">
+                        <xctk:PropertyDefinition.PropertyDefinitions>
+                            <xctk:PropertyDefinition TargetProperties="Status" DisplayOrder="1" />
+                            <xctk:PropertyDefinition TargetProperties="Priority" DisplayOrder="2" />
+                            <xctk:PropertyDefinition TargetProperties="StartDTS" DisplayName="Started On" DisplayOrder="3" />
+                            <xctk:PropertyDefinition TargetProperties="DueDTS" DisplayName="Due On" DisplayOrder="4" />
+                            <xctk:PropertyDefinition TargetProperties="CompletedDTS" DisplayName="Completed On" DisplayOrder="5" />
+                            <xctk:PropertyDefinition TargetProperties="TotalWork" DisplayOrder="6" />
+                            <xctk:PropertyDefinition TargetProperties="ActualWork" DisplayOrder="7" />
+                        </xctk:PropertyDefinition.PropertyDefinitions>
+                    </xctk:PropertyDefinition>                        
+
+                    <xctk:PropertyDefinition TargetProperties="Reminder" DisplayOrder="1">
+                        <xctk:PropertyDefinition.PropertyDefinitions>
+                            <xctk:PropertyDefinition TargetProperties="ReminderOn" DisplayName="Remind Me" DisplayOrder="1"/>
+                            <xctk:PropertyDefinition TargetProperties="ReminderMessage" DisplayName="Notify Message" DisplayOrder="2"/>
+                            <xctk:PropertyDefinition TargetProperties="ReminderDTS" DisplayName="Reminder On" DisplayOrder="3"/>
+                            <xctk:PropertyDefinition TargetProperties="ReminderSound" DisplayName="Notify Sound" DisplayOrder="4"/>
+                            <xctk:PropertyDefinition TargetProperties="ReminderImageURI" DisplayName="Notify Image" DisplayOrder="5"/>
+                            <xctk:PropertyDefinition TargetProperties="LongNotification" DisplayName="Long Notify" DisplayOrder="6"/>
+                            <xctk:PropertyDefinition TargetProperties="SnoozeCount" DisplayName="Snooze Count" DisplayOrder="7"/>
+                            <xctk:PropertyDefinition TargetProperties="SnoozeInterval" DisplayName="Snooze Delay" DisplayOrder="8"/>
+                        </xctk:PropertyDefinition.PropertyDefinitions>
+                    </xctk:PropertyDefinition>
+
+                    </xctk:PropertyGrid.PropertyDefinitions>
+                </xctk:PropertyGrid>
+            </StackPanel>
+
+            <StackPanel x:Name="uxInfoPanel" Visibility="Collapsed" KeyDown="uxInfoPanel_KeyDown" IsVisibleChanged="uxInfoPanel_IsVisibleChanged">
+                <xctk:PropertyGrid x:Name="uxInfoPropertyGrid" AutoGenerateProperties="False" ShowSearchBox="False" ShowSortOptions="False" ShowSummary="False" IsCategorized="True" ShowTitle="False" IsMiscCategoryLabelHidden="True" FontFamily="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" FontSize="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" PropertyValueChanged="uxInfoPropertyGrid_PropertyValueChanged">
+                    <xctk:PropertyGrid.PropertyDefinitions>
+                        <xctk:PropertyDefinition TargetProperties="Title" DisplayOrder="0" />
+                        <xctk:PropertyDefinition TargetProperties="UXSettings" DisplayName="Settings" DisplayOrder="1">
+                            <xctk:PropertyDefinition.PropertyDefinitions>
+                                <xctk:PropertyDefinition TargetProperties="BackgroundColor" DisplayName="Fill Color" DisplayOrder="0" />
+                                <xctk:PropertyDefinition TargetProperties="FontFamily" DisplayName="Font Name " DisplayOrder="1" />
+                                <xctk:PropertyDefinition TargetProperties="FontSize" DisplayName="Font Size" DisplayOrder="2" />
+                                <xctk:PropertyDefinition TargetProperties="FontColor" DisplayName="Font Color" DisplayOrder="3" />
+                                <xctk:PropertyDefinition TargetProperties="FontStyle" DisplayName="Font Style" DisplayOrder="4" />
+                            </xctk:PropertyDefinition.PropertyDefinitions>
+                        </xctk:PropertyDefinition>
+                        <xctk:PropertyDefinition TargetProperties="Security" DisplayName="Security" DisplayOrder="2">
+                            <xctk:PropertyDefinition.PropertyDefinitions>                        
+                                <xctk:PropertyDefinition TargetProperties="Permissions" DisplayOrder="0" />
+                                <xctk:PropertyDefinition TargetProperties="OwnerSID" DisplayName="Owner" DisplayOrder="1" />
+                                <xctk:PropertyDefinition TargetProperties="CreatedBy" DisplayOrder="2" />
+                                <xctk:PropertyDefinition TargetProperties="CreatedDTS" DisplayName="Created On" DisplayOrder="3" />
+                                <xctk:PropertyDefinition TargetProperties="UpdatedBy" DisplayOrder="4" />
+                                <xctk:PropertyDefinition TargetProperties="UpdatedDTS" DisplayName="Updated On" DisplayOrder="5" />
+                            </xctk:PropertyDefinition.PropertyDefinitions>
+                        </xctk:PropertyDefinition>
+                    </xctk:PropertyGrid.PropertyDefinitions>
+                </xctk:PropertyGrid>
+            </StackPanel>
+
+            <StackPanel>
+                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" Background="{x:Null}" BorderBrush="{x:Null}" FontSize="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" SelectionBrush="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}">
+                    <xctk:RichTextBox.Resources>
+                        <Style TargetType="{x:Type Paragraph}">
+                            <Setter Property="Margin" Value="0" />
+                        </Style>
+                    </xctk:RichTextBox.Resources>
+                </xctk:RichTextBox>
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+</Window>
