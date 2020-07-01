@@ -1,4 +1,4 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Width="256" Height="256" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" MouseWheel="OnMouseWheel" Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" MouseWheel="OnMouseWheel" Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
 
     <Window.Resources>
         <Style TargetType="{x:Type Image}">
@@ -21,6 +21,7 @@
         </Style>        
 
         <Style TargetType="{x:Type xctk:PropertyGrid}">
+            <Setter Property="NameColumnWidth" Value="100" />        
             <Setter Property="FontFamily" Value="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" />
             <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" />
             <Setter Property="FontStyle" Value="{DynamicResource {x:Static SystemFonts.MenuFontStyleKey}}" />
@@ -120,6 +121,7 @@
                                 <xctk:PropertyDefinition TargetProperties="FontSize" DisplayName="Font Size" DisplayOrder="2" />
                                 <xctk:PropertyDefinition TargetProperties="FontColor" DisplayName="Font Color" DisplayOrder="3" />
                                 <xctk:PropertyDefinition TargetProperties="FontStyle" DisplayName="Font Style" DisplayOrder="4" />
+                                <xctk:PropertyDefinition TargetProperties="Topmost" DisplayName="Pin To Top" DisplayOrder="5" />
                             </xctk:PropertyDefinition.PropertyDefinitions>
                         </xctk:PropertyDefinition>
                         <xctk:PropertyDefinition TargetProperties="Security" DisplayName="Security" DisplayOrder="2">
@@ -137,7 +139,7 @@
             </StackPanel>
 
             <StackPanel>
-                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" Background="{x:Null}" BorderBrush="{x:Null}" FontSize="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" SelectionBrush="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}">
+                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" Background="{x:Null}" BorderBrush="{x:Null}" FontSize="{DynamicResource {x:Static SystemFonts.MessageFontSizeKey}}" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
                     <xctk:RichTextBox.Resources>
                         <Style TargetType="{x:Type Paragraph}">
                             <Setter Property="Margin" Value="0" />

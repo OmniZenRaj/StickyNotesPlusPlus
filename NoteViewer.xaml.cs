@@ -18,7 +18,6 @@ using System.Windows.Threading;
 using Xceed.Wpf.Toolkit.PropertyGrid;
 
 using U = Utilities;
-using EX = Utilities.Exceptions;
 using System.Windows.Navigation;
 using System.Windows.Interop;
 
@@ -120,13 +119,23 @@ namespace OmniZenNotes
         
         void PositionWindow(Rect restoreBounds)
         {
+            var rect = CalcWindowBounds(restoreBounds);
+            Width = rect.Width;
+            Height = rect.Height;
+            Left = rect.Left;
+            Top = rect.Top;
+        }
+
+        Rect CalcWindowBounds(Rect restoreBounds) {
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
-            Width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
-            Height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
-            Left = restoreBounds.Left > area.Left ? restoreBounds.Left : area.Width / 2 - Width / 2; // Center Horz
-            Top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
+            double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
+            double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
+            double left = restoreBounds.Left > area.Left ? restoreBounds.Left : area.Width / 2 - Width / 2; // Center Horz
+            double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
+
+            return new Rect(left,top, width, height);;
         }
 
         void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
@@ -144,11 +153,8 @@ namespace OmniZenNotes
             uxInfoPropertyGrid.SelectedObject = VM.Note;
             uxAlertPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
-            Image image = uxPinTab.Content as Image;
-            image.RenderTransform = new RotateTransform(Topmost ? 0 : 90);
-            image.RenderTransformOrigin = new Point(0.5, 0.5);
-
-            PositionWindow(RestoreBounds);            
+            UpdatePinTabButton();
+            PositionWindow(RestoreBounds);
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -321,6 +327,8 @@ namespace OmniZenNotes
 
             Background = new SolidColorBrush(colorScRgb);
             uxToolBar.Background = Background;
+            uxRichTextBox.SelectionBrush = new SolidColorBrush(colorScRgb);
+
         }
 
         private void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
@@ -363,11 +371,17 @@ namespace OmniZenNotes
         private void OnPinTabButton_Click(object sender, RoutedEventArgs e)
         {
             Topmost = !Topmost;
+            UpdatePinTabButton();
+        }        
+
+        private void UpdatePinTabButton() {
             Image image = uxPinTab.Content as Image;
             image.RenderTransform = new RotateTransform(Topmost ? 0 : 90);
             image.RenderTransformOrigin = new Point(0.5, 0.5);
+
             VM.Note.UXSettings.Topmost = Topmost;
-        }        
+            uxInfoPropertyGrid.Update();            
+        }
 
 #pragma warning disable IDE0051
 
@@ -445,20 +459,17 @@ namespace OmniZenNotes
                 }
 
                 // Restore the Note specific settings (which override the App level settings)
-                if (VM.Note.UXSettings != null)
+                if (VM.Note.UXSettings.RestoreBounds is Rect restoreBoundz)
                 {
-                    if (VM.Note.UXSettings.RestoreBounds is Rect restoreBoundz)
-                    {
-                        Left = restoreBoundz.Left; Top = restoreBoundz.Top;
-                        Width = restoreBoundz.Width; Height = restoreBoundz.Height;
-                    }
-                    // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
-                    SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
-                    uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
-                    SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
-                    uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
-                    Topmost = VM.Note.UXSettings.Topmost;
+                    Left = restoreBoundz.Left; Top = restoreBoundz.Top;
+                    Width = restoreBoundz.Width; Height = restoreBoundz.Height;
                 }
+                // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
+                SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
+                uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
+                SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
+                uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
+                Topmost = VM.Note.UXSettings.Topmost;
             }
             catch
             {
@@ -466,8 +477,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void SaveSettings()
-        {
+        private void SaveUXSettings() {
             // Save the Note specific settings (which override the App level settings)
             if (VM.Note != null)
             {
@@ -487,6 +497,11 @@ namespace OmniZenNotes
                 VM.Note.UXSettings.OptionsExpanded = uxOptionsExpander.IsExpanded;
                 VM.Note.UXSettings.Topmost = Topmost;
             }
+        }
+
+        private void SaveSettings()
+        {
+            SaveUXSettings();
 
             // Save the App wide default settings:
             S.Default.RestoreBounds = RestoreBounds;
@@ -631,9 +646,19 @@ namespace OmniZenNotes
                         break;
                     }
                 }
-            } else
-            // Create a Hyperlink to the dropped file
+            } else if (args.KeyStates == DragDropKeyStates.AltKey)
             {
+                // Insert the contents of supported dropped file:
+                switch (fileInfo.Extension.ToLower())
+                {
+                    case ".png": case ".jpg": case ".bmp": {
+                            var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
+                            uxRichTextBox.Document.Background = new ImageBrush(bitmap);
+                            break; 
+                    }
+                }
+            } else {
+                // Create a Hyperlink to the dropped file
                 var image = new Image();
                 var icon = U.Shell.GetShellIcon(fileInfo);
                 var bitmap = U.Graphics.GetBitmapImage(icon);

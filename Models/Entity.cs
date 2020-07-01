@@ -135,15 +135,25 @@ namespace OmniZenNotes.Models
         public bool OptionsExpanded { get; set; }
         public bool Topmost { get; set; }        
         public string CSS { get; set; }
+
+        public UXSettings() {
+            RestoreBounds = new Rect(0, 0, 364, 256);
+            FontFamily = SystemFonts.MenuFontFamily;
+            FontSize = SystemFonts.MenuFontSize;
+            FontStyle = SystemFonts.MenuFontStyle;
+            FontColor = SystemColors.MenuTextColor;
+            BackgroundColor = SystemColors.AppWorkspaceColor;
+        }
     }
 
     public class Security {
-        public string OwnerSID { get; set; }
+        public string OwnerSID { get; internal set; }
         public EntityPermissions Permissions { get; set; } = EntityPermissions.Private;
-        public string CreatedBy { get; set; }
-        public DateTime CreatedDTS { get; set; }
-        public string UpdatedBy { get; set; }
-        public DateTime UpdatedDTS { get; set; }
+        public string CreatedBy { get; internal set; }
+        public DateTime CreatedDTS { get; internal set; }
+        public string UpdatedBy { get; internal set; }
+        public DateTime UpdatedDTS { get; internal set; }
+
     }
 
     public enum EntityPermissions { Read, Modify, Full, Private };

@@ -25,7 +25,7 @@ namespace OmniZenNotes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("256,256,256,256")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0,0,364,256")]
         public global::System.Windows.Rect RestoreBounds {
             get {
                 return ((global::System.Windows.Rect)(this["RestoreBounds"]));
