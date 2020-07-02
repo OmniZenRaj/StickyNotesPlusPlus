@@ -21,7 +21,7 @@
         </Style>        
 
         <Style TargetType="{x:Type xctk:PropertyGrid}">
-            <Setter Property="NameColumnWidth" Value="100" />        
+            <Setter Property="NameColumnWidth" Value="120" />        
             <Setter Property="FontFamily" Value="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" />
             <Setter Property="FontSize" Value="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" />
             <Setter Property="FontStyle" Value="{DynamicResource {x:Static SystemFonts.MenuFontStyleKey}}" />
@@ -126,8 +126,7 @@
                         </xctk:PropertyDefinition>
                         <xctk:PropertyDefinition TargetProperties="Security" DisplayName="Security" DisplayOrder="2">
                             <xctk:PropertyDefinition.PropertyDefinitions>                        
-                                <xctk:PropertyDefinition TargetProperties="Permissions" DisplayOrder="0" />
-                                <xctk:PropertyDefinition TargetProperties="OwnerSID" DisplayName="Owner" DisplayOrder="1" />
+                                <xctk:PropertyDefinition TargetProperties="Permissions" DisplayOrder="1" />
                                 <xctk:PropertyDefinition TargetProperties="CreatedBy" DisplayOrder="2" />
                                 <xctk:PropertyDefinition TargetProperties="CreatedDTS" DisplayName="Created On" DisplayOrder="3" />
                                 <xctk:PropertyDefinition TargetProperties="UpdatedBy" DisplayOrder="4" />

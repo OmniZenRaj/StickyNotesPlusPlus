@@ -133,7 +133,7 @@ namespace OmniZenNotes.Models
         public Color FontColor { get; set; }
         public Color BackgroundColor { get; set; }
         public bool OptionsExpanded { get; set; }
-        public bool Topmost { get; set; }        
+        public bool Topmost { get; set; }
         public string CSS { get; set; }
 
         public UXSettings() {
@@ -141,8 +141,20 @@ namespace OmniZenNotes.Models
             FontFamily = SystemFonts.MenuFontFamily;
             FontSize = SystemFonts.MenuFontSize;
             FontStyle = SystemFonts.MenuFontStyle;
-            FontColor = SystemColors.MenuTextColor;
-            BackgroundColor = SystemColors.AppWorkspaceColor;
+            FontColor = SystemColors.WindowTextColor;
+            BackgroundColor = SystemColors.WindowColor;
+        }
+
+        public void CloneFrom(UXSettings copy) {
+            RestoreBounds = new Rect(copy.RestoreBounds.Size);
+            FontFamily = copy.FontFamily;
+            FontSize = copy.FontSize;
+            FontStyle = copy.FontStyle;
+            FontColor = copy.FontColor;
+            BackgroundColor = copy.BackgroundColor;
+            OptionsExpanded = copy.OptionsExpanded;
+            Topmost = copy.Topmost;
+            CSS = copy.CSS;
         }
     }
 

@@ -121,7 +121,7 @@ namespace OmniZenNotes.Models
             var note = new Note() { Title = $"New Note {Notes.Count+1}", };
 
             if (copy != null) {
-                 // TODO: Deep clone the copy Note to new Note
+                note.UXSettings.CloneFrom(copy.UXSettings);
             }
 
             notebook.Notes.Add(note);           // Add to owner notebook
@@ -246,6 +246,6 @@ namespace OmniZenNotes.Models
             {
                 Tasks.Remove(task);            // App wide Notes collection
             }
-        }        
+        }
     }
 }

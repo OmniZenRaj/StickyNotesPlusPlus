@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.Collections.Generic;
 using System.Reflection;
 
 using OmniZenNotes.Models;
@@ -10,6 +11,7 @@ namespace OmniZenNotes
 
     public partial class App : Application
     {
+        public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
         protected override void OnStartup(StartupEventArgs e) {
 
             LoadSettings();

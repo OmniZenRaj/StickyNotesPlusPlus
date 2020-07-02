@@ -94,7 +94,6 @@ class ShellLink { }
 
 namespace OmniZenNotes
 {
-    using MessageBox = Xceed.Wpf.Toolkit.MessageBox;
     using S = Properties.Settings;
 
     public partial class NoteViewer : Window
@@ -107,6 +106,7 @@ namespace OmniZenNotes
         public NoteViewer(Note note) {
             InitializeComponent();
             VM = new NoteViewModel(this, note);
+            App.NoteViewers.Add(this);
 
             MouseEnter += OnWindow_MouseEnter;
             MouseLeave += OnWindow_MouseLeave;
@@ -116,7 +116,7 @@ namespace OmniZenNotes
 
             LoadSettings();
         }
-        
+
         void PositionWindow(Rect restoreBounds)
         {
             var rect = CalcWindowBounds(restoreBounds);
@@ -149,7 +149,7 @@ namespace OmniZenNotes
         private void OnLoaded(object sender, EventArgs e) {
             DataContext = VM.Note;
             NoteViewers.Add(this);
-            
+
             uxInfoPropertyGrid.SelectedObject = VM.Note;
             uxAlertPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
@@ -158,7 +158,8 @@ namespace OmniZenNotes
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
-            Save(saveAsync: false);            
+            Save(saveAsync: false);
+            App.NoteViewers.Remove(this);
         }
 
         void OnSaveCommand(object sender, RoutedEventArgs e) {
@@ -173,7 +174,10 @@ namespace OmniZenNotes
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Escape || (e.Key == Key.F4 && Keyboard.Modifiers == ModifierKeys.Alt)) { Close(); }
+            if (e.Key == Key.Escape || (e.Key == Key.F4 && Keyboard.Modifiers == ModifierKeys.Alt)) {
+                e.Handled = true;
+                Close();
+            }
         }
 
         private void OnMouseWheel(object sender, MouseWheelEventArgs e) {
@@ -245,15 +249,18 @@ namespace OmniZenNotes
         }
 
 
-        private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle) {
+        private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings=true) {
 
             // Keep the Window Font in sync with the RichTextBox Font:
             if (fontFamily != null) {
 
-                VM.Note.UXSettings.FontFamily = fontFamily;
-                VM.Note.UXSettings.FontSize = fontSize;
-                VM.Note.UXSettings.FontColor = fontColor;
-                VM.Note.UXSettings.FontStyle = fontStyle;
+                if (updateUXSettings)
+                {
+                    VM.Note.UXSettings.FontFamily = fontFamily;
+                    VM.Note.UXSettings.FontSize = fontSize;
+                    VM.Note.UXSettings.FontColor = fontColor;
+                    VM.Note.UXSettings.FontStyle = fontStyle;
+                }
 
                 // Set the Font settings for the RichTextBox:
                 uxRichTextBox.FontFamily = fontFamily;
@@ -269,7 +276,7 @@ namespace OmniZenNotes
                     // Create a TextRange around the entire document.
                     range = new TextRange(doc.ContentStart, doc.ContentEnd);
                     range.Select(range.Start, range.End);
-                }                
+                }
 
                 // Now apply the various font properties
                 range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
@@ -309,9 +316,10 @@ namespace OmniZenNotes
             }
         }
 
-        private void SetBackgroundColor(Color color) {
-            VM.Note.UXSettings.BackgroundColor = color;
-            uxColorPicker.SelectedColor = color;
+        private void SetBackgroundColor(Color color, bool updateUXSettings = true) {
+            if (updateUXSettings) {
+                VM.Note.UXSettings.BackgroundColor = color;
+            };
 
             Background = new SolidColorBrush(color);
             uxRichTextBox.Background = new SolidColorBrush(color);
@@ -328,7 +336,6 @@ namespace OmniZenNotes
             Background = new SolidColorBrush(colorScRgb);
             uxToolBar.Background = Background;
             uxRichTextBox.SelectionBrush = new SolidColorBrush(colorScRgb);
-
         }
 
         private void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
@@ -347,11 +354,11 @@ namespace OmniZenNotes
             noteViewer.Top = Top > area.Top ? Top >= 0 ? Top + (area.Height* 0.03) : Top - (area.Height* 0.03) : (area.Height * 0.03);
             noteViewer.Width = Width;
             noteViewer.Height = Height;
-            noteViewer.Show();        
+            noteViewer.Show();
         }
 
         private void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
-            OpenNewWindow(VM.CreateNewNote());
+            OpenNewWindow(VM.CreateNewNote(copy: VM.Note));
         }
 
         private void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
@@ -372,7 +379,8 @@ namespace OmniZenNotes
         {
             Topmost = !Topmost;
             UpdatePinTabButton();
-        }        
+            uxInfoPropertyGrid.Update();
+        }
 
         private void UpdatePinTabButton() {
             Image image = uxPinTab.Content as Image;
@@ -380,7 +388,6 @@ namespace OmniZenNotes
             image.RenderTransformOrigin = new Point(0.5, 0.5);
 
             VM.Note.UXSettings.Topmost = Topmost;
-            uxInfoPropertyGrid.Update();            
         }
 
 #pragma warning disable IDE0051
@@ -433,7 +440,7 @@ namespace OmniZenNotes
         {
             try
             {
-                // Restore Window position and size from user settings save of last session
+                 // Restore Window position and size from user settings save of last session
                 if (S.Default?.RestoreBounds is Rect restoreBounds)
                 {
                     Left = restoreBounds.Left; Top = restoreBounds.Top;
@@ -442,9 +449,8 @@ namespace OmniZenNotes
                 // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
                 WindowState = S.Default?.WindowState is WindowState windowState ? windowState : System.Windows.WindowState.Normal;
                 WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
-                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle);
-                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
-                SetBackgroundColor(S.Default.BackgroundColor);
+                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
+                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings:false);
 
                 uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
                 Topmost = S.Default.Topmost;
@@ -457,24 +463,31 @@ namespace OmniZenNotes
                     Timer.Interval = TimeSpan.FromSeconds(seconds);
                     Timer.Start();
                 }
-
-                // Restore the Note specific settings (which override the App level settings)
-                if (VM.Note.UXSettings.RestoreBounds is Rect restoreBoundz)
-                {
-                    Left = restoreBoundz.Left; Top = restoreBoundz.Top;
-                    Width = restoreBoundz.Width; Height = restoreBoundz.Height;
-                }
-                // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
-                SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
-                uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
-                SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
-                uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
-                Topmost = VM.Note.UXSettings.Topmost;
             }
             catch
             {
                 Left = 1; Top = 1; Width = 480; Height = 480;
             }
+
+            LoadUXSettings();
+            if (uxRichTextBox.Background is SolidColorBrush scba)
+            {
+                uxColorPicker.SelectedColor = scba.Color;
+            }
+        }
+
+        private void LoadUXSettings() {
+            // Restore the Note specific settings (which override the App level settings)
+            if (VM.Note.UXSettings.RestoreBounds is Rect restoreBounds &&  double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top))
+            {
+                Left = restoreBounds.Left; Top = restoreBounds.Top;
+                Width = restoreBounds.Width; Height = restoreBounds.Height;
+            }
+            // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
+            SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
+            SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
+            uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
+            Topmost = VM.Note.UXSettings.Topmost;
         }
 
         private void SaveUXSettings() {
@@ -484,8 +497,8 @@ namespace OmniZenNotes
                 VM.Note.UXSettings ??= new UXSettings();
                 VM.Note.UXSettings.RestoreBounds = RestoreBounds;
                 VM.Note.UXSettings.WindowState = WindowState;
-                VM.Note.UXSettings.FontFamily = FontFamily;
-                VM.Note.UXSettings.FontSize = FontSize;
+                VM.Note.UXSettings.FontFamily = uxRichTextBox.FontFamily;
+                VM.Note.UXSettings.FontSize = uxRichTextBox.FontSize;
                 if (uxRichTextBox.Foreground is SolidColorBrush fgscb)
                 {
                     VM.Note.UXSettings.FontColor = fgscb.Color;
@@ -503,6 +516,7 @@ namespace OmniZenNotes
         {
             SaveUXSettings();
 
+            /*
             // Save the App wide default settings:
             S.Default.RestoreBounds = RestoreBounds;
             S.Default.WindowState = WindowState;
@@ -521,6 +535,7 @@ namespace OmniZenNotes
 
             S.Default.OptionsExpanded = uxOptionsExpander.IsExpanded;
             S.Default.Topmost = Topmost;
+            */
 
             S.Default.Save();
         }
@@ -532,7 +547,7 @@ namespace OmniZenNotes
 
         private void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
             SetBackgroundColor((Color)e.NewValue);
-            uxInfoPropertyGrid.Update();            
+            uxInfoPropertyGrid.Update();
         }
 
         private void uxAlertPanel_KeyDown(object sender, KeyEventArgs e) {
@@ -587,8 +602,13 @@ namespace OmniZenNotes
                         SetFont(uxRichTextBox.FontFamily, uxRichTextBox.FontSize, (Color)e.NewValue, uxRichTextBox.FontStyle);
                         break;
                     case "FontStyle":
-                        SetFont(uxRichTextBox.FontFamily, uxRichTextBox.FontSize, foregroundColor, (FontStyle)e.NewValue);                    
+                        SetFont(uxRichTextBox.FontFamily, uxRichTextBox.FontSize, foregroundColor, (FontStyle)e.NewValue);
                         break;
+                    case "Topmost":
+                        Topmost = (bool)e.NewValue;
+                        UpdatePinTabButton();
+                        break;
+
                     default: break;
                 }
             }
@@ -635,7 +655,7 @@ namespace OmniZenNotes
                         }
                         var iuic_image = new InlineUIContainer(image, tp);
                         break;
-                    }                    
+                    }
                     case ".mp4" : case ".mpg": case ".mp3":case ".wmv": case ".avi": case ".mkv": {
                         var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
                         if (me.HasVideo) {
@@ -654,7 +674,7 @@ namespace OmniZenNotes
                     case ".png": case ".jpg": case ".bmp": {
                             var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
                             uxRichTextBox.Document.Background = new ImageBrush(bitmap);
-                            break; 
+                            break;
                     }
                 }
             } else {
@@ -697,6 +717,6 @@ namespace OmniZenNotes
                 }
             }
             return null;
-        }        
+        }
     }
 }
