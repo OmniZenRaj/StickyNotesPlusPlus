@@ -53,8 +53,8 @@ namespace OmniZenNotes.Models
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $@"INSERT INTO Note
-                    (ID, Name, Description , Title, Document, TaskID, UXSettings, OwnerSID, CreatedBy, UpdatedBy )
-                    VALUES(@ID, @Name, @Description, @Title, @Document, @TaskID, @UXSettings, @OwnerSID, @CreatedBy, @UpdatedBy)
+                    (ID, Name, Description , Title, Document, TaskID, UXSettings, OwnerSID, Permissions, CreatedBy, UpdatedBy )
+                    VALUES(@ID, @Name, @Description, @Title, @Document, @TaskID, @UXSettings, @OwnerSID, @Permissions, @CreatedBy, @UpdatedBy)
                     ON CONFLICT(ID) DO UPDATE SET
                         Name=excluded.Name,
                         Description=excluded.Description,
@@ -63,6 +63,7 @@ namespace OmniZenNotes.Models
                         TaskID=excluded.TaskID,
                         UXSettings=excluded.UXSettings,
                         OwnerSID=excluded.OwnerSID,
+                        Permissions=excluded.Permissions,
                         CreatedBy=excluded.CreatedBy,
                         UpdatedBy=excluded.UpdatedBy";
 
@@ -122,6 +123,7 @@ namespace OmniZenNotes.Models
 
             if (copy != null) {
                 note.UXSettings.CloneFrom(copy.UXSettings);
+                note.Document.Background = copy.Document.Background;
             }
 
             notebook.Notes.Add(note);           // Add to owner notebook

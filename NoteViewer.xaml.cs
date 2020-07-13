@@ -10,16 +10,21 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Reflection;
+using System.Windows.Threading;
+using System.Windows.Data;
+using System.Windows.Interop;
+using System.Windows.Controls.Primitives;
+using System.Globalization;
 
-using OmniZenNotes.Models;
+using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using MS.WindowsAPICodePack.Internal;
-using System.Windows.Threading;
-using Xceed.Wpf.Toolkit.PropertyGrid;
 
+using Xceed.Wpf.Toolkit.PropertyGrid;
+using OmniZenNotes.Models;
 using U = Utilities;
 using System.Windows.Navigation;
-using System.Windows.Interop;
 
 [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 interface IShellLinkW
@@ -103,18 +108,151 @@ namespace OmniZenNotes
 
         public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
 
-        public NoteViewer(Note note) {
+        public NoteViewer(Note note)
+        {
             InitializeComponent();
             VM = new NoteViewModel(this, note);
             App.NoteViewers.Add(this);
 
-            MouseEnter += OnWindow_MouseEnter;
-            MouseLeave += OnWindow_MouseLeave;
-
-            AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
-            InputBindings.Add(new KeyBinding(ApplicationCommands.Save, new KeyGesture(Key.S, ModifierKeys.Control)));
+            InitializeControls();
+            InitializeCommands();
 
             LoadSettings();
+        }
+
+        void InitializeControls()
+        {
+            uxRichTextBox.IsDocumentEnabled = true;
+            uxRichTextBox.SpellCheck.IsEnabled = true;
+            MouseEnter += OnWindow_MouseEnter;
+            MouseLeave += OnWindow_MouseLeave;
+            uxShowNotesMenu.SubmenuOpened += OnShowNote_SubmenuOpened;
+            uxColorsMenu.SubmenuOpened += OnShowColors_SubmenuOpened;
+
+            Title = VM.Note.Title;
+            Image AppIcon = (Image)FindResource("AppIcon");
+            Icon = AppIcon.Source;
+        }
+
+        private void OnShowColors_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            uxColorsMenu.Items.Clear();
+            PropertyInfo[] props = typeof(Colors).GetProperties();
+            foreach (PropertyInfo p in props)
+            {
+                Color color = (Color)p.GetValue(null);
+                MenuItem item = new MenuItem
+                {
+                    Header = p.Name,
+                    Tag = color,
+                    Background = new SolidColorBrush(color),
+                    Foreground = new SolidColorBrush(AdjustColor(color)),
+                };
+
+                // Handle color selection from auto generated submenu
+                item.Click += (object sender, RoutedEventArgs e) => {
+                    if (sender is MenuItem mi && mi.Tag is Color color) {
+                        SetBackgroundColor(color);
+                    }
+                };
+
+                uxColorsMenu.Items.Add(item);
+            }
+        }
+
+        void OnShowNote_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            uxShowNotesMenu.Items.Clear();
+            uxShowNotesMenu.Items.Add(new MenuItem() {
+                Header = "Show All",
+                InputGestureText = "Alt-A",
+        });
+            uxShowNotesMenu.Items.Add(new MenuItem()
+            {
+                Header = "Show Private",
+                InputGestureText = "Alt-R"
+            });
+
+            uxShowNotesMenu.Items.Add(new MenuItem()
+            {
+                Header = "Show Public",
+                InputGestureText = "Alt-P"
+            });
+
+            uxShowNotesMenu.Items.Add(new Separator());
+
+            App.NoteViewers.Sort((NoteViewer x, NoteViewer y) => { return x.Title.CompareTo(y.Title); });
+
+            foreach (var noteViewer in App.NoteViewers)
+            {
+                MenuItem item = new MenuItem
+                {
+                    Header = noteViewer.Title,
+                    Tag = noteViewer,
+                    IsChecked = noteViewer.Visibility == Visibility.Visible
+                };
+
+                if (noteViewer.uxRichTextBox.Document.Background is null)
+                {
+                    if (noteViewer.uxRichTextBox.Background is null)
+                    {
+                        item.Background = noteViewer.Background.Clone();
+                    }
+                    else
+                    {
+                        item.Background = noteViewer.uxRichTextBox.Background.Clone();
+                    }
+                }
+                else
+                {
+                    item.Background = noteViewer.uxRichTextBox.Document.Background.Clone();
+                }
+
+                uxShowNotesMenu.Items.Add(item);
+            }
+
+            foreach (var item in uxShowNotesMenu.Items) {
+                if (item is MenuItem menuItem) {
+                    menuItem.Click += NoteSubMenu_Clicked;
+                }
+            }
+        }
+
+        // Handle menu checks and visibility processing
+        void NoteSubMenu_Clicked(object sender, RoutedEventArgs e) {
+
+            if (sender is MenuItem mi) {
+                if (mi.Tag is NoteViewer nv) {
+                    mi.IsChecked = !mi.IsChecked; // Toggle Checked status
+                    if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.Hide(); }
+
+                } else if ("Show All".CompareTo(mi.Header) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        noteViewer.Show();
+                    }
+
+                } else if ("Show Private".CompareTo(mi.Header) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
+                            noteViewer.Show();
+                        } else {
+                            noteViewer.Hide();
+                        }
+                    }
+
+                } else if ("Show Public".CompareTo(mi.Header) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
+                            noteViewer.Show();
+                        } else {
+                            noteViewer.Hide();
+                        }
+                    }
+                }
+            }
         }
 
         void PositionWindow(Rect restoreBounds)
@@ -126,7 +264,8 @@ namespace OmniZenNotes
             Top = rect.Top;
         }
 
-        Rect CalcWindowBounds(Rect restoreBounds) {
+        Rect CalcWindowBounds(Rect restoreBounds)
+        {
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
@@ -135,107 +274,204 @@ namespace OmniZenNotes
             double left = restoreBounds.Left > area.Left ? restoreBounds.Left : area.Width / 2 - Width / 2; // Center Horz
             double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
 
-            return new Rect(left,top, width, height);;
+            return new Rect(left, top, width, height); ;
         }
 
-        void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
-            CommandBinding cb = new CommandBinding(command);
-            cb.Executed += new ExecutedRoutedEventHandler(handler);
-            // Default can execute to always true unless otherwise provied.
-            cb.CanExecute += new CanExecuteRoutedEventHandler(enabler ??= (sender, e) => e.CanExecute = true);
-            CommandBindings.Add(cb);
+        // Create, configure and bind Application Commands
+        void InitializeCommands()
+        {
+            // Save Note
+            AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
+
+            // Print / Print Preview Note
+            AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
+            AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
+
+            // Refresh Command
+            AddCommandBinding(AppCommands.RefreshCommand, OnRefreshCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.RefreshCommand, new KeyGesture(Key.F5, ModifierKeys.None, "F5")));
+
+            // Spellcheck Command
+            AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
+
+            // Set Note Font Command
+            AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
+
+            // View Note Reminder Command
+            AddCommandBinding(AppCommands.ViewNoteReminderCommand, OnViewNoteReminderCommand);
+            // View Note Settings Command
+            AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
+
+            // Delete Command
+            AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
+
+            void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null)
+            {
+                CommandBinding cb = new CommandBinding(command);
+                cb.Executed += new ExecutedRoutedEventHandler(handler);
+                cb.CanExecute += new CanExecuteRoutedEventHandler(enabler ??= (sender, e) => e.CanExecute = true);
+                CommandBindings.Add(cb);
+            }
+
+            AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
+
         }
 
-        private void OnLoaded(object sender, EventArgs e) {
+        private void OnLoaded(object sender, EventArgs e)
+        {
             DataContext = VM.Note;
             NoteViewers.Add(this);
 
-            uxInfoPropertyGrid.SelectedObject = VM.Note;
-            uxAlertPropertyGrid.SelectedObject = VM.Note.Task;
+            uxSettingsPropertyGrid.SelectedObject = VM.Note;
+            uxReminderPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
             UpdatePinTabButton();
             PositionWindow(RestoreBounds);
         }
 
-        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
             Save(saveAsync: false);
             App.NoteViewers.Remove(this);
         }
 
-        void OnSaveCommand(object sender, RoutedEventArgs e) {
+        void OnSaveCommand(object sender, RoutedEventArgs e)
+        {
             Save(saveAsync: false);
         }
 
-        private void Save(bool saveAsync = true) {
+        private void Save(bool saveAsync = true)
+        {
             SaveSettings();
-            if (VM.Note != null) {
+            if (VM.Note != null)
+            {
                 VM.Note.Save(saveAsync);
             }
         }
 
-        private void OnKeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Escape || (e.Key == Key.F4 && Keyboard.Modifiers == ModifierKeys.Alt)) {
-                e.Handled = true;
+        void OnRefreshCommand(object sender, RoutedEventArgs e)
+        {
+        }
+
+        void OnSpellCheckCommand(object sender, RoutedEventArgs e) {
+            uxRichTextBox.SpellCheck.IsEnabled = !uxRichTextBox.SpellCheck.IsEnabled;
+        }
+
+        void OnDeleteCommand(object sender, RoutedEventArgs e)
+        {
+            if (NoteViewers.Count == 1) {
+                var rc = MessageBox.Show("You about to DELETE the LAST Sticky Note. \nThis will EXIT the Application in Alpha. Press Cancel to go back.", Assembly.GetExecutingAssembly().GetName().Name, MessageBoxButton.OKCancel);
+                if (rc == MessageBoxResult.OK) {
+                    VM.Note.Delete();
+                    VM.Note = null;
+                    Close();
+                }
+            } else {
+                VM.Note.Delete();
+                VM.Note = null;
                 Close();
             }
+
+            e.Handled = true;
         }
 
-        private void OnMouseWheel(object sender, MouseWheelEventArgs e) {
-            if (Keyboard.Modifiers == ModifierKeys.Control) {
-                FontSize = e.Delta > 0 ? FontSize + 1 : FontSize - 1;
+        void OnExitApplicationCommand(object sender, RoutedEventArgs e) {
+            Application.Current.Shutdown();
+        }
+
+        void OnSelectFontCommand(object sender, RoutedEventArgs e) {
+            OnTextFormatButton_Click(sender, e);
+        }
+
+        void OnViewNoteReminderCommand(object sender, RoutedEventArgs e) {
+            ShowReminderPanel(!uxViewNoteReminderMenuItem.IsChecked);
+        }
+        void OnViewNoteSettingsCommand(object sender, RoutedEventArgs e) {
+            ShowSettingsPanel(!uxViewNoteSettingsMenuItem.IsChecked);
+        }
+
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape || e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                if( NoteViewers.Count == 1) {
+                    MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
+                } else {
+                    Visibility = Visibility.Hidden;
+                }
+                e.Handled = true;
             }
         }
 
-        private void OnMouseDown(object sender, MouseButtonEventArgs e) {
+        private void OnMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                double fontSize = e.Delta > 0 ? FontSize + 1 : FontSize - 1;
+                FontSize = fontSize <= 6 ? 8 : fontSize;
+            }
+        }
+
+        private void OnMouseDown(object sender, MouseButtonEventArgs e)
+        {
 
             uxToolBar.Visibility = Visibility.Visible;
 
-            if (e.LeftButton == MouseButtonState.Pressed) {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
                 DragMove();
             }
         }
 
-        private void OnActivated(object sender, EventArgs e) {
+        private void OnActivated(object sender, EventArgs e)
+        {
             uxToolBar.Visibility = Visibility.Visible;
         }
 
-        private void OnDeactivated(object sender, EventArgs e) {
+        private void OnDeactivated(object sender, EventArgs e)
+        {
             uxToolBar.Visibility = Visibility.Hidden;
         }
 
-        private void OnWindow_MouseEnter(object sender, EventArgs e) {
+        private void OnWindow_MouseEnter(object sender, EventArgs e)
+        {
             uxToolBar.Visibility = Visibility.Visible;
-
         }
 
-        private void OnWindow_MouseLeave(object sender, EventArgs e) {
-            if (!IsActive) {
+        private void OnWindow_MouseLeave(object sender, EventArgs e)
+        {
+            if (!IsActive)
+            {
                 uxToolBar.Visibility = Visibility.Hidden;
             }
         }
 
-        private void OnButton_MouseEnter(object sender, EventArgs e) {
-
+        private void OnButton_MouseEnter(object sender, EventArgs e)
+        {
         }
 
-        private void OnButton_MouseLeave(object sender, EventArgs e) {
-
+        private void OnButton_MouseLeave(object sender, EventArgs e)
+        {
         }
 
         #region UX Control Event Handlers
 
-        private void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
+        private void OnTextFormatButton_Click(object sender, RoutedEventArgs e)
+        {
 
             using var fd = new System.Windows.Forms.FontDialog();
 
             fd.Font = new System.Drawing.Font(GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize); ;
-            if (uxRichTextBox.Foreground is SolidColorBrush scb) {
+            if (uxRichTextBox.Foreground is SolidColorBrush scb)
+            {
                 fd.Color = System.Drawing.Color.FromArgb(scb.Color.A, scb.Color.R, scb.Color.G, scb.Color.B);
                 fd.ShowColor = true;
             }
 
             var dr = fd.ShowDialog();
-            if (dr == System.Windows.Forms.DialogResult.OK) {
+            if (dr == System.Windows.Forms.DialogResult.OK)
+            {
                 var fontFamily = new FontFamily(fd.Font.FontFamily.ToString());
                 var fontColor = Color.FromArgb(fd.Color.A, fd.Color.R, fd.Color.G, fd.Color.B);
                 var fontSize = fd.Font.Size;
@@ -244,162 +480,233 @@ namespace OmniZenNotes
                 //var fontStyle = (FontStyle)fsConverter.ConvertFrom(fd.Font.Style.ToString());
 
                 SetFont(fontFamily, fontSize, fontColor, FontStyle);
-                uxInfoPropertyGrid.Update();
+                uxSettingsPropertyGrid.Update();
             }
         }
 
-
-        private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings=true) {
+        private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true)
+        {
 
             // Keep the Window Font in sync with the RichTextBox Font:
-            if (fontFamily != null) {
-
-                if (updateUXSettings)
-                {
+            if (fontFamily != null)
+            {
+                if (updateUXSettings) {
                     VM.Note.UXSettings.FontFamily = fontFamily;
                     VM.Note.UXSettings.FontSize = fontSize;
                     VM.Note.UXSettings.FontColor = fontColor;
                     VM.Note.UXSettings.FontStyle = fontStyle;
                 }
 
-                // Set the Font settings for the RichTextBox:
-                uxRichTextBox.FontFamily = fontFamily;
-                uxRichTextBox.FontSize = fontSize;
-                uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
-                uxRichTextBox.FontStyle = fontStyle;
-
                 // Create a TextRange around the entire document.
                 var doc = uxRichTextBox.Document;
                 TextRange range = uxRichTextBox.Selection;
-                if (string.IsNullOrEmpty(uxRichTextBox.Selection.Text))
-                {
+                if (string.IsNullOrEmpty(uxRichTextBox.Selection.Text)) {
                     // Create a TextRange around the entire document.
                     range = new TextRange(doc.ContentStart, doc.ContentEnd);
                     range.Select(range.Start, range.End);
                 }
-
-                // Now apply the various font properties
-                range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
-                range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
-                range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
-                range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, GetFamilyFontName(fontFamily));
-
-            }
-
-            if (fontColor != null) {
-                uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
+                
+                // Set the Font for the Selected Text or the whole RichTextBox:
+                if (!range.IsEmpty) {
+                    range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
+                    range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
+                    range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
+                    range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, GetFamilyFontName(fontFamily));
+                } else {
+                    uxRichTextBox.FontFamily = fontFamily;
+                    uxRichTextBox.FontSize = fontSize;
+                    uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
+                    uxRichTextBox.FontStyle = fontStyle;
+                    uxRichTextBox.Foreground = fontColor != null ? new SolidColorBrush(fontColor) : uxRichTextBox.Foreground;
+                }
             }
         }
 
         // Deal with font family property carefully converting from fontFamily to string name
-        private string GetFamilyFontName(FontFamily fontFamily) {
+        private string GetFamilyFontName(FontFamily fontFamily)
+        {
             string fontName = fontFamily.Source;
-            if (fontName.IndexOf("=") > 0 && fontName.IndexOf("]") > 1) {
+            if (fontName.IndexOf("=") > 0 && fontName.IndexOf("]") > 1)
+            {
                 fontName = fontName.Substring(fontName.IndexOf("=") + 1, fontName.IndexOf("]") - fontName.IndexOf("=") - 1);
             }
 
             return fontName;
         }
 
-        private void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
+        private void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e)
+        {
 
             using var cd = new System.Windows.Forms.ColorDialog();
-            if( uxRichTextBox.Background is SolidColorBrush scb) {
+            if (uxRichTextBox.Background is SolidColorBrush scb)
+            {
                 cd.Color = System.Drawing.Color.FromArgb(scb.Color.A, scb.Color.R, scb.Color.G, scb.Color.B);
             }
 
             var dr = cd.ShowDialog();
-            if (dr == System.Windows.Forms.DialogResult.OK) {
+            if (dr == System.Windows.Forms.DialogResult.OK)
+            {
                 Color color = Color.FromArgb(cd.Color.A, cd.Color.R, cd.Color.G, cd.Color.B);
                 SetBackgroundColor(color);
-                uxInfoPropertyGrid.Update();
+                uxSettingsPropertyGrid.Update();
             }
         }
 
-        private void SetBackgroundColor(Color color, bool updateUXSettings = true) {
-            if (updateUXSettings) {
+        private void SetBackgroundColor(Color color, bool updateUXSettings = true)
+        {
+            if (updateUXSettings)
+            {
                 VM.Note.UXSettings.BackgroundColor = color;
             };
+
+            uxColorPicker.SelectedColor = color;
 
             Background = new SolidColorBrush(color);
             uxRichTextBox.Background = new SolidColorBrush(color);
 
+            Color colorScRgb = AdjustColor(color);
+            if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
+
+            Background = new SolidColorBrush(colorScRgb);
+            uxToolBar.Background = Background;
+
+            if(uxRichTextBox.Document.Background is ImageBrush backgroundBrush) {
+                backgroundBrush.Opacity = colorScRgb.A / 255.0f;
+            }
+
+            uxRichTextBox.SelectionBrush = colorScRgb.ScA <= 0.75 ? new SolidColorBrush(Colors.Black) : new SolidColorBrush(colorScRgb);
+        }
+
+        private Color AdjustColor(Color color)
+        {
             // Tweak the textbox color for a nice background accent color for the toolbar.
             U.Graphics.RgbToHls(color.R, color.G, color.B, out double h, out double l, out double s);
-            if (l > 0.50f) l *= 0.25f; else if (l > 0.35f) l *= 0.35f; else if (l > 0.25f) l *= 1.25f; else if (l > 0.00f) l *= 2.00f;  else l = 0.35f;
+            if (l > 0.50f) l *= 0.25f; else if (l > 0.35f) l *= 0.35f; else if (l > 0.25f) l *= 1.25f; else if (l > 0.00f) l *= 2.00f; else l = 0.35f;
             if (l < 0.35f) s *= 0.50f; else if (l < 0.35f) s *= 0.75f;
 
             U.Graphics.HlsToRgb(h, l, s, out int r, out int g, out int b);
             float scA = color.A / 255.0f, scR = r / 255.0f, scG = g / 255.0f, scB = b / 255.0f;
             var colorScRgb = Color.FromScRgb(scA, scR, scG, scB);
 
-            Background = new SolidColorBrush(colorScRgb);
-            uxToolBar.Background = Background;
-            uxRichTextBox.SelectionBrush = new SolidColorBrush(colorScRgb);
+            return colorScRgb;
         }
 
-        private void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
-            if (Keyboard.Modifiers == ModifierKeys.Control) {
+        private void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
                 FontSize = e.Delta > 0 ? FontSize + 1 : FontSize - 1;
             }
         }
 
-        private void OpenNewWindow(Note note) {
+        private void OpenNewWindow(Note note)
+        {
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
             // Create new NoteViewer at same size & slightly to left & lower than this one
             var noteViewer = new NoteViewer(note);
-            noteViewer.Left = Left > area.Left ? Left >= 0 ? Left + (area.Width*0.02) : Left - (area.Width* 0.02) : Left + (area.Width * 0.02);
-            noteViewer.Top = Top > area.Top ? Top >= 0 ? Top + (area.Height* 0.03) : Top - (area.Height* 0.03) : (area.Height * 0.03);
+            noteViewer.Left = Left > area.Left ? Left >= 0 ? Left + (area.Width * 0.02) : Left - (area.Width * 0.02) : Left + (area.Width * 0.02);
+            noteViewer.Top = Top > area.Top ? Top >= 0 ? Top + (area.Height * 0.03) : Top - (area.Height * 0.03) : (area.Height * 0.03);
             noteViewer.Width = Width;
             noteViewer.Height = Height;
             noteViewer.Show();
         }
 
-        private void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
+        private void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
+            uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity? new ScaleTransform(0.5, 0.5) : Transform.Identity;
+        }
+
+        private void OnAddNoteButton_Click(object sender, RoutedEventArgs e)
+        {
             OpenNewWindow(VM.CreateNewNote(copy: VM.Note));
         }
 
-        private void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
-            VM.Note.Delete();
-            VM.Note = null;
-            Close();
+        private void OnDelNoteButton_Click(object sender, RoutedEventArgs e)
+        {
+            OnDeleteCommand(sender, e);
         }
 
-        private void OnAlertsButton_Click(object sender, RoutedEventArgs e) {
-            uxAlertPanel.Visibility = uxAlertPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        private void OnReminderButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                ShowReminderPanel(toggleButton.IsChecked );
+            }
         }
 
-        private void OnInfoButton_Click(object sender, RoutedEventArgs e) {
-            uxInfoPanel.Visibility = uxInfoPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        private void ShowReminderPanel(bool? show) {
+            uxReminderPanel.Visibility = show == true ? Visibility.Visible : Visibility.Collapsed;
+            uxReminderButton.IsChecked = show == true;
+            uxViewNoteReminderMenuItem.IsChecked = show == true;
+            uxSettingsButton.IsChecked = false;
+            uxViewNoteSettingsMenuItem.IsChecked = uxSettingsButton.IsChecked == true;
+        }
+
+        private void OnSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                ShowSettingsPanel(toggleButton.IsChecked);
+            }
+        }
+
+        private void ShowSettingsPanel(bool? show) {
+            uxSettingsPanel.Visibility = show == true ? Visibility.Visible : Visibility.Collapsed;
+            uxSettingsButton.IsChecked = true;
+            uxViewNoteSettingsMenuItem.IsChecked = uxSettingsButton.IsChecked == true;
+            uxReminderButton.IsChecked = false;
+            uxViewNoteReminderMenuItem.IsChecked = uxReminderButton.IsChecked == true;
+        }
+
+        private void OnOptionsExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (sender is Expander expander)
+            {
+                VM.Note.UXSettings.OptionsExpanded = expander.IsExpanded;
+            }
+        }
+
+        private void OnOptionsExpander_Collapsed(object sender, RoutedEventArgs e)
+        {
+            if (sender is Expander expander)
+            {
+                VM.Note.UXSettings.OptionsExpanded = expander.IsExpanded;
+            }
         }
 
         private void OnPinTabButton_Click(object sender, RoutedEventArgs e)
         {
             Topmost = !Topmost;
             UpdatePinTabButton();
-            uxInfoPropertyGrid.Update();
+            uxSettingsPropertyGrid.Update();
         }
 
-        private void UpdatePinTabButton() {
+        private void UpdatePinTabButton()
+        {
+            VM.Note.UXSettings.Topmost = Topmost;
+
             Image image = uxPinTab.Content as Image;
+/*             Image icon = Topmost ? (Image)FindResource("PinTabOn") : (Image)FindResource("PinTabOff");
+            image.Source = icon.Source; */
+
             image.RenderTransform = new RotateTransform(Topmost ? 0 : 90);
             image.RenderTransformOrigin = new Point(0.5, 0.5);
-
-            VM.Note.UXSettings.Topmost = Topmost;
         }
 
 #pragma warning disable IDE0051
 
-        private void SaveToFile() {
-            var sfd = new System.Windows.Forms.SaveFileDialog {
+        private void SaveToFile()
+        {
+            var sfd = new System.Windows.Forms.SaveFileDialog
+            {
                 Filter = "XAML Files (*.xaml)|*.xaml|RichText Files (*.rtf)|*.rtf|All Files (*.*)|*.*"
             };
 
             var dr = sfd.ShowDialog();
-            if (dr == System.Windows.Forms.DialogResult.OK) {
-                TextRange range = new TextRange( uxRichTextBox.Document.ContentStart, uxRichTextBox.Document.ContentEnd);
+            if (dr == System.Windows.Forms.DialogResult.OK)
+            {
+                TextRange range = new TextRange(uxRichTextBox.Document.ContentStart, uxRichTextBox.Document.ContentEnd);
                 using FileStream fs = File.Create(sfd.FileName);
                 range.Save(fs, DataFormats.XamlPackage);
             }
@@ -421,14 +728,20 @@ namespace OmniZenNotes
             }
         }
 
-        private void Print() {
-            // Create a PrintDialog.
-            var printDialog = new PrintDialog();
+        // TODO: Print & PrintPreview NOT working (may only work with FixedDocument (not FlowDocument))
+        private void OnPrintCommand(object sender, RoutedEventArgs e)
+        {
+            var printDialog = new PrintDialog(); // Create a PrintDialog.
 
             // Show the dialog and print the document if successful
-            if (printDialog.ShowDialog() == true) {
-                printDialog.PrintDocument((((IDocumentPaginatorSource)uxRichTextBox.Document).DocumentPaginator),$"Printing ");
+            if (printDialog.ShowDialog() == true)
+            {
+                printDialog.PrintDocument((((IDocumentPaginatorSource)uxRichTextBox.Document).DocumentPaginator), $"Printing ");
             }
+        }
+        private void OnPrintPreviewCommand(object sender, RoutedEventArgs e) {
+            var printPreviewDialog = new System.Windows.Forms.PrintPreviewDialog();
+            var dc = printPreviewDialog.ShowDialog();
         }
 
         #endregion
@@ -440,7 +753,7 @@ namespace OmniZenNotes
         {
             try
             {
-                 // Restore Window position and size from user settings save of last session
+/*                 // Restore Window position and size from user settings save of last session
                 if (S.Default?.RestoreBounds is Rect restoreBounds)
                 {
                     Left = restoreBounds.Left; Top = restoreBounds.Top;
@@ -450,11 +763,11 @@ namespace OmniZenNotes
                 WindowState = S.Default?.WindowState is WindowState windowState ? windowState : System.Windows.WindowState.Normal;
                 WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
                 SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
-                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings:false);
-
+                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
+                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
                 uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
                 Topmost = S.Default.Topmost;
-
+ */
                 // Auto Save Settings
                 if (S.Default.AutoSave is int seconds && seconds > 0)
                 {
@@ -476,21 +789,25 @@ namespace OmniZenNotes
             }
         }
 
-        private void LoadUXSettings() {
-            // Restore the Note specific settings (which override the App level settings)
-            if (VM.Note.UXSettings.RestoreBounds is Rect restoreBounds &&  double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top))
+        // Restore the Note specific settings (which override the App level settings)
+        private void LoadUXSettings()
+        {
+            if (VM.Note.UXSettings.RestoreBounds is Rect restoreBounds && double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top))
             {
                 Left = restoreBounds.Left; Top = restoreBounds.Top;
                 Width = restoreBounds.Width; Height = restoreBounds.Height;
             }
+
             // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
             SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
+            uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
             SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
             uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
             Topmost = VM.Note.UXSettings.Topmost;
         }
 
-        private void SaveUXSettings() {
+        private void SaveUXSettings()
+        {
             // Save the Note specific settings (which override the App level settings)
             if (VM.Note != null)
             {
@@ -514,8 +831,8 @@ namespace OmniZenNotes
 
         private void SaveSettings()
         {
-            SaveUXSettings();
 
+            SaveUXSettings();
             /*
             // Save the App wide default settings:
             S.Default.RestoreBounds = RestoreBounds;
@@ -542,53 +859,67 @@ namespace OmniZenNotes
 
         #endregion
 
-        private void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
+        private void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
         }
 
-        private void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
+        private void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
+        {
             SetBackgroundColor((Color)e.NewValue);
-            uxInfoPropertyGrid.Update();
+            uxSettingsPropertyGrid.Update();
         }
 
-        private void uxAlertPanel_KeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Escape) {
-                uxAlertPanel.Visibility = Visibility.Collapsed;
+        private void uxReminderPanel_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                uxReminderPanel.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
         }
 
-        private void uxInfoPanel_KeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Escape) {
-                uxInfoPanel.Visibility = Visibility.Collapsed;
+        private void uxSettingsPanel_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                uxSettingsPanel.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
         }
 
-        private void uxAlertPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible && visible) {
-                uxInfoPanel.Visibility = Visibility.Collapsed;
+        private void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is bool visible && visible)
+            {
+                uxSettingsPanel.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void uxInfoPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible && visible) {
-                uxAlertPanel.Visibility = Visibility.Collapsed;
+        private void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is bool visible && visible)
+            {
+                uxReminderPanel.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void uxAlertPropertyGrid_PropertyValueChanged(object sender, Xceed.Wpf.Toolkit.PropertyGrid.PropertyValueChangedEventArgs e) {
+        private void uxReminderPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e)
+        {
         }
 
-        private void uxInfoPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
-            if (e.OriginalSource is PropertyItem item) {
+        private void uxSettingsPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e)
+        {
+            if (e.OriginalSource is PropertyItem item)
+            {
                 Color foregroundColor = Colors.Black;
                 if (uxRichTextBox.Foreground is SolidColorBrush scba)
                 {
                     foregroundColor = scba.Color;
                 }
 
-                switch(item.PropertyName) {
-                    case "BackgroundColor" :
+                switch (item.PropertyName)
+                {
+                    case "BackgroundColor":
                         SetBackgroundColor((Color)e.NewValue);
                         break;
                     case "FontFamily":
@@ -608,6 +939,9 @@ namespace OmniZenNotes
                         Topmost = (bool)e.NewValue;
                         UpdatePinTabButton();
                         break;
+                    case "Title":
+                        Title = (string)e.NewValue;
+                        break;
 
                     default: break;
                 }
@@ -623,7 +957,6 @@ namespace OmniZenNotes
         private void uxRichTextBox_PreviewDrop(object sender, DragEventArgs args)
         {
             args.Handled = true;
-
             var fileName = IsSingleFileOrDir(args);
             if (fileName == null) return;
             var fileInfo = new FileInfo(fileName);
@@ -631,18 +964,26 @@ namespace OmniZenNotes
             TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
             TextPointer tp = uxRichTextBox.CaretPosition;
 
-            if (args.KeyStates == DragDropKeyStates.ControlKey) {
+            if (args.KeyStates == DragDropKeyStates.ControlKey)
+            {
 
                 // Insert the contents of supported dropped file:
-                switch (fileInfo.Extension.ToLower()) {
-                    case ".text": case ".txt":
-                    {
-                        using var fileToLoad = new StreamReader(fileInfo.FullName);
-                        uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
-                        fileToLoad.Close();
-                        break;
-                     };
-                    case ".png": case ".jpg": case ".bmp": {
+                switch (fileInfo.Extension.ToLower())
+                {
+                    // Insert the file text content directly into the Document
+                    case ".text":
+                    case ".txt":
+                        {
+                            using var fileToLoad = new StreamReader(fileInfo.FullName);
+                            uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
+                            fileToLoad.Close();
+                            break;
+                        }
+                    // Create an Image element and set the Source to the dropped file path
+                    case ".png":
+                    case ".jpg":
+                    case ".gif":
+                    case ".bmp":
                         var image = new Image();
                         var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
                         image.Source = bitmap;
@@ -655,50 +996,125 @@ namespace OmniZenNotes
                         }
                         var iuic_image = new InlineUIContainer(image, tp);
                         break;
-                    }
-                    case ".mp4" : case ".mpg": case ".mp3":case ".wmv": case ".avi": case ".mkv": {
+
+                    // Create a MediaElement and set the Source to the dropped file path
+                    case ".mp4":
+                    case ".mpg":
+                    case ".mp3":
+                    case ".wma":
+                    case ".wmv":
+                    case ".avi":
+                    case ".mkv":
                         var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
-                        if (me.HasVideo) {
-                            me.Width = Math.Min(me.NaturalVideoWidth, Width);
-                            me.Height = Math.Min(me.NaturalVideoHeight, Height);
-                        }
                         var iuic_me = new InlineUIContainer(me, tp);
                         break;
-                    }
                 }
-            } else if (args.KeyStates == DragDropKeyStates.AltKey)
+            }
+            else if (args.KeyStates == DragDropKeyStates.AltKey)
             {
                 // Insert the contents of supported dropped file:
                 switch (fileInfo.Extension.ToLower())
                 {
-                    case ".png": case ".jpg": case ".bmp": {
-                            var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
-                            uxRichTextBox.Document.Background = new ImageBrush(bitmap);
-                            break;
-                    }
+                    case ".png":
+                    case ".jpg":
+                    case ".bmp":
+                        var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
+                        var imageBrush = new ImageBrush(bitmap);
+                        if (uxRichTextBox.Background is SolidColorBrush scb && scb.Color.A < 255)
+                        {
+                            imageBrush.Opacity = scb.Color.A / 255.0f;
+                        }
+                        uxRichTextBox.Document.Background = imageBrush;
+                        break;
+                    case ".wmv":
+                        var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
+                        var iuic_me = new InlineUIContainer(me, tp);
+                        break;                    
                 }
-            } else {
-                // Create a Hyperlink to the dropped file
-                var image = new Image();
-                var icon = U.Shell.GetShellIcon(fileInfo);
-                var bitmap = U.Graphics.GetBitmapImage(icon);
-                image.Source = bitmap;
-                image.Height = bitmap.PixelHeight;
-                image.Width = bitmap.PixelWidth;
+            }
+            else
+            {
+                // Create a Hyperlink to the dropped file/folder
+                var image = new Image
+                {
+                    // ToolTip is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
+                    ToolTip = fileInfo.FullName,
+                    Tag = DefaultThumbnailSize.Medium.Height,
+                };
 
-                var hyperLink = new Hyperlink(new Run(" "), tp)
+                // Create a Hyperlink with the Shell thumbnail image & display name
+                Hyperlink hyperLink = new Hyperlink(new Run(" "), tp)
                 {
                     NavigateUri = new Uri(fileInfo.FullName),
-                    ToolTip = $@"Click to open {fileInfo.FullName}",
-                    IsEnabled = true
+                    Tag = image,
                 };
 
-                hyperLink.Inlines.Add(image);
-                hyperLink.Inlines.Add(new Run($"{fileInfo.Name} "));
-                hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
-                {
-                    Debug.WriteLine($"HyperLink RequestNavigate to {e.Uri}");
+                hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
+                    Debug.WriteLine($"RequestNavigate for {sender} with {e}");
                 };
+
+                ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);               
+                hyperLink.Inlines.Add(image);
+                hyperLink.Inlines.Add(new Run($" {shellObject?.Name} "));
+
+                // Wrap the Hyperlink in a Paragraph to keep it isolated and editable
+                var para = new Paragraph(new Run(" "));
+                para.Inlines.Add(hyperLink);
+                para.Inlines.Add(new Run(" ", tp));
+                uxRichTextBox.Document.Blocks.Add(para);
+            }
+        }
+
+        public void OnMediaElement_MediaEnded(object sender, RoutedEventArgs e) {
+            if(sender is MediaElement me) {
+                me.Position = TimeSpan.FromSeconds(0);
+            }
+        }
+
+        public void OnMediaElement_MediaOpened(object sender, RoutedEventArgs e) {
+            if (sender is MediaElement me) {
+                me.Position = TimeSpan.FromSeconds(0);
+            }
+        }
+
+        public void OnMediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e) {
+            if (sender is MediaElement me) {
+                U.Exceptions.LogException(e.ErrorException, $"Media FAILED for {me.Source}");
+            }
+        }
+
+        public BitmapSource GetShellThumbNail(string filePath)
+        {
+            ShellObject shellObject = ShellObject.FromParsingName(filePath);
+            return shellObject?.Thumbnail.SmallBitmapSource;
+        }
+
+        public void OnHyperlink_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            Debug.WriteLine($"OnHyperlink_MouseDown for {e.Source}");
+            if (sender is Hyperlink hyperlink && e.MouseDevice.LeftButton == MouseButtonState.Pressed)
+            {
+                var fileInfo = new FileInfo(Uri.UnescapeDataString(hyperlink.NavigateUri.AbsolutePath));
+                U.Shell.ShellOpen(fileInfo);
+                e.Handled = true;
+            }
+        }
+
+        // BUG: Once Document has been saved/restored, Image is no longer resizable
+        public void OnHyperlink_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                Image image = hyperlink.Tag as Image;
+
+                double scale = e.Delta > 0 ? 1.10 : 0.90;
+                image.Tag = Math.MinMagnitude((double)image.Tag* scale, DefaultThumbnailSize.ExtraLarge.Height);
+                image.InvalidateProperty(TagProperty);
+                image.InvalidateProperty(HeightProperty);
+                image.InvalidateProperty(WidthProperty);                
+
+                e.Handled = true;
+                Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta} Image {image.Tag} x {image.Tag} scaled by {scale}");
             }
         }
 
@@ -718,5 +1134,21 @@ namespace OmniZenNotes
             }
             return null;
         }
+    }
+
+    public class FilePathToThumbNailConverter : IValueConverter
+    {
+        object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture)
+        {
+            if (o is string tooltip)
+            {
+                FileInfo fileInfo = new FileInfo(Uri.UnescapeDataString(tooltip));
+                ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
+                return shellObject?.Thumbnail.MediumBitmapSource;
+            }
+            return null;
+        }
+
+        object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
     }
 }

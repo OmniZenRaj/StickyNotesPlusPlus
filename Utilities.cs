@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
+using System.Windows.Input;
 
 namespace Utilities
 {
@@ -122,7 +123,7 @@ namespace Utilities
             return bitmapImage;
         }
 
-        /* C# uses uses RGB (red, green, and blue) component values to specify colors where each component value is between 0 and 255. 
+        /* C# uses uses RGB (red, green, and blue) component values to specify colors where each component value is between 0 and 255.
          * The HLS system uses the values hue, lightness, and saturation where:
          * Hue determines the color with a 0 to 360 degree direction on a color wheel.
          * Lightness indicates how much light is in the color.
@@ -301,7 +302,14 @@ namespace Utilities
 
         public static void ShellOpen(FileSystemInfo fileInfoOrDirectoryInfo) {
             try {
-                Process.Start(fileInfoOrDirectoryInfo.FullName);
+                ProcessStartInfo psi = new ProcessStartInfo()
+                {
+                    FileName = fileInfoOrDirectoryInfo.FullName,
+                    UseShellExecute = true,
+                    Verb = "Open"
+                };
+
+                Process.Start(psi);
             } catch (Exception ex) {
                 Exceptions.LogException(ex, $"Unable to Shell Open {fileInfoOrDirectoryInfo.FullName}");
             }
@@ -468,5 +476,12 @@ namespace Utilities
         }
 
         #endregion
+    }
+
+    // Application Level Commands
+    public static class AppCommands
+    {
+        public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));
+        public static RoutedUICommand DeleteCommand = new RoutedUICommand("DeleteNote", "DeleteNote", typeof(AppCommands));
     }
 }

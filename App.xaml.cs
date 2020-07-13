@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -27,6 +29,11 @@ namespace OmniZenNotes
 
         protected override void OnExit(ExitEventArgs e) {
             SaveSettings();
+            foreach (Notebook notebook in Repository.NoteBooks) {
+                foreach (Note note in notebook.Notes) {
+                    note.Save();
+                }
+            }
         }
 
         protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
@@ -45,6 +52,14 @@ namespace OmniZenNotes
                 nbDBFilePath = nbDBFilePath.Replace("{RoamingApplicationData}", roamingAppData);
                 nbDBFilePath = nbDBFilePath.Replace("{AssemblyName}", assemblyName);
                 nbDBFilePath = nbDBFilePath.Replace("{UserName}", userName);
+
+                // Create the notebook sqlite db file if it doesn't exist :
+                if (!File.Exists(nbDBFilePath)) {
+                    FileInfo asmFileInfo = new FileInfo(Assembly.GetExecutingAssembly().Location);
+                    var db = Path.Combine(asmFileInfo.Directory.FullName, "DB", "OmniZenNotes.sqlite3");
+                    File.Copy(db, nbDBFilePath);    // Copy from product location
+                }
+
                 Repository.NoteBooks.Add(new Notebook(nbDBFilePath));
             }
         }
@@ -56,4 +71,15 @@ namespace OmniZenNotes
             }
         }
     }
+    // Application Level Commands
+    public static class AppCommands
+    {
+        public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));
+        public static RoutedUICommand SpellCheckCommand = new RoutedUICommand("Spell Check", "SpellCheck", typeof(AppCommands));
+        public static RoutedUICommand SelectFontCommand = new RoutedUICommand("Font...", "SelectNoteFont", typeof(AppCommands));
+        public static RoutedUICommand ViewNoteReminderCommand = new RoutedUICommand("Reminder...", "ViewNoteReminder", typeof(AppCommands));
+        public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
+        public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
+        public static RoutedUICommand ExitApplicationCommand = new RoutedUICommand("Exit App", "ExitApplication", typeof(AppCommands));
+    }  
 }
