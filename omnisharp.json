@@ -37,7 +37,7 @@
         "LabelPositioning": "oneLess",
         "WrappingPreserveSingleLine": true,
         "WrappingKeepStatementsOnSingleLine": true,
-        "NewLinesForBracesInTypes": false,
+        "NewLinesForBracesInTypes": true,
         "NewLinesForBracesInMethods": false,
         "NewLinesForBracesInProperties": false,
         "NewLinesForBracesInAccessors": false,

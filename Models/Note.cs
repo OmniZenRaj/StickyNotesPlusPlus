@@ -14,12 +14,12 @@ namespace OmniZenNotes.Models
     {
         public string Title { get; set; }
         public FlowDocument Document { get; private set; }
-        public Task Task { get; set;}
+        public Task Task { get; set; }
 
         public Note() : this(Guid.NewGuid()) {
         }
 
-        public Note(string guid) : this (Guid.Parse(guid)) {
+        public Note(string guid) : this(Guid.Parse(guid)) {
 
         }
 
@@ -28,13 +28,13 @@ namespace OmniZenNotes.Models
             Task = new Task();
         }
 
-        public async void  Save(bool saveAsync = true) {
+        public async void Save(bool saveAsync = true) {
             if (saveAsync) {
                 await Repository.SaveNote(this);
                 await Repository.SaveTask(Task);
             } else {
                 Repository.SaveNote(this);
-                Repository.SaveTask(Task);                
+                Repository.SaveTask(Task);
             }
         }
 
@@ -66,14 +66,14 @@ namespace OmniZenNotes.Models
             } catch (Exception ex) {
                 EX.LogException(ex, $"Note LoadToSQL FAILED:");
             }
-    }
+        }
 
         private void LoadDocumentBlob(SQLiteDataReader reader) {
-                using var ms = new MemoryStream();
-                GetBlob(reader, reader.GetOrdinal("Document"), ms);
-                TextRange range = new TextRange(Document.ContentStart, Document.ContentEnd);
-                range.Load(ms, System.Windows.DataFormats.XamlPackage);
-                ms.Close();
+            using var ms = new MemoryStream();
+            GetBlob(reader, reader.GetOrdinal("Document"), ms);
+            TextRange range = new TextRange(Document.ContentStart, Document.ContentEnd);
+            range.Load(ms, System.Windows.DataFormats.XamlPackage);
+            ms.Close();
         }
 
         private void SaveDocumentBlob(SQLiteCommand cmd) {

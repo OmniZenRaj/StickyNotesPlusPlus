@@ -9,7 +9,8 @@ using EX = Utilities.Exceptions;
 
 namespace OmniZenNotes.Models
 {
-    public class Entity {
+    public class Entity
+    {
         // Identity Fields:
         public Guid ID { get; private set; }
         public string Name { get; private set; }
@@ -158,7 +159,8 @@ namespace OmniZenNotes.Models
         }
     }
 
-    public class Security {
+    public class Security
+    {
         public string OwnerSID { get; internal set; }
         public EntityPermissions Permissions { get; set; } = EntityPermissions.Private;
         public string CreatedBy { get; internal set; }

@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using System.Reflection;
 
-using U= Utilities;
+using U = Utilities;
 using OmniZenNotes.Models;
 
 namespace OmniZenNotes
@@ -89,5 +89,5 @@ namespace OmniZenNotes
         public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
         public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
         public static RoutedUICommand ExitApplicationCommand = new RoutedUICommand("Exit App", "ExitApplication", typeof(AppCommands));
-    }  
+    }
 }

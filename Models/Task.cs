@@ -16,13 +16,13 @@ namespace OmniZenNotes.Models
         [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
         public TaskReminder Reminder { get; set; } = new TaskReminder();
 
-        public Task(Guid guid) :base(guid) {
+        public Task(Guid guid) : base(guid) {
             Todo.StartDTS = DateTime.Now;
             Todo.DueDTS = Todo.StartDTS.AddDays(2);
             Reminder.ReminderDTS = Todo.StartDTS.AddDays(1);
         }
 
-        public Task() : this(Guid.NewGuid()){
+        public Task() : this(Guid.NewGuid()) {
         }
 
         public async void Save(bool saveAsync = true) {
@@ -38,7 +38,7 @@ namespace OmniZenNotes.Models
 
             try {
                 Todo.Subject = GetString(reader, "Subject");
-                try { Todo.Status = (TaskStatus)Enum.Parse(Todo.Status.GetType(), GetString(reader, "Status")); } catch {}
+                try { Todo.Status = (TaskStatus)Enum.Parse(Todo.Status.GetType(), GetString(reader, "Status")); } catch { }
                 try { Todo.Priority = (TaskPriority)Enum.Parse(Todo.Priority.GetType(), GetString(reader, "Priority")); } catch { }
                 Todo.StartDTS = GetDateTime(reader, "StartDTS");
                 Todo.DueDTS = GetDateTime(reader, "DueDTS");
@@ -84,13 +84,14 @@ namespace OmniZenNotes.Models
         public DateTime ReminderDTS { get; set; }
         public TaskAlarmSound ReminderSound { get; set; }
         public string ReminderImageURI { get; set; }
-        public bool LongNotification {get; set;}
+        public bool LongNotification { get; set; }
         public uint SnoozeCount { get; set; }
         public uint SnoozeInterval { get; set; }
         public string Recurrrence { get; set; }
     }
 
-    public class TaskTodo {
+    public class TaskTodo
+    {
         public string Subject { get; set; }
         public TaskStatus Status { get; set; }
         public TaskPriority Priority { get; set; }

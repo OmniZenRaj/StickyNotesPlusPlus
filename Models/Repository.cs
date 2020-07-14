@@ -120,7 +120,7 @@ namespace OmniZenNotes.Models
 
             notebook ??= DefaultNotebook;
 
-            var note = new Note() { Title = $"New Note {Notes.Count+1}", };
+            var note = new Note() { Title = $"New Note {Notes.Count + 1}", };
 
             if (copy != null) {
                 note.UXSettings.CloneFrom(copy.UXSettings);
@@ -136,7 +136,7 @@ namespace OmniZenNotes.Models
 
         private static SQLiteConnection GetDBConnection(Notebook notebook = null) {
 
-            if( _Connection?.State == ConnectionState.Open) { return _Connection; }
+            if (_Connection?.State == ConnectionState.Open) { return _Connection; }
 
             try {
                 // Verify the Uri db Path location is valid and reachable:
@@ -231,22 +231,16 @@ namespace OmniZenNotes.Models
             return task;
         }
 
-        public static void DeleteTask(Task task)
-        {
-            try
-            {
+        public static void DeleteTask(Task task) {
+            try {
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $"DELETE FROM Task WHERE ID = '{task.ID.ToString()}'";
                 using SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 int result = cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 EX.LogException(ex, $"SQLITE ERROR: ");
-            }
-            finally
-            {
+            } finally {
                 Tasks.Remove(task);            // App wide Notes collection
             }
         }

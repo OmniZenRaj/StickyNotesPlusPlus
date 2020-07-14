@@ -302,8 +302,7 @@ namespace Utilities
 
         public static void ShellOpen(FileSystemInfo fileInfoOrDirectoryInfo) {
             try {
-                ProcessStartInfo psi = new ProcessStartInfo()
-                {
+                ProcessStartInfo psi = new ProcessStartInfo() {
                     FileName = fileInfoOrDirectoryInfo.FullName,
                     UseShellExecute = true,
                     Verb = "Open"
@@ -367,8 +366,8 @@ namespace Utilities
 #if RELEASE
                 if (!showMessage) return;
 #endif
-        var assembly = System.Reflection.Assembly.GetEntryAssembly();
-        string title = assembly.GetName().Name;
+            var assembly = System.Reflection.Assembly.GetEntryAssembly();
+            string title = assembly.GetName().Name;
 
             MessageBox.Show(msg, $"{title}: Exception Error");
         }
