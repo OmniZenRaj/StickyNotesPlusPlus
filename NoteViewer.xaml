@@ -1,11 +1,10 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" MouseWheel="OnMouseWheel" Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" 
+Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
 
     <Window.Resources>
-        <local:FilePathToThumbNailConverter x:Key="FilePathToThumbNailConverter"/>
-
         <Image x:Key="AppIcon" Source="App.ico" x:Shared="False" />
         <Image x:Key="Add_Note" Source="assets/images/ic_add.png" x:Shared="False" />
-        <Image x:Key="Del_Note" Source="assets/images/trash-24x.png" x:Shared="False" />
+        <Image x:Key="Del_Note" Source="assets/images/ic_delete_forever_36pt.png" x:Shared="False" />
         <Image x:Key="TextFormat" Source="assets/images/textformat-24x.png" x:Shared="False" />
         <Image x:Key="FillBackground" Source="assets/images/ic_format_color_fill_black_18dp.png" x:Shared="False" />
         <Image x:Key="Reminder" Source="assets/images/task-24x.png" x:Shared="False" />
@@ -139,7 +138,7 @@
             </StackPanel>
 
             <StackPanel>
-                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" Background="{x:Null}" BorderBrush="{x:Null}" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
+                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="OnRichTextBox_PreviewDragOver" PreviewDrop="OnRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" MouseWheel="OnRichTextBox_MouseWheel" Background="{x:Null}" BorderBrush="{x:Null}" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
 
                     <xctk:RichTextBox.ContextMenu>
                         <ContextMenu>
@@ -153,10 +152,12 @@
                             <MenuItem x:Name="uxShowNotesMenu" Header="Show Notes">
                                 <MenuItem Header="@see code" />
                             </MenuItem>
-                            <MenuItem x:Name="uxColorsMenu" Header="Colors">
+                            <MenuItem x:Name="uxSelectColorMenu" Header="Colors">
                                 <MenuItem Header="@see code" />
                             </MenuItem>
-                            <MenuItem Header="Font..." Command="local:AppCommands.SelectFontCommand"/>
+                            <MenuItem x:Name="uxSelectFontMenu" Header="Fonts">
+                                <MenuItem Header="@see code" />
+                            </MenuItem>
                             <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand"/>
                             <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" />
                             <Separator/>
@@ -175,12 +176,10 @@
                             <Setter Property="Margin" Value="0" />
                         </Style>
                         <!-- This Style (& associated code) enables displaying a Shell thumbnail image for a give path -->
-                        <!-- The use of ToolTip is required because setting the Source to a non image file (eg a folder) will cause Exceptions -->
                         <!-- The use of FilePathToThumbNailConverter is used to convert the image's ToolTip to a Shell Thumbnail bitmap image -->
                         <Style TargetType="{x:Type Image}">
-                            <Setter Property="Source" Value="{Binding Path=ToolTip, Converter={StaticResource FilePathToThumbNailConverter}, RelativeSource={RelativeSource Self}}"/>
-                            <Setter Property="Height" Value="{Binding Path=Tag, RelativeSource={RelativeSource Self}}"/>
-                            <Setter Property="Width"  Value="{Binding Path=Tag, RelativeSource={RelativeSource Self}}"/>                            
+                            <Setter Property="Source" Value="{Binding Converter={StaticResource FilePathToThumbNailConverter}, RelativeSource={RelativeSource Self}}"/>
+                            <Setter Property="LayoutTransform" Value="{Binding Path=Tag, Converter={StaticResource TagToLayoutTransformConverter}, RelativeSource={RelativeSource Self}, Mode=TwoWay}"/>   
                             <Setter Property="Cursor" Value="Hand"/>
                         </Style>
 

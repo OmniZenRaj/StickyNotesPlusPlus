@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Collections.Generic;
 using System.Reflection;
 
+using U= Utilities;
 using OmniZenNotes.Models;
 
 namespace OmniZenNotes
@@ -15,16 +16,21 @@ namespace OmniZenNotes
     {
         public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
         protected override void OnStartup(StartupEventArgs e) {
+            try {
+                LoadSettings();
 
-            LoadSettings();
+                Repository.LoadModel();
 
-            Repository.LoadModel();
-
-            foreach (Notebook notebook in Repository.NoteBooks) {
-                foreach(Note note in notebook.Notes) {
-                    new NoteViewer(note).Show();
+                foreach (Notebook notebook in Repository.NoteBooks) {
+                    foreach (Note note in notebook.Notes) {
+                        new NoteViewer(note).Show();
+                    }
                 }
+
+            } catch (Exception ex) {
+                U.Exceptions.LogException(ex, "App START Error");
             }
+
         }
 
         protected override void OnExit(ExitEventArgs e) {
@@ -57,6 +63,8 @@ namespace OmniZenNotes
                 if (!File.Exists(nbDBFilePath)) {
                     FileInfo asmFileInfo = new FileInfo(Assembly.GetExecutingAssembly().Location);
                     var db = Path.Combine(asmFileInfo.Directory.FullName, "DB", "OmniZenNotes.sqlite3");
+                    var dir = Path.GetDirectoryName(nbDBFilePath);
+                    Directory.CreateDirectory(dir); // Create the settings directory first time
                     File.Copy(db, nbDBFilePath);    // Copy from product location
                 }
 

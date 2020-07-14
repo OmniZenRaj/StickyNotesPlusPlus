@@ -24,6 +24,7 @@
     <Resource Include="App.ico" />
     <Resource Include="assets/images/ic_add.png" />
     <Resource Include="assets/images/trash-24x.png" />
+    <Resource Include="assets/images/ic_delete_forever_36pt.png" />    
     <Resource Include="assets/images/textformat-24x.png" />
     <Resource Include="assets/images/ic_format_color_fill_black_18dp.png" />
     <Resource Include="assets/images/task-24x.png" />

@@ -39,8 +39,8 @@ namespace OmniZenNotes.Models
         }
 
         public void Delete() {
-            Repository.DeleteNote(this);
             Repository.DeleteTask(Task);
+            Repository.DeleteNote(this);
         }
 
         public new void LoadFromSQL(SQLiteDataReader reader) {

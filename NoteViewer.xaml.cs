@@ -103,6 +103,8 @@ namespace OmniZenNotes
 
     public partial class NoteViewer : Window
     {
+        public static List<FontFamily> FontFamilies;
+        public static List<Color> BackgroundColors;
         public NoteViewModel VM { get; set; }
         DispatcherTimer Timer = new DispatcherTimer();
 
@@ -123,24 +125,25 @@ namespace OmniZenNotes
         void InitializeControls()
         {
             uxRichTextBox.IsDocumentEnabled = true;
-            uxRichTextBox.SpellCheck.IsEnabled = true;
+            uxRichTextBox.SpellCheck.IsEnabled = false;
+
             MouseEnter += OnWindow_MouseEnter;
             MouseLeave += OnWindow_MouseLeave;
             uxShowNotesMenu.SubmenuOpened += OnShowNote_SubmenuOpened;
-            uxColorsMenu.SubmenuOpened += OnShowColors_SubmenuOpened;
+            uxSelectColorMenu.SubmenuOpened += OnSelectColor_SubmenuOpened;
+            uxSelectFontMenu.SubmenuOpened += OnSelectFont_SubmenuOpened;            
 
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
             Icon = AppIcon.Source;
         }
 
-        private void OnShowColors_SubmenuOpened(object sender, RoutedEventArgs e)
+        private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e)
         {
-            uxColorsMenu.Items.Clear();
+            uxSelectColorMenu.Items.Clear();
             PropertyInfo[] props = typeof(Colors).GetProperties();
-            foreach (PropertyInfo p in props)
-            {
-                Color color = (Color)p.GetValue(null);
+                foreach (PropertyInfo p in props) {
+                    Color color = (Color)p.GetValue(null);
                 MenuItem item = new MenuItem
                 {
                     Header = p.Name,
@@ -156,9 +159,39 @@ namespace OmniZenNotes
                     }
                 };
 
-                uxColorsMenu.Items.Add(item);
+                uxSelectColorMenu.Items.Add(item);
             }
         }
+
+        private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
+            uxSelectFontMenu.Items.Clear();
+
+            // TODO: Add a Font... menu item to bring up Font Dialog box
+
+            // Load the Font Families on first time 
+            if (FontFamilies == null) {
+                FontFamilies = new List<FontFamily>(Fonts.SystemFontFamilies);
+                FontFamilies.Sort((FontFamily x, FontFamily y) => { return x.Source.CompareTo(y.Source); });                
+            }
+
+            foreach (var fontFamily in FontFamilies) {
+                MenuItem item = new MenuItem {
+                    Header = fontFamily.Source,
+                    Tag = fontFamily,
+                    FontFamily = fontFamily
+                };
+
+                // Handle font selection from auto generated submenu
+                item.Click += (object sender, RoutedEventArgs e) => {
+                    if (sender is MenuItem mi && mi.Tag is FontFamily fontFamily) {
+                        SetFont(fontFamily, uxRichTextBox.FontSize, (uxRichTextBox.Foreground as SolidColorBrush), uxRichTextBox.FontStyle);
+                    }
+                };
+
+                uxSelectFontMenu.Items.Add(item);
+            };
+        }
+
 
         void OnShowNote_SubmenuOpened(object sender, RoutedEventArgs e)
         {
@@ -283,9 +316,9 @@ namespace OmniZenNotes
             // Save Note
             AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
 
-            // Print / Print Preview Note
-            AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
-            AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
+            // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
+            // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
+            // AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
 
             // Refresh Command
             AddCommandBinding(AppCommands.RefreshCommand, OnRefreshCommand);
@@ -332,7 +365,7 @@ namespace OmniZenNotes
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            Save(saveAsync: false);
+            if (VM.Note != null) { Save(saveAsync: false); }
             App.NoteViewers.Remove(this);
         }
 
@@ -360,19 +393,16 @@ namespace OmniZenNotes
 
         void OnDeleteCommand(object sender, RoutedEventArgs e)
         {
+            MessageBoxResult mbr = MessageBoxResult.OK;
             if (NoteViewers.Count == 1) {
-                var rc = MessageBox.Show("You about to DELETE the LAST Sticky Note. \nThis will EXIT the Application in Alpha. Press Cancel to go back.", Assembly.GetExecutingAssembly().GetName().Name, MessageBoxButton.OKCancel);
-                if (rc == MessageBoxResult.OK) {
-                    VM.Note.Delete();
-                    VM.Note = null;
-                    Close();
-                }
-            } else {
+                mbr = MessageBox.Show("You about to DELETE the LAST Sticky Note. \nThis will EXIT the Application in Alpha. \n\nPress Cancel to go back.", Assembly.GetExecutingAssembly().GetName().Name, MessageBoxButton.OKCancel);
+            }
+
+            if (mbr == MessageBoxResult.OK) {
                 VM.Note.Delete();
                 VM.Note = null;
                 Close();
             }
-
             e.Handled = true;
         }
 
@@ -404,12 +434,19 @@ namespace OmniZenNotes
             }
         }
 
-        private void OnMouseWheel(object sender, MouseWheelEventArgs e)
+        private void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control)
             {
-                double fontSize = e.Delta > 0 ? FontSize + 1 : FontSize - 1;
-                FontSize = fontSize <= 6 ? 8 : fontSize;
+                // TODO: Make Text Selections work
+                TextRange range = uxRichTextBox.Selection;
+                if(!string.IsNullOrEmpty(range.Text)) {
+                    var para = range.Start.Paragraph;
+                    para.FontSize = Math.Max(e.Delta > 0 ? para.FontSize + 1 : para.FontSize - 1, 6);
+                } else {
+                    double fontSize = Math.Max(e.Delta > 0 ? uxRichTextBox.FontSize + 1 : uxRichTextBox.FontSize - 1, 6);
+                    SetFont(uxRichTextBox.FontFamily, fontSize, uxRichTextBox.Foreground, uxRichTextBox.FontStyle);
+                }
             }
         }
 
@@ -483,25 +520,23 @@ namespace OmniZenNotes
                 uxSettingsPropertyGrid.Update();
             }
         }
+        private void SetFont(FontFamily fontFamily, double fontSize, Brush foreGround, FontStyle fontStyle, bool updateUXSettings = true) {
+                if( foreGround is SolidColorBrush scb) {
+                SetFont(fontFamily, fontSize, scb.Color, fontStyle, updateUXSettings);
+            }
+        }
+
 
         private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true)
         {
-
             // Keep the Window Font in sync with the RichTextBox Font:
             if (fontFamily != null)
             {
-                if (updateUXSettings) {
-                    VM.Note.UXSettings.FontFamily = fontFamily;
-                    VM.Note.UXSettings.FontSize = fontSize;
-                    VM.Note.UXSettings.FontColor = fontColor;
-                    VM.Note.UXSettings.FontStyle = fontStyle;
-                }
-
-                // Create a TextRange around the entire document.
                 var doc = uxRichTextBox.Document;
+
+                // Create a TextRange for the Selected Text or the entire document.
                 TextRange range = uxRichTextBox.Selection;
                 if (string.IsNullOrEmpty(uxRichTextBox.Selection.Text)) {
-                    // Create a TextRange around the entire document.
                     range = new TextRange(doc.ContentStart, doc.ContentEnd);
                     range.Select(range.Start, range.End);
                 }
@@ -512,13 +547,24 @@ namespace OmniZenNotes
                     range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
                     range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
                     range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, GetFamilyFontName(fontFamily));
-                } else {
+                }
+
+                // Set the Font for the whole RichTextBox when no Text was selected
+                if (string.IsNullOrEmpty(uxRichTextBox.Selection?.Text)) {
                     uxRichTextBox.FontFamily = fontFamily;
                     uxRichTextBox.FontSize = fontSize;
                     uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
                     uxRichTextBox.FontStyle = fontStyle;
                     uxRichTextBox.Foreground = fontColor != null ? new SolidColorBrush(fontColor) : uxRichTextBox.Foreground;
                 }
+
+            }
+
+            if (updateUXSettings) {
+                VM.Note.UXSettings.FontFamily = uxRichTextBox.FontFamily;
+                VM.Note.UXSettings.FontSize = uxRichTextBox.FontSize;
+                VM.Note.UXSettings.FontColor = (uxRichTextBox.Foreground as SolidColorBrush).Color;
+                VM.Note.UXSettings.FontStyle = uxRichTextBox.FontStyle;
             }
         }
 
@@ -589,14 +635,6 @@ namespace OmniZenNotes
             var colorScRgb = Color.FromScRgb(scA, scR, scG, scB);
 
             return colorScRgb;
-        }
-
-        private void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            if (Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                FontSize = e.Delta > 0 ? FontSize + 1 : FontSize - 1;
-            }
         }
 
         private void OpenNewWindow(Note note)
@@ -948,13 +986,13 @@ namespace OmniZenNotes
             }
         }
 
-        private void uxRichTextBox_PreviewDragOver(object sender, DragEventArgs args)
+        private void OnRichTextBox_PreviewDragOver(object sender, DragEventArgs args)
         {
             args.Effects = args.KeyStates == (DragDropKeyStates.LeftMouseButton | DragDropKeyStates.ControlKey) ? DragDropEffects.Copy : DragDropEffects.Link;
             args.Handled = true;
         }
 
-        private void uxRichTextBox_PreviewDrop(object sender, DragEventArgs args)
+        private void OnRichTextBox_PreviewDrop(object sender, DragEventArgs args)
         {
             args.Handled = true;
             var fileName = IsSingleFileOrDir(args);
@@ -1039,7 +1077,9 @@ namespace OmniZenNotes
                 {
                     // ToolTip is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
                     ToolTip = fileInfo.FullName,
-                    Tag = DefaultThumbnailSize.Medium.Height,
+                    Tag = .50d,
+                    Height = DefaultThumbnailSize.Medium.Height,
+                    Width = DefaultThumbnailSize.Medium.Width,
                 };
 
                 // Create a Hyperlink with the Shell thumbnail image & display name
@@ -1106,15 +1146,9 @@ namespace OmniZenNotes
             if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 Image image = hyperlink.Tag as Image;
-
-                double scale = e.Delta > 0 ? 1.10 : 0.90;
-                image.Tag = Math.MinMagnitude((double)image.Tag* scale, DefaultThumbnailSize.ExtraLarge.Height);
-                image.InvalidateProperty(TagProperty);
-                image.InvalidateProperty(HeightProperty);
-                image.InvalidateProperty(WidthProperty);                
-
+                image.Tag = e.Delta > 0 ? (double)image.Tag * 1.10 : (double)image.Tag * 0.90;
+                Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta} Image {image.Height} x {image.Width} scaled by {image.Tag}");
                 e.Handled = true;
-                Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta} Image {image.Tag} x {image.Tag} scaled by {scale}");
             }
         }
 
@@ -1140,15 +1174,35 @@ namespace OmniZenNotes
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture)
         {
-            if (o is string tooltip)
+            if (o is Image image && image.ToolTip is string tooltip)
             {
-                FileInfo fileInfo = new FileInfo(Uri.UnescapeDataString(tooltip));
-                ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
-                return shellObject?.Thumbnail.MediumBitmapSource;
+                FileInfo fileInfo = new FileInfo(tooltip);
+                try {
+                    ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
+                    return shellObject?.Thumbnail?.MediumBitmapSource;   // PDF Reader can cause exceptions
+                } catch {
+                    try {
+                        return U.Shell.GetShellIcon(fileInfo);
+                    } catch {}
+                }
             }
+
             return null;
         }
 
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
     }
+
+    public class TagToLayoutTransformConverter : IValueConverter {
+        object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) 
+        {
+            if (o is double scale) {
+                return new ScaleTransform(scale, scale);
+            }
+
+            return null;
+        }
+
+        object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
+    }    
 }

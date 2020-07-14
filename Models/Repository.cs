@@ -99,8 +99,8 @@ namespace OmniZenNotes.Models
             return note;
         }
 
-        public static void DeleteNote(Note note) {
-
+        public static void DeleteNote(Note note, Notebook notebook = null) {
+            notebook ??= DefaultNotebook;
             try {
                 SQLiteConnection conn = GetDBConnection();
 
@@ -111,7 +111,8 @@ namespace OmniZenNotes.Models
             } catch (Exception ex) {
                 EX.LogException(ex, $"SQLITE ERROR: ");
             } finally {
-                Notes.Remove(note);            // App wide Notes collection
+                notebook.Notes.Remove(note);   // Remove from owner notebook
+                Notes.Remove(note);            // Remove from App wide Notes collection
             }
         }
 
