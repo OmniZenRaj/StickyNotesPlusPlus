@@ -105,10 +105,10 @@ namespace OmniZenNotes
     {
         public static List<FontFamily> FontFamilies;
         public static List<Color> BackgroundColors;
+        public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
+
         public NoteViewModel VM { get; set; }
         DispatcherTimer Timer = new DispatcherTimer();
-
-        public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
 
         public NoteViewer(Note note) {
             InitializeComponent();
@@ -295,16 +295,16 @@ namespace OmniZenNotes
 
         // Create, configure and bind Application Commands
         void InitializeCommands() {
+            // Refresh Command
+            AddCommandBinding(NavigationCommands.Refresh, OnRefreshCommand);
+            // New Command
+            AddCommandBinding(ApplicationCommands.New, OnNewCommand);
             // Save Note
             AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
 
             // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
             // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
             // AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
-
-            // Refresh Command
-            AddCommandBinding(AppCommands.RefreshCommand, OnRefreshCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.RefreshCommand, new KeyGesture(Key.F5, ModifierKeys.None, "F5")));
 
             // Spellcheck Command
             AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
@@ -396,7 +396,7 @@ namespace OmniZenNotes
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.Escape || e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt) {
+            if ( e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt) {
                 if (NoteViewers.Count == 1) {
                     MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
                 } else {
@@ -557,7 +557,7 @@ namespace OmniZenNotes
             uxColorPicker.SelectedColor = color;
 
             Background = new SolidColorBrush(color);
-            uxRichTextBox.Background = new SolidColorBrush(color);
+            uxRichTextBox.Document.Background = new SolidColorBrush(color);
 
             Color colorScRgb = AdjustColor(color);
             if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
@@ -599,10 +599,15 @@ namespace OmniZenNotes
         }
 
         private void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
+            if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
             uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
         }
 
         private void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
+            OnNewCommand(sender, e);
+        }
+
+        private void OnNewCommand(object sender, RoutedEventArgs e) {
             OpenNewWindow(VM.CreateNewNote(copy: VM.Note));
         }
 
@@ -926,7 +931,7 @@ namespace OmniZenNotes
 
                     // Create a MediaElement and set the Source to the dropped file path
                     case ".mp4": case ".mpg": case ".mp3": case ".wma": case ".wmv": case ".avi":case ".mkv":
-                        var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
+                        var me = new MediaElement { Source = new Uri(fileInfo.FullName), ToolTip = fileInfo.FullName};
                         var iuic_me = new InlineUIContainer(me, tp);
                         break;
                 }
@@ -985,14 +990,17 @@ namespace OmniZenNotes
         }
 
         public void OnMediaElement_MediaOpened(object sender, RoutedEventArgs e) {
-            if (sender is MediaElement me) {
+            if (sender is MediaElement me && me.Position == TimeSpan.FromSeconds(0)) {                
                 me.Position = TimeSpan.FromSeconds(0);
             }
         }
 
         public void OnMediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e) {
             if (sender is MediaElement me) {
-                U.Exceptions.LogException(e.ErrorException, $"Media FAILED for {me.Source}");
+                var error = $"Media FAILED for {me.Source} : ";
+                var iuic = me.Parent as InlineUIContainer;
+                iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
+                //U.Exceptions.LogException(e.ErrorException, error);
             }
         }
 
@@ -1041,7 +1049,17 @@ namespace OmniZenNotes
                 FileInfo fileInfo = new FileInfo(tooltip);
                 try {
                     ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
-                    return shellObject?.Thumbnail?.MediumBitmapSource;   // PDF Reader can cause exceptions
+                    double scaleH = image.Height * (double)image.Tag;
+                    double scaleW = image.Width *  (double)image.Tag;
+                    var thumbnail = scaleW switch {
+                        double w when w >= DefaultThumbnailSize.ExtraLarge.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
+                        double w when w >= DefaultThumbnailSize.Large.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
+                        double w when w >= DefaultThumbnailSize.Medium.Height => shellObject?.Thumbnail.LargeBitmapSource,
+                        double w when w >= DefaultThumbnailSize.Small.Height => shellObject?.Thumbnail.MediumBitmapSource,                        
+                        _ => shellObject?.Thumbnail.SmallBitmapSource
+                    };
+                    Debug.WriteLine($"FilePathToThumbNailConverter Thumbnail {thumbnail.Height} x {thumbnail.Width} for scaleW {scaleW} scaled by {image.Tag}");                    
+                    return thumbnail;
                 } catch {
                     try {
                         return U.Shell.GetShellIcon(fileInfo);

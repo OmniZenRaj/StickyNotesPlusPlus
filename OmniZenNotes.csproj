@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Version>0.0.2</Version>
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
