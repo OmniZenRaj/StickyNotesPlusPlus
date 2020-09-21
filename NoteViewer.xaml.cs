@@ -301,6 +301,9 @@ namespace OmniZenNotes
             AddCommandBinding(ApplicationCommands.New, OnNewCommand);
             // Save Note
             AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
+            // Full Screen Toggle
+            AddCommandBinding(NavigationCommands.Zoom, OnZoomCommand);
+            InputBindings.Add(new KeyBinding(NavigationCommands.Zoom, new KeyGesture(Key.F11, ModifierKeys.None, "F11")));
 
             // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
             // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
@@ -418,6 +421,9 @@ namespace OmniZenNotes
                     SetFont(uxRichTextBox.FontFamily, fontSize, uxRichTextBox.Foreground, uxRichTextBox.FontStyle);
                 }
             }
+        }
+        private void OnZoomCommand(object sender, RoutedEventArgs e) {
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
         private void OnMouseDown(object sender, MouseButtonEventArgs e) {
