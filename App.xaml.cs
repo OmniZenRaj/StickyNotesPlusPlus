@@ -84,7 +84,7 @@ namespace OmniZenNotes
     {
         public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));
         public static RoutedUICommand SpellCheckCommand = new RoutedUICommand("Spell Check", "SpellCheck", typeof(AppCommands));
-        public static RoutedUICommand FormatBarCommand = new RoutedUICommand("Format Bar", "FormatBar", typeof(AppCommands));        
+        public static RoutedUICommand FormatBarCommand = new RoutedUICommand("Format Bar", "FormatBar", typeof(AppCommands));
         public static RoutedUICommand SelectFontCommand = new RoutedUICommand("Font...", "SelectNoteFont", typeof(AppCommands));
         public static RoutedUICommand ViewNoteReminderCommand = new RoutedUICommand("Reminder...", "ViewNoteReminder", typeof(AppCommands));
         public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));

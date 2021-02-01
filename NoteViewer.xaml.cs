@@ -7,8 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows.Threading;
@@ -18,82 +16,11 @@ using System.Windows.Controls.Primitives;
 using System.Globalization;
 
 using Microsoft.WindowsAPICodePack.Shell;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
-using MS.WindowsAPICodePack.Internal;
-
 using Xceed.Wpf.Toolkit.PropertyGrid;
-using OmniZenNotes.Models;
-using U = Utilities;
 using System.Windows.Navigation;
 
-[ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IShellLinkW
-{
-    void GetPath(
-        [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
-        int cchMaxPath,
-        IntPtr pfd,
-        uint fFlags);
-    void GetIDList(out IntPtr ppidl);
-    void SetIDList(IntPtr pidl);
-    void GetDescription(
-        [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
-        int cchMaxName);
-    void SetDescription(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszName);
-    void GetWorkingDirectory(
-        [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir,
-        int cchMaxPath
-        );
-    void SetWorkingDirectory(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszDir);
-    void GetArguments(
-        [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs,
-        int cchMaxPath);
-    void SetArguments(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
-    void GetHotKey(out short wHotKey);
-    void SetHotKey(short wHotKey);
-    void GetShowCmd(out uint iShowCmd);
-    void SetShowCmd(uint iShowCmd);
-    void GetIconLocation(
-        [Out(), MarshalAs(UnmanagedType.LPWStr)] out StringBuilder pszIconPath,
-        int cchIconPath,
-        out int iIcon);
-    void SetIconLocation(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszIconPath,
-        int iIcon);
-    void SetRelativePath(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszPathRel,
-        uint dwReserved);
-    void Resolve(IntPtr hwnd, uint fFlags);
-    void SetPath(string pszFile);
-}
-
-[ComImport, Guid("0000010b-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IPersistFile
-{
-    string GetCurFile();
-    [PreserveSig]
-    uint IsDirty();
-    void Load(string pszFileName, long dwMode);
-    void Save(string pszFileName, bool fRemember);
-    void SaveCompleted(string pszFileName);
-}
-
-[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IPropertyStore
-{
-    uint GetCount();
-    PropertyKey GetAt(uint propertyIndex);
-    PropVariant GetValue([In] ref PropertyKey key);
-    void SetValue([In] ref PropertyKey key, PropVariant pv);
-    void Commit();
-}
-
-[ComImport, Guid("00021401-0000-0000-C000-000000000046"), ClassInterface(ClassInterfaceType.None)]
-class ShellLink { }
-
+using OmniZenNotes.Models;
+using U = Utilities;
 
 #pragma warning disable IDE1006 // Ignore name rule violation for XAML element objects starting with ux
 
@@ -409,7 +336,7 @@ namespace OmniZenNotes
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e) {
-            if ( e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt) {
+            if (e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt) {
                 if (NoteViewers.Count == 1) {
                     MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
                 } else {
@@ -473,9 +400,10 @@ namespace OmniZenNotes
 
         private void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
 
-            using var fd = new System.Windows.Forms.FontDialog();
+            using var fd = new System.Windows.Forms.FontDialog {
+                Font = new System.Drawing.Font(GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
+            };
 
-            fd.Font = new System.Drawing.Font(GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize); ;
             if (uxRichTextBox.Foreground is SolidColorBrush scb) {
                 fd.Color = System.Drawing.Color.FromArgb(scb.Color.A, scb.Color.R, scb.Color.G, scb.Color.B);
                 fd.ShowColor = true;
@@ -486,7 +414,7 @@ namespace OmniZenNotes
                 var fontFamily = new FontFamily(fd.Font.FontFamily.ToString());
                 var fontColor = Color.FromArgb(fd.Color.A, fd.Color.R, fd.Color.G, fd.Color.B);
                 var fontSize = fd.Font.Size;
-                var fsConverter = new FontStyleConverter();
+                //var fsConverter = new FontStyleConverter();
 
                 //var fontStyle = (FontStyle)fsConverter.ConvertFrom(fd.Font.Style.ToString());
 
@@ -606,11 +534,12 @@ namespace OmniZenNotes
             var area = screen.WorkingArea;
 
             // Create new NoteViewer at same size & slightly to left & lower than this one
-            var noteViewer = new NoteViewer(note);
-            noteViewer.Left = Left > area.Left ? Left >= 0 ? Left + (area.Width * 0.02) : Left - (area.Width * 0.02) : Left + (area.Width * 0.02);
-            noteViewer.Top = Top > area.Top ? Top >= 0 ? Top + (area.Height * 0.03) : Top - (area.Height * 0.03) : (area.Height * 0.03);
-            noteViewer.Width = Width;
-            noteViewer.Height = Height;
+            var noteViewer = new NoteViewer(note) {
+                Left = Left > area.Left ? Left >= 0 ? Left + (area.Width * 0.02) : Left - (area.Width * 0.02) : Left + (area.Width * 0.02),
+                Top = Top > area.Top ? Top >= 0 ? Top + (area.Height * 0.03) : Top - (area.Height * 0.03) : (area.Height * 0.03),
+                Width = Width,
+                Height = Height
+            };
             noteViewer.Show();
         }
 
@@ -724,10 +653,6 @@ namespace OmniZenNotes
             if (printDialog.ShowDialog() == true) {
                 printDialog.PrintDocument((((IDocumentPaginatorSource)uxRichTextBox.Document).DocumentPaginator), $"Printing ");
             }
-        }
-        private void OnPrintPreviewCommand(object sender, RoutedEventArgs e) {
-            var printPreviewDialog = new System.Windows.Forms.PrintPreviewDialog();
-            var dc = printPreviewDialog.ShowDialog();
         }
 
         #endregion
@@ -925,14 +850,18 @@ namespace OmniZenNotes
                 // Insert the contents of supported dropped file:
                 switch (fileInfo.Extension.ToLower()) {
                     // Insert the file text content directly into the Document
-                    case ".text": case ".txt": {
+                    case ".text":
+                    case ".txt": {
                             using var fileToLoad = new StreamReader(fileInfo.FullName);
                             uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
                             fileToLoad.Close();
                             break;
                         }
                     // Create an Image element and set the Source to the dropped file path
-                    case ".png": case ".jpg": case ".gif":case ".bmp":
+                    case ".png":
+                    case ".jpg":
+                    case ".gif":
+                    case ".bmp":
                         var image = new Image();
                         var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
                         image.Source = bitmap;
@@ -946,15 +875,24 @@ namespace OmniZenNotes
                         break;
 
                     // Create a MediaElement and set the Source to the dropped file path
-                    case ".mp4": case ".mpg": case ".mp3": case ".wma": case ".wmv": case ".avi":case ".mkv":
-                        var me = new MediaElement { Source = new Uri(fileInfo.FullName), ToolTip = fileInfo.FullName};
+                    case ".mp4":
+                    case ".mpg":
+                    case ".mp3":
+                    case ".wma":
+                    case ".wmv":
+                    case ".avi":
+                    case ".mkv":
+                        var me = new MediaElement { Source = new Uri(fileInfo.FullName), ToolTip = fileInfo.FullName };
                         var iuic_me = new InlineUIContainer(me, tp);
                         break;
                 }
             } else if (args.KeyStates == DragDropKeyStates.AltKey) {
                 // Insert the contents of supported dropped file:
                 switch (fileInfo.Extension.ToLower()) {
-                    case ".png": case ".jpg": case ".gif": case ".bmp":
+                    case ".png":
+                    case ".jpg":
+                    case ".gif":
+                    case ".bmp":
                         var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
                         var imageBrush = new ImageBrush(bitmap);
                         if (uxRichTextBox.Background is SolidColorBrush scb && scb.Color.A < 255) {
@@ -1006,7 +944,7 @@ namespace OmniZenNotes
         }
 
         public void OnMediaElement_MediaOpened(object sender, RoutedEventArgs e) {
-            if (sender is MediaElement me && me.Position == TimeSpan.FromSeconds(0)) {                
+            if (sender is MediaElement me && me.Position == TimeSpan.FromSeconds(0)) {
                 me.Position = TimeSpan.FromSeconds(0);
             }
         }
@@ -1066,19 +1004,20 @@ namespace OmniZenNotes
                 try {
                     ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
                     double scaleH = image.Height * (double)image.Tag;
-                    double scaleW = image.Width *  (double)image.Tag;
-                    var thumbnail = scaleW switch {
+                    double scaleW = image.Width * (double)image.Tag;
+                    var thumbnail = scaleW switch
+                    {
                         double w when w >= DefaultThumbnailSize.ExtraLarge.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
                         double w when w >= DefaultThumbnailSize.Large.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
                         double w when w >= DefaultThumbnailSize.Medium.Height => shellObject?.Thumbnail.LargeBitmapSource,
-                        double w when w >= DefaultThumbnailSize.Small.Height => shellObject?.Thumbnail.MediumBitmapSource,                        
+                        double w when w >= DefaultThumbnailSize.Small.Height => shellObject?.Thumbnail.MediumBitmapSource,
                         _ => shellObject?.Thumbnail.SmallBitmapSource
                     };
                     var properties = shellObject.Properties;
                     var prop = properties.System.Title.Value;
                     var comment = properties.System.Comment.Value;
 
-                    Debug.WriteLine($"FilePathToThumbNailConverter Thumbnail {thumbnail.Height} x {thumbnail.Width} for scaleW {scaleW} scaled by {image.Tag}");                    
+                    Debug.WriteLine($"FilePathToThumbNailConverter Thumbnail {thumbnail.Height} x {thumbnail.Width} for scaleW {scaleW} scaled by {image.Tag}");
                     return thumbnail;
                 } catch {
                     try {

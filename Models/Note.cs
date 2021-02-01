@@ -68,6 +68,7 @@ namespace OmniZenNotes.Models
             }
         }
 
+#pragma warning disable IDE0051
         private void LoadDocumentBlob(SQLiteDataReader reader) {
             using var ms = new MemoryStream();
             GetBlob(reader, reader.GetOrdinal("Document"), ms);
@@ -83,5 +84,7 @@ namespace OmniZenNotes.Models
             cmd.Parameters.Add("@Document", DbType.Binary).Value = ms.ToArray();
             ms.Close();
         }
+#pragma warning restore IDE0051
+
     }
 }

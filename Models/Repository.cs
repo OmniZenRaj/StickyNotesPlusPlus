@@ -146,8 +146,9 @@ namespace OmniZenNotes.Models
                     throw new DirectoryNotFoundException(dbPath.FullName);
                 }
 
-                SQLiteConnectionStringBuilder connectString = new SQLiteConnectionStringBuilder();
-                connectString.DataSource = dbPath.FullName;
+                SQLiteConnectionStringBuilder connectString = new SQLiteConnectionStringBuilder {
+                    DataSource = dbPath.FullName
+                };
 
                 _Connection = new SQLiteConnection(connectString.ToString());
                 _Connection.Open();
@@ -160,6 +161,7 @@ namespace OmniZenNotes.Models
             return null;
         }
 
+#pragma warning disable IDE0060
         public static void LoadTasks(Notebook notebook) {
 
             try {
@@ -179,6 +181,7 @@ namespace OmniZenNotes.Models
                 EX.LogException(ex, $"SQLITE ERROR: ");
             }
         }
+#pragma warning restore IDE0060
 
         public async static System.Threading.Tasks.Task<int> SaveTask(Task task) {
 
