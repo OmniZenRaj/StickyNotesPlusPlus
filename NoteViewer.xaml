@@ -163,8 +163,8 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
 
             <StackPanel>
                 <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="OnRichTextBox_PreviewDragOver" PreviewDrop="OnRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" MouseWheel="OnRichTextBox_MouseWheel" Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
-                    <xctk:RichTextBoxFormatBarManager.FormatBar>
-                        <xctk:RichTextBoxFormatBar />
+                    <xctk:RichTextBoxFormatBarManager.FormatBar >
+                        <xctk:RichTextBoxFormatBar x:Name="RTBFB"/>
                     </xctk:RichTextBoxFormatBarManager.FormatBar>                
                     <xctk:RichTextBox.Resources>
                         <Style TargetType="{x:Type Paragraph}">

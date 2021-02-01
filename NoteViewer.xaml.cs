@@ -124,6 +124,7 @@ namespace OmniZenNotes
         void InitializeControls() {
             uxRichTextBox.IsDocumentEnabled = true;
             uxRichTextBox.SpellCheck.IsEnabled = false;
+            RTBFB.IsEnabled = false;
 
             MouseEnter += OnWindow_MouseEnter;
             MouseLeave += OnWindow_MouseLeave;
@@ -313,6 +314,10 @@ namespace OmniZenNotes
             AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
             InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
 
+            // Format Bar Command
+            AddCommandBinding(AppCommands.FormatBarCommand, OnFormatBarCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.FormatBarCommand, new KeyGesture(Key.F4, ModifierKeys.None, "F4")));
+
             // Set Note Font Command
             AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
 
@@ -367,6 +372,11 @@ namespace OmniZenNotes
 
         void OnSpellCheckCommand(object sender, RoutedEventArgs e) {
             uxRichTextBox.SpellCheck.IsEnabled = !uxRichTextBox.SpellCheck.IsEnabled;
+        }
+
+        void OnFormatBarCommand(object sender, RoutedEventArgs e) {
+            RTBFB.IsEnabled = !RTBFB.IsEnabled;
+            RTBFB.Visibility = RTBFB.IsEnabled ? Visibility.Visible : Visibility.Hidden;
         }
 
         void OnDeleteCommand(object sender, RoutedEventArgs e) {
@@ -1064,6 +1074,10 @@ namespace OmniZenNotes
                         double w when w >= DefaultThumbnailSize.Small.Height => shellObject?.Thumbnail.MediumBitmapSource,                        
                         _ => shellObject?.Thumbnail.SmallBitmapSource
                     };
+                    var properties = shellObject.Properties;
+                    var prop = properties.System.Title.Value;
+                    var comment = properties.System.Comment.Value;
+
                     Debug.WriteLine($"FilePathToThumbNailConverter Thumbnail {thumbnail.Height} x {thumbnail.Width} for scaleW {scaleW} scaled by {image.Tag}");                    
                     return thumbnail;
                 } catch {
