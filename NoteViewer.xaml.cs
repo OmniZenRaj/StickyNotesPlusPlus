@@ -55,9 +55,9 @@ namespace OmniZenNotes
 
             MouseEnter += OnWindow_MouseEnter;
             MouseLeave += OnWindow_MouseLeave;
-            uxShowNotesMenu.SubmenuOpened += OnShowNote_SubmenuOpened;
-            uxSelectColorMenu.SubmenuOpened += OnSelectColor_SubmenuOpened;
-            uxSelectFontMenu.SubmenuOpened += OnSelectFont_SubmenuOpened;
+            uxShowNotesMenuItem.SubmenuOpened += OnShowNote_SubmenuOpened;
+            uxSelectColorMenuItem.SubmenuOpened += OnSelectColor_SubmenuOpened;
+            uxSelectFontMenuItem.SubmenuOpened += OnSelectFont_SubmenuOpened;
 
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
@@ -65,7 +65,7 @@ namespace OmniZenNotes
         }
 
         private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxSelectColorMenu.Items.Clear();
+            uxSelectColorMenuItem.Items.Clear();
             PropertyInfo[] props = typeof(Colors).GetProperties();
             foreach (PropertyInfo p in props) {
                 Color color = (Color)p.GetValue(null);
@@ -83,12 +83,12 @@ namespace OmniZenNotes
                     }
                 };
 
-                uxSelectColorMenu.Items.Add(item);
+                uxSelectColorMenuItem.Items.Add(item);
             }
         }
 
         private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxSelectFontMenu.Items.Clear();
+            uxSelectFontMenuItem.Items.Clear();
 
             // TODO: Add a Font... menu item to bring up Font Dialog box
 
@@ -112,28 +112,28 @@ namespace OmniZenNotes
                     }
                 };
 
-                uxSelectFontMenu.Items.Add(item);
+                uxSelectFontMenuItem.Items.Add(item);
             };
         }
 
 
         void OnShowNote_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxShowNotesMenu.Items.Clear();
-            uxShowNotesMenu.Items.Add(new MenuItem() {
+            uxShowNotesMenuItem.Items.Clear();
+            uxShowNotesMenuItem.Items.Add(new MenuItem() {
                 Header = "Show All",
                 InputGestureText = "Alt-A",
             });
-            uxShowNotesMenu.Items.Add(new MenuItem() {
+            uxShowNotesMenuItem.Items.Add(new MenuItem() {
                 Header = "Show Private",
                 InputGestureText = "Alt-R"
             });
 
-            uxShowNotesMenu.Items.Add(new MenuItem() {
+            uxShowNotesMenuItem.Items.Add(new MenuItem() {
                 Header = "Show Public",
                 InputGestureText = "Alt-P"
             });
 
-            uxShowNotesMenu.Items.Add(new Separator());
+            uxShowNotesMenuItem.Items.Add(new Separator());
 
             App.NoteViewers.Sort((NoteViewer x, NoteViewer y) => { return x.Title.CompareTo(y.Title); });
 
@@ -154,10 +154,10 @@ namespace OmniZenNotes
                     item.Background = noteViewer.uxRichTextBox.Document.Background.Clone();
                 }
 
-                uxShowNotesMenu.Items.Add(item);
+                uxShowNotesMenuItem.Items.Add(item);
             }
 
-            foreach (var item in uxShowNotesMenu.Items) {
+            foreach (var item in uxShowNotesMenuItem.Items) {
                 if (item is MenuItem menuItem) {
                     menuItem.Click += NoteSubMenu_Clicked;
                 }
@@ -170,7 +170,7 @@ namespace OmniZenNotes
             if (sender is MenuItem mi) {
                 if (mi.Tag is NoteViewer nv) {
                     mi.IsChecked = !mi.IsChecked; // Toggle Checked status
-                    if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.Hide(); }
+                    if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.OnHideCommand(sender, e); }
 
                 } else if ("Show All".CompareTo(mi.Header) == 0) {
                     mi.IsChecked = true;
@@ -184,7 +184,7 @@ namespace OmniZenNotes
                         if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
                             noteViewer.Show();
                         } else {
-                            noteViewer.Hide();
+                            noteViewer.OnHideCommand(sender, e);
                         }
                     }
 
@@ -194,7 +194,7 @@ namespace OmniZenNotes
                         if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
                             noteViewer.Show();
                         } else {
-                            noteViewer.Hide();
+                            noteViewer.OnHideCommand(sender, e);
                         }
                     }
                 }
@@ -215,7 +215,7 @@ namespace OmniZenNotes
 
             double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
             double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
-            double left = restoreBounds.Left > area.Left ? restoreBounds.Left : area.Width / 2 - Width / 2; // Center Horz
+            double left = restoreBounds.Left > area.Left ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
             double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
 
             return new Rect(left, top, width, height); ;
@@ -252,6 +252,10 @@ namespace OmniZenNotes
             AddCommandBinding(AppCommands.ViewNoteReminderCommand, OnViewNoteReminderCommand);
             // View Note Settings Command
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
+
+            // Hide Command
+            AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.HideCommand, new KeyGesture(Key.H, ModifierKeys.Alt, "Alt-H")));
 
             // Delete Command
             AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
@@ -306,6 +310,15 @@ namespace OmniZenNotes
             RTBFB.Visibility = RTBFB.IsEnabled ? Visibility.Visible : Visibility.Hidden;
         }
 
+        void OnHideCommand(object sender, RoutedEventArgs e) {
+            if (NoteViewers.Count == 1) {
+                MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
+            } else {
+                Hide();
+            }
+            e.Handled = true;
+        }
+
         void OnDeleteCommand(object sender, RoutedEventArgs e) {
             MessageBoxResult mbr = MessageBoxResult.OK;
             if (NoteViewers.Count == 1) {
@@ -328,21 +341,18 @@ namespace OmniZenNotes
             OnTextFormatButton_Click(sender, e);
         }
 
-        void OnViewNoteReminderCommand(object sender, RoutedEventArgs e) {
-            ShowReminderPanel(!uxViewNoteReminderMenuItem.IsChecked);
+        void OnViewNoteReminderCommand(object sender, ExecutedRoutedEventArgs e) {
+            if (e.Source is ToggleButton toggleButton) {
+                ShowReminderPanel(toggleButton);
+            }
         }
-        void OnViewNoteSettingsCommand(object sender, RoutedEventArgs e) {
-            ShowSettingsPanel(!uxViewNoteSettingsMenuItem.IsChecked);
-        }
+        void OnViewNoteSettingsCommand(object sender, ExecutedRoutedEventArgs e) {
+            if (e.Parameter is string p && p == "MenuItem") {
+                
 
-        private void OnKeyDown(object sender, KeyEventArgs e) {
-            if (e.Key == Key.H && Keyboard.Modifiers == ModifierKeys.Alt) {
-                if (NoteViewers.Count == 1) {
-                    MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
-                } else {
-                    Visibility = Visibility.Hidden;
-                }
-                e.Handled = true;
+            }
+            if (e.Source is ToggleButton toggleButton) {
+                ShowSettingsPanel(toggleButton);
             }
         }
 
@@ -365,29 +375,33 @@ namespace OmniZenNotes
 
         private void OnMouseDown(object sender, MouseButtonEventArgs e) {
 
-            uxToolBar.Visibility = Visibility.Visible;
-
+            ToggleToolBar(Visibility.Visible);
             if (e.LeftButton == MouseButtonState.Pressed) {
                 DragMove();
             }
         }
 
         private void OnActivated(object sender, EventArgs e) {
-            uxToolBar.Visibility = Visibility.Visible;
+            ToggleToolBar(Visibility.Visible);
         }
 
         private void OnDeactivated(object sender, EventArgs e) {
-            uxToolBar.Visibility = Visibility.Hidden;
+            ToggleToolBar(Visibility.Collapsed);
         }
 
         private void OnWindow_MouseEnter(object sender, EventArgs e) {
-            uxToolBar.Visibility = Visibility.Visible;
+            ToggleToolBar(Visibility.Visible);
         }
 
         private void OnWindow_MouseLeave(object sender, EventArgs e) {
             if (!IsActive) {
-                uxToolBar.Visibility = Visibility.Hidden;
+                ToggleToolBar(Visibility.Collapsed);
             }
+        }
+        private void ToggleToolBar( Visibility visibility) {
+            uxToolBar.Visibility = visibility;
+            uxAddNoteButton.Visibility = visibility;
+            uxNoteTitleLabel.Visibility = visibility;
         }
 
         private void OnButton_MouseEnter(object sender, EventArgs e) {
@@ -401,7 +415,7 @@ namespace OmniZenNotes
         private void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
 
             using var fd = new System.Windows.Forms.FontDialog {
-                Font = new System.Drawing.Font(GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
+                Font = new System.Drawing.Font(U.Graphics.GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
             };
 
             if (uxRichTextBox.Foreground is SolidColorBrush scb) {
@@ -422,12 +436,12 @@ namespace OmniZenNotes
                 uxSettingsPropertyGrid.Update();
             }
         }
+
         private void SetFont(FontFamily fontFamily, double fontSize, Brush foreGround, FontStyle fontStyle, bool updateUXSettings = true) {
             if (foreGround is SolidColorBrush scb) {
                 SetFont(fontFamily, fontSize, scb.Color, fontStyle, updateUXSettings);
             }
         }
-
 
         private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
             // Keep the Window Font in sync with the RichTextBox Font:
@@ -446,7 +460,7 @@ namespace OmniZenNotes
                     range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
                     range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
                     range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
-                    range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, GetFamilyFontName(fontFamily));
+                    range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, U.Graphics.GetFamilyFontName(fontFamily));
                 }
 
                 // Set the Font for the whole RichTextBox when no Text was selected
@@ -466,16 +480,6 @@ namespace OmniZenNotes
                 VM.Note.UXSettings.FontColor = (uxRichTextBox.Foreground as SolidColorBrush).Color;
                 VM.Note.UXSettings.FontStyle = uxRichTextBox.FontStyle;
             }
-        }
-
-        // Deal with font family property carefully converting from fontFamily to string name
-        private string GetFamilyFontName(FontFamily fontFamily) {
-            string fontName = fontFamily.Source;
-            if (fontName.IndexOf("=") > 0 && fontName.IndexOf("]") > 1) {
-                fontName = fontName.Substring(fontName.IndexOf("=") + 1, fontName.IndexOf("]") - fontName.IndexOf("=") - 1);
-            }
-
-            return fontName;
         }
 
         private void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
@@ -560,32 +564,18 @@ namespace OmniZenNotes
             OnDeleteCommand(sender, e);
         }
 
-        private void OnReminderButton_Click(object sender, RoutedEventArgs e) {
-            if (sender is ToggleButton toggleButton) {
-                ShowReminderPanel(toggleButton.IsChecked);
-            }
-        }
-
-        private void ShowReminderPanel(bool? show) {
-            uxReminderPanel.Visibility = show == true ? Visibility.Visible : Visibility.Collapsed;
-            uxReminderButton.IsChecked = show == true;
-            uxViewNoteReminderMenuItem.IsChecked = show == true;
+        private void ShowReminderPanel(ToggleButton toggleButton) {
+            uxViewNoteReminderMenuItem.IsChecked = toggleButton.IsChecked == true;
+            uxReminderPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             uxSettingsButton.IsChecked = false;
-            uxViewNoteSettingsMenuItem.IsChecked = uxSettingsButton.IsChecked == true;
+            uxViewNoteSettingsMenuItem.IsChecked = false;;
         }
 
-        private void OnSettingsButton_Click(object sender, RoutedEventArgs e) {
-            if (sender is ToggleButton toggleButton) {
-                ShowSettingsPanel(toggleButton.IsChecked);
-            }
-        }
-
-        private void ShowSettingsPanel(bool? show) {
-            uxSettingsPanel.Visibility = show == true ? Visibility.Visible : Visibility.Collapsed;
-            uxSettingsButton.IsChecked = true;
-            uxViewNoteSettingsMenuItem.IsChecked = uxSettingsButton.IsChecked == true;
+        private void ShowSettingsPanel(ToggleButton toggleButton) {
+            uxViewNoteSettingsMenuItem.IsChecked = toggleButton.IsChecked == true;
+            uxSettingsPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             uxReminderButton.IsChecked = false;
-            uxViewNoteReminderMenuItem.IsChecked = uxReminderButton.IsChecked == true;
+            uxViewNoteReminderMenuItem.IsChecked = false;
         }
 
         private void OnOptionsExpander_Expanded(object sender, RoutedEventArgs e) {
@@ -780,14 +770,20 @@ namespace OmniZenNotes
         }
 
         private void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible && visible) {
-                uxSettingsPanel.Visibility = Visibility.Collapsed;
+            if (e.NewValue is bool visible) {
+                uxViewNoteReminderMenuItem.IsChecked = visible;
+                // Toggle Settings panel & button to be mutualy exclusive of the Reminder panel
+                uxSettingsPanel.Visibility = visible ? Visibility.Collapsed : uxSettingsPanel.Visibility;
+                uxSettingsButton.IsChecked = !visible && uxSettingsButton.IsChecked == true;
             }
         }
 
         private void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible && visible) {
-                uxReminderPanel.Visibility = Visibility.Collapsed;
+            if (e.NewValue is bool visible) {
+                uxViewNoteSettingsMenuItem.IsChecked = visible;
+                // Toggle Reminder panel & button to be mutualy exclusive of the Settings panel
+                uxReminderPanel.Visibility = visible ? Visibility.Collapsed : uxReminderPanel.Visibility;
+                uxReminderButton.IsChecked = !visible && uxReminderButton.IsChecked == true;
             }
         }
 
@@ -806,8 +802,7 @@ namespace OmniZenNotes
                         SetBackgroundColor((Color)e.NewValue);
                         break;
                     case "FontFamily":
-                        FontFamily = (FontFamily)e.NewValue;
-                        SetFont(uxRichTextBox.FontFamily, uxRichTextBox.FontSize, foregroundColor, uxRichTextBox.FontStyle);
+                        SetFont((FontFamily)e.NewValue, uxRichTextBox.FontSize, foregroundColor, uxRichTextBox.FontStyle);
                         break;
                     case "FontSize":
                         SetFont(uxRichTextBox.FontFamily, (double)e.NewValue, foregroundColor, uxRichTextBox.FontStyle);
@@ -1043,5 +1038,22 @@ namespace OmniZenNotes
         }
 
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
+    }
+
+    public class BooleanToVisibilityConverter : IValueConverter
+    {
+        object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
+            if (o is bool visible) {
+                return visible == true ? Visibility.Visible : Visibility.Collapsed;
+            }
+            return Visibility.Visible;
+        }
+
+        object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) {
+            if (o is Visibility visibility) {
+                return visibility == Visibility.Visible ? true : false;
+            }
+            return true;
+        }
     }
 }

@@ -5,22 +5,29 @@
     <ApplicationIcon>App.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Version>1.0.0</Version>
+    <!--Use the latest language features of C# that are compatible with TargetFramework version -->
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <NoWarn>NU1701</NoWarn>
+
+  <!--Ignore Nuget package WARNINGS: -->
+    <NoWarn>NU1701</NoWarn> <!-- WARNING: This package may not be fully compatible with your project -->
   </PropertyGroup>
 
   <ItemGroup>
+    <!--Required for Wpf Toolkit Controls and Features-->  
     <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />
+    <!--Required for JSON data conversion and formatting-->
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <!--Required for SQLite access to read SQLite Databases -->
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.111.0" />
-    
+    <!--Required for Shell API access to read Video Meta Data and Shell properties --> 
     <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
     <PackageReference Include="WindowsAPICodePack-ShellExtensions" Version="1.1.1" />
   </ItemGroup>
 
+<!--Graphic Images and Icon Resources: -->
   <ItemGroup>
     <Resource Include="App.ico" />
     <Resource Include="assets/images/ic_add.png" />
@@ -34,7 +41,6 @@
     <Resource Include="assets/images/ic_save_black_18dp.png" />
     <Resourcec Include="assets/images/pin-green_small-24x.png" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="Resources\" />
   </ItemGroup>

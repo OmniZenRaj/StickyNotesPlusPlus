@@ -38,8 +38,8 @@ namespace OmniZenNotes.Models
 
             try {
                 Todo.Subject = GetString(reader, "Subject");
-                try { Todo.Status = (TaskStatus)Enum.Parse(Todo.Status.GetType(), GetString(reader, "Status")); } catch { }
-                try { Todo.Priority = (TaskPriority)Enum.Parse(Todo.Priority.GetType(), GetString(reader, "Priority")); } catch { }
+                Todo.Status = Enum.Parse<TaskStatus>(GetString(reader, "Status") ?? " ");
+                Todo.Priority = Enum.Parse<TaskPriority>(GetString(reader, "Priority") ?? " ");
                 Todo.StartDTS = GetDateTime(reader, "StartDTS");
                 Todo.DueDTS = GetDateTime(reader, "DueDTS");
                 Todo.CompletedDTS = GetDateTime(reader, "CompletedDTS");
@@ -82,12 +82,13 @@ namespace OmniZenNotes.Models
         public bool ReminderOn { get; set; }
         public string ReminderMessage { get; set; }
         public DateTime ReminderDTS { get; set; }
-        public TaskAlarmSound ReminderSound { get; set; }
+        public TaskAlarmSound ReminderSound { get; set; } = TaskAlarmSound.Reminder;
         public string ReminderImageURI { get; set; }
         public bool LongNotification { get; set; }
         public uint SnoozeCount { get; set; }
         public uint SnoozeInterval { get; set; }
         public string Recurrrence { get; set; }
+        public override string ToString() => string.IsNullOrEmpty(ReminderMessage) ? ReminderOn ? "Remind Me" + $" on {ReminderDTS}" : "No Reminder Set" : ReminderMessage;
     }
 
     public class TaskTodo
@@ -100,5 +101,6 @@ namespace OmniZenNotes.Models
         public DateTime CompletedDTS { get; set; }
         public decimal TotalWork { get; set; }
         public decimal ActualWork { get; set; }
+        public override string ToString() =>  $"{Status} Task " + (CompletedDTS != DateTime.MinValue ? $"Completed on {CompletedDTS}" : $"Due On {DueDTS}") + $" {Priority} Priorty" ;
     }
 }

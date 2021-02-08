@@ -88,6 +88,7 @@ namespace OmniZenNotes
         public static RoutedUICommand SelectFontCommand = new RoutedUICommand("Font...", "SelectNoteFont", typeof(AppCommands));
         public static RoutedUICommand ViewNoteReminderCommand = new RoutedUICommand("Reminder...", "ViewNoteReminder", typeof(AppCommands));
         public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
+        public static RoutedUICommand HideCommand = new RoutedUICommand("Hide Note", "HideNote", typeof(AppCommands));        
         public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
         public static RoutedUICommand ExitApplicationCommand = new RoutedUICommand("Exit App", "ExitApplication", typeof(AppCommands));
     }

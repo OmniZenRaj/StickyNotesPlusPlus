@@ -5,6 +5,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Security.Principal;
 
+using G = Utilities.Graphics;
 using EX = Utilities.Exceptions;
 
 namespace OmniZenNotes.Models
@@ -39,10 +40,6 @@ namespace OmniZenNotes.Models
         }
 
         public Entity() {
-            var windowsIdentity = WindowsIdentity.GetCurrent();
-            Security.OwnerSID = windowsIdentity?.User.Value;
-            Security.CreatedBy = windowsIdentity?.Name;
-            Security.UpdatedBy = windowsIdentity?.Name;
         }
 
         protected void LoadFromSQL(SQLiteDataReader reader) {
@@ -60,7 +57,7 @@ namespace OmniZenNotes.Models
                 };
 
                 Security.OwnerSID = GetString(reader, "OwnerSID");
-                try { Security.Permissions = (EntityPermissions)Enum.Parse(Security.Permissions.GetType(), GetString(reader, "Permissions")); } catch { }
+                Security.Permissions = Enum.Parse<EntityPermissions>(GetString(reader, "Permissions") ?? "Private");
                 Security.CreatedBy = GetString(reader, "CreatedBy");
                 Security.CreatedDTS = GetDateTime(reader, "CreatedDTS");
                 Security.UpdatedBy = GetString(reader, "UpdatedBy");
@@ -128,7 +125,7 @@ namespace OmniZenNotes.Models
     {
         public Rect RestoreBounds { get; set; }
         public WindowState WindowState { get; set; }
-        public FontFamily FontFamily { get; set; }
+        public FontFamily FontFamily { get ; set; } 
         public double FontSize { get; set; }
         public FontStyle FontStyle { get; set; }
         public Color FontColor { get; set; }
@@ -136,6 +133,9 @@ namespace OmniZenNotes.Models
         public bool OptionsExpanded { get; set; }
         public bool Topmost { get; set; }
         public string CSS { get; set; }
+
+        public string FontName => G.GetFamilyFontName(FontFamily);
+        public override string ToString() => $@"{G.GetFamilyFontName(FontFamily)} {FontSize} {FontStyle}";
 
         public UXSettings() {
             RestoreBounds = new Rect(0, 0, 364, 256);
@@ -161,13 +161,14 @@ namespace OmniZenNotes.Models
 
     public class Security
     {
-        public string OwnerSID { get; internal set; }
+        public string OwnerSID { get; internal set; } = WindowsIdentity.GetCurrent()?.User?.Value;
         public EntityPermissions Permissions { get; set; } = EntityPermissions.Private;
-        public string CreatedBy { get; internal set; }
-        public DateTime CreatedDTS { get; internal set; }
-        public string UpdatedBy { get; internal set; }
-        public DateTime UpdatedDTS { get; internal set; }
-
+        public string CreatedBy { get; internal set; } = WindowsIdentity.GetCurrent()?.Name;
+        public DateTime CreatedDTS { get; internal set; } = DateTime.Now;
+        public string UpdatedBy { get; internal set; } = WindowsIdentity.GetCurrent()?.Name;
+        public DateTime UpdatedDTS { get; internal set; } = DateTime.Now;
+        
+        public override string ToString() => $@"Created by {CreatedBy} on {CreatedDTS}";
     }
 
     public enum EntityPermissions { Read, Modify, Full, Private };

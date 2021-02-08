@@ -207,6 +207,15 @@ namespace Utilities
             if (hue < 240) return q1 + (q2 - q1) * (240 - hue) / 60;
             return q1;
         }
+        // Deal with font family property carefully converting from fontFamily to string name
+        public static string GetFamilyFontName(System.Windows.Media.FontFamily fontFamily) {
+            string fontName = fontFamily.Source;
+            if (fontName.IndexOf("=") > 0 && fontName.IndexOf("]") > 1) {
+                fontName = fontName.Substring(fontName.IndexOf("=") + 1, fontName.IndexOf("]") - fontName.IndexOf("=") - 1);
+            }
+
+            return fontName;
+        }
 
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern int ExtractIconEx(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconSmall, int nIcons);

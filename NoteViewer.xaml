@@ -1,4 +1,4 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" KeyDown="OnKeyDown" MouseDown="OnMouseDown" 
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" MouseDown="OnMouseDown" 
 Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
 
     <Window.Resources>
@@ -56,41 +56,40 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
         <DockPanel x:Name="uxToolBar" Grid.Row="0" >
             <DockPanel.ContextMenu>
                 <ContextMenu>
-                    <MenuItem x:Name="uxShowNotesMenu" Header="Show Notes">
+                    <MenuItem x:Name="uxShowNotesMenuItem" Header="Show Notes">
                         <MenuItem Header="@see code" />
                     </MenuItem>
-                    <MenuItem x:Name="uxSelectColorMenu" Header="Colors">
+                    <MenuItem x:Name="uxSelectColorMenuItem" Header="Colors">
                         <MenuItem Header="@see code" />
                     </MenuItem>
-                    <MenuItem x:Name="uxSelectFontMenu" Header="Fonts">
+                    <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts">
                         <MenuItem Header="@see code" />
                     </MenuItem>
-                    <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand"/>
-                    <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" />
+                    <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="{Binding Source={RelativeSource Self}}"/>
+                    <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem"/>
                     <Separator/>
                     <MenuItem Header="New Note" Command="New" />
                     <MenuItem Header="Refresh" Command="Refresh"/>
                     <MenuItem Header="Save" Command="Save" />
+                    <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H"/>
                     <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" />
                     <Separator/>
                     <MenuItem Header="App Settings..."/>
                     <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="Alt-F4" />
                 </ContextMenu>
             </DockPanel.ContextMenu>
-
             <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                 <Button x:Name="uxAddNoteButton" Click="OnAddNoteButton_Click" Content="{StaticResource Add_Note}" />
+                <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" ToolTip="{Binding Security}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
             </StackPanel>
-            <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" >
                 <Expander x:Name="uxOptionsExpander" Height="26" Margin="8,0,8,0" Padding="8,0,8,0" ExpandDirection="Left" Background="{x:Null}" Style="{DynamicResource RGBExpanderStyle}" Expanded="OnOptionsExpander_Expanded" Collapsed="OnOptionsExpander_Collapsed">
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                         <ToggleButton x:Name="uxPinTab" Click="OnPinTabButton_Click" Content="{StaticResource PinTabOff}"/>
-
                         <Separator Margin="4,0,0,0" />
-                        <ToggleButton x:Name="uxReminderButton" Click="OnReminderButton_Click" Content="{StaticResource Reminder}" />
+                        <ToggleButton x:Name="uxReminderButton" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder}" />
                         <Separator Margin="4,0,0,0" />
-                        <ToggleButton x:Name="uxSettingsButton" Click="OnSettingsButton_Click" Content="{StaticResource Info}" />
+                        <ToggleButton x:Name="uxSettingsButton" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info}" />
                         <Separator Margin="8,0,0,0" />
                         <xctk:ColorPicker x:Name="uxColorPicker" Width="40" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged" />
                         <Separator Margin="4,0,0,0" />
@@ -101,23 +100,10 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
             </StackPanel>
         </DockPanel>
         <StackPanel Grid.Row="1">
-            <StackPanel x:Name="uxReminderPanel" Visibility="Collapsed" KeyDown="uxReminderPanel_KeyDown" IsVisibleChanged="uxReminderPanel_IsVisibleChanged">
+            <StackPanel x:Name="uxReminderPanel" Visibility="{Binding Path=IsChecked, ElementName=uxReminderButton, Converter={StaticResource BooleanToVisibilityConverter}}" KeyDown="uxReminderPanel_KeyDown" IsVisibleChanged="uxReminderPanel_IsVisibleChanged">
                 <xctk:PropertyGrid x:Name="uxReminderPropertyGrid" AutoGenerateProperties="False" ShowSearchBox="False" ShowSortOptions="False" ShowSummary="False" IsCategorized="True" ShowTitle="False" PropertyValueChanged="uxReminderPropertyGrid_PropertyValueChanged" FontFamily="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" FontSize="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" IsMiscCategoryLabelHidden="True">
                 <xctk:PropertyGrid.PropertyDefinitions>
-
-                    <xctk:PropertyDefinition TargetProperties="Todo" DisplayOrder="0">
-                        <xctk:PropertyDefinition.PropertyDefinitions>
-                            <xctk:PropertyDefinition TargetProperties="Status" DisplayOrder="1" />
-                            <xctk:PropertyDefinition TargetProperties="Priority" DisplayOrder="2" />
-                            <xctk:PropertyDefinition TargetProperties="StartDTS" DisplayName="Started On" DisplayOrder="3" />
-                            <xctk:PropertyDefinition TargetProperties="DueDTS" DisplayName="Due On" DisplayOrder="4" />
-                            <xctk:PropertyDefinition TargetProperties="CompletedDTS" DisplayName="Completed On" DisplayOrder="5" />
-                            <xctk:PropertyDefinition TargetProperties="TotalWork" DisplayOrder="6" />
-                            <xctk:PropertyDefinition TargetProperties="ActualWork" DisplayOrder="7" />
-                        </xctk:PropertyDefinition.PropertyDefinitions>
-                    </xctk:PropertyDefinition>
-
-                    <xctk:PropertyDefinition TargetProperties="Reminder" DisplayOrder="1">
+                    <xctk:PropertyDefinition TargetProperties="Reminder" DisplayOrder="0">
                         <xctk:PropertyDefinition.PropertyDefinitions>
                             <xctk:PropertyDefinition TargetProperties="ReminderOn" DisplayName="Remind Me" DisplayOrder="1"/>
                             <xctk:PropertyDefinition TargetProperties="ReminderMessage" DisplayName="Notify Message" DisplayOrder="2"/>
@@ -130,11 +116,22 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
                         </xctk:PropertyDefinition.PropertyDefinitions>
                     </xctk:PropertyDefinition>
 
+                    <xctk:PropertyDefinition TargetProperties="Todo" DisplayOrder="1">
+                        <xctk:PropertyDefinition.PropertyDefinitions>
+                            <xctk:PropertyDefinition TargetProperties="Status" DisplayOrder="1" />
+                            <xctk:PropertyDefinition TargetProperties="Priority" DisplayOrder="2" />
+                            <xctk:PropertyDefinition TargetProperties="StartDTS" DisplayName="Started On" DisplayOrder="3" />
+                            <xctk:PropertyDefinition TargetProperties="DueDTS" DisplayName="Due On" DisplayOrder="4" />
+                            <xctk:PropertyDefinition TargetProperties="CompletedDTS" DisplayName="Completed On" DisplayOrder="5" />
+                            <xctk:PropertyDefinition TargetProperties="TotalWork" DisplayOrder="6" />
+                            <xctk:PropertyDefinition TargetProperties="ActualWork" DisplayOrder="7" />
+                        </xctk:PropertyDefinition.PropertyDefinitions>
+                    </xctk:PropertyDefinition>
                     </xctk:PropertyGrid.PropertyDefinitions>
                 </xctk:PropertyGrid>
             </StackPanel>
 
-            <StackPanel x:Name="uxSettingsPanel" Visibility="Collapsed" KeyDown="uxSettingsPanel_KeyDown" IsVisibleChanged="uxSettingsPanel_IsVisibleChanged">
+            <StackPanel x:Name="uxSettingsPanel" Visibility="{Binding Path=IsChecked, ElementName=uxSettingsButton, Converter={StaticResource BooleanToVisibilityConverter}}" KeyDown="uxSettingsPanel_KeyDown" IsVisibleChanged="uxSettingsPanel_IsVisibleChanged">
                 <xctk:PropertyGrid x:Name="uxSettingsPropertyGrid" AutoGenerateProperties="False" ShowSearchBox="False" ShowSortOptions="False" ShowSummary="False" IsCategorized="True" ShowTitle="False" IsMiscCategoryLabelHidden="True" FontFamily="{DynamicResource {x:Static SystemFonts.MenuFontFamilyKey}}" FontSize="{DynamicResource {x:Static SystemFonts.MenuFontSizeKey}}" PropertyValueChanged="uxSettingsPropertyGrid_PropertyValueChanged">
                     <xctk:PropertyGrid.PropertyDefinitions>
                         <xctk:PropertyDefinition TargetProperties="Title" DisplayOrder="0" />

@@ -6,9 +6,9 @@ namespace OmniZenNotes
 {
     public class NoteViewModel
     {
-
         internal NoteViewer NoteViewer;
         public Note Note { get; set; }
+        public string ToolTip => $@"{Note.Security.CreatedBy}";
 
         public SystemIconResources Icons { get; set; } = new SystemIconResources();
 

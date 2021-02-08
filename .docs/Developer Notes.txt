@@ -1,0 +1,12 @@
+Developer Notes:
+
+    Visual Studo Code (v1.38.0) can cause superfulous error message Problems when editing .cshtml or .cs files
+    This happens due to the OmniSharp C# Extension's use of intermediate/cache files for IDE IntelliSence features
+    The errors usually involve some kind of 'Duplicate' something error that can be ignored such as:
+        Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute [Project]  or
+        Ambiguity between 'Views_Shared_VideoViewer.Html' and 'Views_Shared_VideoViewer.Html'
+    To fix these issues, you should close the Project Workspace and run the clean.cmd script.
+    This will clear the IntelliSense, debug cache folders and usually clear up the error messages
+    Re open the Project Workspace and the superfulous errors should be cleared
+    The errors may reappear once you start editing the project files (this is a known VS Code issue)
+    Dont worry about the VS Code IDE error messages too much, just ensure dotnet build completes without errors or warnings
