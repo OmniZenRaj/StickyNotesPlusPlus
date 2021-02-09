@@ -10,6 +10,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using System.Windows.Input;
+using Microsoft.WindowsAPICodePack.Shell;
 
 namespace Utilities
 {
@@ -303,6 +304,29 @@ namespace Utilities
                 Exceptions.LogException(ex, $"Unable to Get Shell Type of {fi.FullName}");
             }
             return "*Unknown";
+        }
+
+        // Return the best size matched thumbnail for given width
+        public static BitmapSource GetShellThumbnail(string localPath, double width) {
+            
+            double XL =Math.Abs(DefaultThumbnailSize.ExtraLarge.Width - width);
+            double L = Math.Abs(DefaultThumbnailSize.Large.Width - width);
+            double M = Math.Abs(DefaultThumbnailSize.Medium.Width - width);
+            double S = Math.Abs(DefaultThumbnailSize.Small.Width - width);
+
+            try {
+                using ShellObject shellObject = ShellObject.FromParsingName(localPath);
+                return width switch
+                {
+                    double w when w >= DefaultThumbnailSize.ExtraLarge.Width => XL < L ? shellObject?.Thumbnail.ExtraLargeBitmapSource : shellObject?.Thumbnail.LargeBitmapSource,
+                    double w when w >= DefaultThumbnailSize.Large.Width => XL < L ? shellObject?.Thumbnail.ExtraLargeBitmapSource : shellObject?.Thumbnail.LargeBitmapSource,
+                    double w when w >= DefaultThumbnailSize.Medium.Width => L < M ? shellObject?.Thumbnail.LargeBitmapSource : shellObject?.Thumbnail.MediumBitmapSource,
+                    double w when w >= DefaultThumbnailSize.Small.Width => M < S ? shellObject?.Thumbnail.MediumBitmapSource : shellObject?.Thumbnail.SmallBitmapSource,
+                    _ => shellObject?.Thumbnail.SmallBitmapSource
+                };
+            } catch {
+                return null;
+            }
         }
 
         public static void ShellOpenDirectory(FileInfo fileInfo) {

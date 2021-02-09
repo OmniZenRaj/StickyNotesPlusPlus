@@ -1,4 +1,4 @@
-﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded" MouseDown="OnMouseDown" 
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded"
 Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
 
     <Window.Resources>
@@ -53,7 +53,7 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <DockPanel x:Name="uxToolBar" Grid.Row="0" >
+        <DockPanel x:Name="uxToolBar" Grid.Row="0"  MouseDown="OnToolBar_MouseDown">
             <DockPanel.ContextMenu>
                 <ContextMenu>
                     <MenuItem x:Name="uxShowNotesMenuItem" Header="Show Notes">

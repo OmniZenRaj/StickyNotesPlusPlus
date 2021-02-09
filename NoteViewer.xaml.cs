@@ -21,6 +21,7 @@ using System.Windows.Navigation;
 
 using OmniZenNotes.Models;
 using U = Utilities;
+using System.Collections;
 
 #pragma warning disable IDE1006 // Ignore name rule violation for XAML element objects starting with ux
 
@@ -31,7 +32,7 @@ namespace OmniZenNotes
     public partial class NoteViewer : Window
     {
         public static List<FontFamily> FontFamilies;
-        public static List<Color> BackgroundColors;
+        public static List<PropertyInfo> BackgroundColors;
         public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
 
         public NoteViewModel VM { get; set; }
@@ -66,11 +67,24 @@ namespace OmniZenNotes
 
         private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e) {
             uxSelectColorMenuItem.Items.Clear();
-            PropertyInfo[] props = typeof(Colors).GetProperties();
-            foreach (PropertyInfo p in props) {
-                Color color = (Color)p.GetValue(null);
-                MenuItem item = new MenuItem {
-                    Header = p.Name,
+
+            // Load the Colors if not already loaded
+            if (BackgroundColors == null || BackgroundColors.Count == 0) {
+                BackgroundColors = new List<PropertyInfo>(typeof(Colors).GetProperties());
+            }
+
+            // Add a Colors... Menu Item to bring up Colors Dialog box
+            MenuItem item = new MenuItem { Header = "Colors...", };
+            item.Click += (object sender, RoutedEventArgs e) => {
+                if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
+            };
+            uxSelectColorMenuItem.Items.Add(item);
+            uxSelectColorMenuItem.Items.Add(new Separator());
+
+            foreach (PropertyInfo prop in BackgroundColors) {
+                Color color = (Color)prop.GetValue(null);
+                item = new MenuItem {
+                    Header = prop.Name,
                     Tag = color,
                     Background = new SolidColorBrush(color),
                     Foreground = new SolidColorBrush(AdjustColor(color)),
@@ -90,16 +104,22 @@ namespace OmniZenNotes
         private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
             uxSelectFontMenuItem.Items.Clear();
 
-            // TODO: Add a Font... menu item to bring up Font Dialog box
-
-            // Load the Font Families on first time 
-            if (FontFamilies == null) {
+            // Load the Font Families if not already loaded
+            if (FontFamilies == null || FontFamilies.Count == 0) {
                 FontFamilies = new List<FontFamily>(Fonts.SystemFontFamilies);
                 FontFamilies.Sort((FontFamily x, FontFamily y) => { return x.Source.CompareTo(y.Source); });
             }
 
+            // Add a Fonts... Menu Item to bring up Font Dialog box
+            MenuItem item = new MenuItem { Header = "Fonts...", };
+            item.Click += (object sender, RoutedEventArgs e) => {
+                if (sender is MenuItem mi) { OnTextFormatButton_Click(sender, e);}
+            };
+            uxSelectFontMenuItem.Items.Add(item);
+            uxSelectFontMenuItem.Items.Add(new Separator());
+
             foreach (var fontFamily in FontFamilies) {
-                MenuItem item = new MenuItem {
+                item = new MenuItem {
                     Header = fontFamily.Source,
                     Tag = fontFamily,
                     FontFamily = fontFamily
@@ -373,9 +393,7 @@ namespace OmniZenNotes
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
-        private void OnMouseDown(object sender, MouseButtonEventArgs e) {
-
-            ToggleToolBar(Visibility.Visible);
+        private void OnToolBar_MouseDown(object sender, MouseButtonEventArgs e) {
             if (e.LeftButton == MouseButtonState.Pressed) {
                 DragMove();
             }
@@ -902,34 +920,44 @@ namespace OmniZenNotes
                 }
             } else {
                 // Create a Hyperlink to the dropped file/folder
-                var image = new Image {
-                    // ToolTip is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
-                    ToolTip = fileInfo.FullName,
-                    Tag = .50d,
-                    Height = DefaultThumbnailSize.Medium.Height,
-                    Width = DefaultThumbnailSize.Medium.Width,
-                };
+                Hyperlink hyperlink = new Hyperlink(new Run(" "), tp) { NavigateUri = new Uri(fileInfo.FullName),};
 
-                // Create a Hyperlink with the Shell thumbnail image & display name
-                Hyperlink hyperLink = new Hyperlink(new Run(" "), tp) {
-                    NavigateUri = new Uri(fileInfo.FullName),
-                    Tag = image,
-                };
-
-                hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
-                    Debug.WriteLine($"RequestNavigate for {sender} with {e}");
-                };
-
-                ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
-                hyperLink.Inlines.Add(image);
-                hyperLink.Inlines.Add(new Run($" {shellObject?.Name} "));
+                // Add an Imange and Display Name text inside the Hyperlink
+                AddImageToHyperLink(hyperlink, DefaultThumbnailSize.Medium.Height, DefaultThumbnailSize.Medium.Width, addTextRun: true);
 
                 // Wrap the Hyperlink in a Paragraph to keep it isolated and editable
                 var para = new Paragraph(new Run(" "));
-                para.Inlines.Add(hyperLink);
+                para.Inlines.Add(hyperlink);
                 para.Inlines.Add(new Run(" ", tp));
                 uxRichTextBox.Document.Blocks.Add(para);
+
+                // RND: Experiments with programatic hyperlink navigation 
+                hyperlink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
+                    Debug.WriteLine($"RequestNavigate for {sender} with {e}");
+                };
             }
+        }
+
+        private void AddImageToHyperLink( Hyperlink hyperlink, double height, double width, bool addTextRun=false){
+            // Create a new image with given height and width
+            var image = new Image {
+                // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
+                ToolTip = hyperlink.NavigateUri.LocalPath,
+                // Tag object is used to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
+                Tag = 1.0d,
+                Height = height,
+                Width = width,
+            };
+
+            // Add an image and name text for the Hyperlink using Windows Shell thumbnail image & display name
+            using ShellObject shellObject = ShellObject.FromParsingName(hyperlink.NavigateUri.LocalPath);
+            if (addTextRun) {
+                hyperlink.Inlines.Add(new Run($" {shellObject?.Name} "));
+            }
+
+            InlineUIContainer iluic = new InlineUIContainer(image);
+            hyperlink.Inlines.InsertBefore(hyperlink.Inlines.LastInline, iluic);
+            hyperlink.Tag = image;
         }
 
         public void OnMediaElement_MediaEnded(object sender, RoutedEventArgs e) {
@@ -953,11 +981,6 @@ namespace OmniZenNotes
             }
         }
 
-        public BitmapSource GetShellThumbNail(string filePath) {
-            ShellObject shellObject = ShellObject.FromParsingName(filePath);
-            return shellObject?.Thumbnail.SmallBitmapSource;
-        }
-
         public void OnHyperlink_MouseDown(object sender, MouseButtonEventArgs e) {
             Debug.WriteLine($"OnHyperlink_MouseDown for {e.Source}");
             if (sender is Hyperlink hyperlink && e.MouseDevice.LeftButton == MouseButtonState.Pressed) {
@@ -966,13 +989,38 @@ namespace OmniZenNotes
                 e.Handled = true;
             }
         }
-
-        // BUG: Once Document has been saved/restored, Image is no longer resizable
+        
         public void OnHyperlink_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control) {
+
+                // Each Hyperlink has an associated image stored in the Tag object property
                 Image image = hyperlink.Tag as Image;
-                image.Tag = e.Delta > 0 ? (double)image.Tag * 1.10 : (double)image.Tag * 0.90;
-                Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta} Image {image.Height} x {image.Width} scaled by {image.Tag}");
+                // Each Image uses Tag object to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
+                image.Tag = e.Delta > 0 ? (double)image.Tag * 1.01 : (double)image.Tag * 0.99;
+                // Scale the thumbnail image using the LayoutTransform until approach closer to the next size
+                // When image size changes across the S/M/L/XL thumbnail boundary size, recreate image to new size
+                double newWidth = image.Width * (double)image.Tag;
+                double newHeight = image.Height * (double)image.Tag;                
+                var thumbnail = U.Shell.GetShellThumbnail(hyperlink.NavigateUri.LocalPath, newWidth);
+
+                // Recreate image in order to trigger update of image when new size is wanted
+                if (thumbnail.Width > image.Width || thumbnail.Width < image.Width) {
+                    // Must create a copy of the collection for safe iteration when updating same collection
+                    ArrayList inlines = new ArrayList(hyperlink.Inlines.Count);
+                    foreach (var i in hyperlink.Inlines) { inlines.Add(i); }
+                    // foreach (Inline inline in inlines) { hyperlink.Inlines.Remove(inline);}
+                    foreach (var inline in hyperlink.Inlines) 
+                    {
+                        if( inline is InlineUIContainer uiContainer) {
+                            hyperlink.Inlines.Remove(uiContainer);
+                            // Recreate the new sized image and display text inlines in the hyperlink
+                            image.Tag = newWidth / thumbnail.Width;  // Scale to new thumbnail size
+                            AddImageToHyperLink(hyperlink, newHeight, newWidth);
+                            break;
+                        }
+                    }
+                }
+                Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta:F0} newWidth {newWidth:F0} Thumbnail {thumbnail.Width} scaled by {image.Tag:F2}");
                 e.Handled = true;
             }
         }
@@ -997,23 +1045,7 @@ namespace OmniZenNotes
             if (o is Image image && image.ToolTip is string tooltip) {
                 FileInfo fileInfo = new FileInfo(tooltip);
                 try {
-                    ShellObject shellObject = ShellObject.FromParsingName(fileInfo.FullName);
-                    double scaleH = image.Height * (double)image.Tag;
-                    double scaleW = image.Width * (double)image.Tag;
-                    var thumbnail = scaleW switch
-                    {
-                        double w when w >= DefaultThumbnailSize.ExtraLarge.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
-                        double w when w >= DefaultThumbnailSize.Large.Height => shellObject?.Thumbnail.ExtraLargeBitmapSource,
-                        double w when w >= DefaultThumbnailSize.Medium.Height => shellObject?.Thumbnail.LargeBitmapSource,
-                        double w when w >= DefaultThumbnailSize.Small.Height => shellObject?.Thumbnail.MediumBitmapSource,
-                        _ => shellObject?.Thumbnail.SmallBitmapSource
-                    };
-                    var properties = shellObject.Properties;
-                    var prop = properties.System.Title.Value;
-                    var comment = properties.System.Comment.Value;
-
-                    Debug.WriteLine($"FilePathToThumbNailConverter Thumbnail {thumbnail.Height} x {thumbnail.Width} for scaleW {scaleW} scaled by {image.Tag}");
-                    return thumbnail;
+                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * (double)image.Tag);                    
                 } catch {
                     try {
                         return U.Shell.GetShellIcon(fileInfo);
