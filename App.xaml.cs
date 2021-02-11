@@ -79,7 +79,7 @@ namespace OmniZenNotes
             }
         }
     }
-    // Application Level Commands
+    // Application Level Commands // NLS: 
     public static class AppCommands
     {
         public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));

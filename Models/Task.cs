@@ -73,6 +73,9 @@ namespace OmniZenNotes.Models
                 EX.LogException(ex, "Task LoadToSQL FAILED:");
             }
         }
+
+        public override string ToString() => $"{Todo} {Reminder}"; // NLS:
+
     }
 
     public enum TaskAlarmSound { IM, Mail, Reminder, SMS, LoopingAlarm1, LoopingAlarm2, LoopingCall, LoopingCall2 };
@@ -88,7 +91,7 @@ namespace OmniZenNotes.Models
         public uint SnoozeCount { get; set; }
         public uint SnoozeInterval { get; set; }
         public string Recurrrence { get; set; }
-        public override string ToString() => string.IsNullOrEmpty(ReminderMessage) ? ReminderOn ? "Remind Me" + $" on {ReminderDTS}" : "No Reminder Set" : ReminderMessage;
+        public override string ToString() => string.IsNullOrEmpty(ReminderMessage) ? ReminderOn ? "Remind Me" + $" on {ReminderDTS}" : "No Reminder Set" : ReminderMessage; // NLS:
     }
 
     public class TaskTodo
@@ -101,6 +104,6 @@ namespace OmniZenNotes.Models
         public DateTime CompletedDTS { get; set; }
         public decimal TotalWork { get; set; }
         public decimal ActualWork { get; set; }
-        public override string ToString() =>  $"{Status} Task " + (CompletedDTS != DateTime.MinValue ? $"Completed on {CompletedDTS}" : $"Due On {DueDTS}") + $" {Priority} Priorty" ;
+        public override string ToString() =>  $"{Status} Task " + (CompletedDTS != DateTime.MinValue ? $"Completed on {CompletedDTS}" : $"Due On {DueDTS}") + $" {Priority} Priorty" ; // NLS:
     }
 }

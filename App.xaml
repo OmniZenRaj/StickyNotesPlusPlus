@@ -6,6 +6,7 @@
     <local:FilePathToThumbNailConverter x:Key="FilePathToThumbNailConverter"/>
     <local:TagToLayoutTransformConverter x:Key="TagToLayoutTransformConverter"/>
     <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    <local:ObjectToStringConverter x:Key="ObjectToStringConverter"/>    
 
     <SolidColorBrush x:Key="Expander.MouseOver.Circle.Stroke" Color="Black" />
     <SolidColorBrush x:Key="Expander.MouseOver.Circle.Fill" Color="Yellow" />

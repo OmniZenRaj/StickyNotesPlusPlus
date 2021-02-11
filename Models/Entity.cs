@@ -135,7 +135,7 @@ namespace OmniZenNotes.Models
         public string CSS { get; set; }
 
         public string FontName => G.GetFamilyFontName(FontFamily);
-        public override string ToString() => $@"{G.GetFamilyFontName(FontFamily)} {FontSize} {FontStyle}";
+        public override string ToString() => $@"{G.GetFamilyFontName(FontFamily)} {FontSize:F2} {FontStyle}";
 
         public UXSettings() {
             RestoreBounds = new Rect(0, 0, 364, 256);
@@ -168,7 +168,7 @@ namespace OmniZenNotes.Models
         public string UpdatedBy { get; internal set; } = WindowsIdentity.GetCurrent()?.Name;
         public DateTime UpdatedDTS { get; internal set; } = DateTime.Now;
         
-        public override string ToString() => $@"Created by {CreatedBy} on {CreatedDTS}";
+        public override string ToString() => $@"Created by {CreatedBy} on {CreatedDTS}"; // NLS:
     }
 
     public enum EntityPermissions { Read, Modify, Full, Private };

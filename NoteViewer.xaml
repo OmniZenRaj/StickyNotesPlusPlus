@@ -54,6 +54,20 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <DockPanel x:Name="uxToolBar" Grid.Row="0"  MouseDown="OnToolBar_MouseDown">
+
+            <DockPanel.ToolTip>
+                <TextBlock>
+                    <Ellipse Fill="Red" Width="4" Height="4" Margin="4"/>
+                    <Run Text="{Binding Path=Title}"/>
+                    <LineBreak />                        
+                    <Ellipse Fill="Green" Width="4" Height="4" Margin="4"/>
+                    <Run Text="{Binding Path=Task, Converter={StaticResource ObjectToStringConverter}}"/>
+                    <LineBreak />
+                    <Ellipse Fill="Blue" Width="4" Height="4" Margin="4"/>
+                    <Run Text="{Binding Path=Security, Converter={StaticResource ObjectToStringConverter}}"/>
+                </TextBlock>
+            </DockPanel.ToolTip>                
+
             <DockPanel.ContextMenu>
                 <ContextMenu>
                     <MenuItem x:Name="uxShowNotesMenuItem" Header="Show Notes">
@@ -65,38 +79,41 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
                     <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts">
                         <MenuItem Header="@see code" />
                     </MenuItem>
-                    <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="{Binding Source={RelativeSource Self}}"/>
-                    <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem"/>
+                    <MenuItem Header="Format Bar" Command="local:AppCommands.FormatBarCommand" InputGestureText="F4" />
+                    <MenuItem Header="Spell Check" Command="local:AppCommands.SpellCheckCommand" InputGestureText="F7" />
+                    <Separator/>                    
+                    <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="MenuItem" InputGestureText="Alt-R"/>
+                    <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem" InputGestureText="Alt-S"/>
                     <Separator/>
                     <MenuItem Header="New Note" Command="New" />
                     <MenuItem Header="Refresh" Command="Refresh"/>
                     <MenuItem Header="Save" Command="Save" />
                     <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H"/>
-                    <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" />
+                    <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" InputGestureText="Alt-D"/>
                     <Separator/>
                     <MenuItem Header="App Settings..."/>
                     <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="Alt-F4" />
                 </ContextMenu>
             </DockPanel.ContextMenu>
             <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                <Button x:Name="uxAddNoteButton" Click="OnAddNoteButton_Click" Content="{StaticResource Add_Note}" />
-                <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" ToolTip="{Binding Security}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
+                <Button x:Name="uxAddNoteButton" Click="OnAddNoteButton_Click" Content="{StaticResource Add_Note}" ToolTip="Create a new Note using current Note as template."/> <!-- NLS: -->
+                <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" >
-                <Expander x:Name="uxOptionsExpander" Height="26" Margin="8,0,8,0" Padding="8,0,8,0" ExpandDirection="Left" Background="{x:Null}" Style="{DynamicResource RGBExpanderStyle}" Expanded="OnOptionsExpander_Expanded" Collapsed="OnOptionsExpander_Collapsed">
+                <Expander x:Name="uxOptionsExpander" Height="26" Margin="8,0,8,0" Padding="8,0,8,0" ExpandDirection="Left" Background="{x:Null}" Style="{DynamicResource RGBExpanderStyle}" Expanded="OnOptionsExpander_Expanded" Collapsed="OnOptionsExpander_Collapsed" ToolTip="Press to Expand or Collapse additional Toolbar actions"> <!-- NLS: -->
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                        <ToggleButton x:Name="uxPinTab" Click="OnPinTabButton_Click" Content="{StaticResource PinTabOff}"/>
+                        <ToggleButton x:Name="uxPinTab" Click="OnPinTabButton_Click" Content="{StaticResource PinTabOff}" ToolTip="Pin Note above all other Windows"/> <!-- NLS: -->
                         <Separator Margin="4,0,0,0" />
-                        <ToggleButton x:Name="uxReminderButton" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder}" />
+                        <ToggleButton x:Name="uxReminderButton" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder}" ToolTip="Show Note Reminder and Task Properties"/> <!-- NLS: -->
                         <Separator Margin="4,0,0,0" />
-                        <ToggleButton x:Name="uxSettingsButton" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info}" />
+                        <ToggleButton x:Name="uxSettingsButton" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info}" ToolTip="Show Note Settings and Security Properties"/> <!-- NLS: -->
                         <Separator Margin="8,0,0,0" />
-                        <xctk:ColorPicker x:Name="uxColorPicker" Width="40" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged" />
+                        <xctk:ColorPicker x:Name="uxColorPicker" Width="40" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged"  ToolTip="Select and Customize Note Color Properties"/> <!-- NLS: -->
                         <Separator Margin="4,0,0,0" />
-                        <Button x:Name="uxTextFormatButton" Click="OnTextFormatButton_Click" Content="{StaticResource TextFormat}" />
+                        <Button x:Name="uxTextFormatButton" Click="OnTextFormatButton_Click" Content="{StaticResource TextFormat}" ToolTip="Select Note and text Font Properties"/> <!-- NLS: -->
                     </StackPanel>
                 </Expander>
-                <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note}"  Margin="0,0,4,0" />
+                <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note}"  Margin="0,0,4,0" ToolTip="Remove Note Permanently"/> <!-- NLS: -->
             </StackPanel>
         </DockPanel>
         <StackPanel Grid.Row="1">

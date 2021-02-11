@@ -51,11 +51,12 @@ namespace OmniZenNotes
 
         void InitializeControls() {
             uxRichTextBox.IsDocumentEnabled = true;
-            uxRichTextBox.SpellCheck.IsEnabled = false;
-            RTBFB.IsEnabled = false;
+            uxRichTextBox.SpellCheck.IsEnabled = false;  // SETTINGS: SpellCheck ON/OFF
+            RTBFB.IsEnabled = false; // SETTINGS: FormatBar Enabled ON/OFF
+            RTBFB.Visibility = Visibility.Hidden; // SETTINGS: FormatBar Visibility ON/OFF
 
-            MouseEnter += OnWindow_MouseEnter;
-            MouseLeave += OnWindow_MouseLeave;
+            //MouseEnter += OnWindow_MouseEnter;
+            //MouseLeave += OnWindow_MouseLeave;
             uxShowNotesMenuItem.SubmenuOpened += OnShowNote_SubmenuOpened;
             uxSelectColorMenuItem.SubmenuOpened += OnSelectColor_SubmenuOpened;
             uxSelectFontMenuItem.SubmenuOpened += OnSelectFont_SubmenuOpened;
@@ -74,6 +75,7 @@ namespace OmniZenNotes
             }
 
             // Add a Colors... Menu Item to bring up Colors Dialog box
+            // TODO: Try to use the newer Wpf Toolkit ColorPicker
             MenuItem item = new MenuItem { Header = "Colors...", };
             item.Click += (object sender, RoutedEventArgs e) => {
                 if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
@@ -113,7 +115,7 @@ namespace OmniZenNotes
             // Add a Fonts... Menu Item to bring up Font Dialog box
             MenuItem item = new MenuItem { Header = "Fonts...", };
             item.Click += (object sender, RoutedEventArgs e) => {
-                if (sender is MenuItem mi) { OnTextFormatButton_Click(sender, e);}
+                if (sender is MenuItem mi) { OnTextFormatButton_Click(sender, e); }
             };
             uxSelectFontMenuItem.Items.Add(item);
             uxSelectFontMenuItem.Items.Add(new Separator());
@@ -136,20 +138,22 @@ namespace OmniZenNotes
             };
         }
 
-
         void OnShowNote_SubmenuOpened(object sender, RoutedEventArgs e) {
             uxShowNotesMenuItem.Items.Clear();
             uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Header = "Show All",
+                Name = "uxShowAllNotesMenuItem",
+                Header = "Show All",    // NLS: 
                 InputGestureText = "Alt-A",
             });
             uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Header = "Show Private",
+                Name = "uxShowPrivateNotesMenuItem",
+                Header = "Show Private", // NLS:
                 InputGestureText = "Alt-R"
             });
 
             uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Header = "Show Public",
+                Name = "uxShowPublicNotesMenuItem",
+                Header = "Show Public", // NLS:
                 InputGestureText = "Alt-P"
             });
 
@@ -192,13 +196,13 @@ namespace OmniZenNotes
                     mi.IsChecked = !mi.IsChecked; // Toggle Checked status
                     if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.OnHideCommand(sender, e); }
 
-                } else if ("Show All".CompareTo(mi.Header) == 0) {
+                } else if ("uxShowAllNotesMenuItem".CompareTo(mi.Name) == 0) {
                     mi.IsChecked = true;
                     foreach (var noteViewer in NoteViewers) {
                         noteViewer.Show();
                     }
 
-                } else if ("Show Private".CompareTo(mi.Header) == 0) {
+                } else if ("uxShowPrivateNotesMenuItem".CompareTo(mi.Name) == 0) {
                     mi.IsChecked = true;
                     foreach (var noteViewer in NoteViewers) {
                         if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
@@ -208,7 +212,7 @@ namespace OmniZenNotes
                         }
                     }
 
-                } else if ("Show Public".CompareTo(mi.Header) == 0) {
+                } else if ("ShowPublicNotesMenuItem".CompareTo(mi.Name) == 0) {
                     mi.IsChecked = true;
                     foreach (var noteViewer in NoteViewers) {
                         if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
@@ -221,21 +225,13 @@ namespace OmniZenNotes
             }
         }
 
-        void PositionWindow(Rect restoreBounds) {
-            var rect = CalcWindowBounds(restoreBounds);
-            Width = rect.Width;
-            Height = rect.Height;
-            Left = rect.Left;
-            Top = rect.Top;
-        }
-
-        Rect CalcWindowBounds(Rect restoreBounds) {
+        Rect KeepWindowInBounds(Rect restoreBounds) {
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
             double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
             double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
-            double left = restoreBounds.Left > area.Left ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
+            double left = restoreBounds.Left > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
             double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
 
             return new Rect(left, top, width, height); ;
@@ -270,8 +266,10 @@ namespace OmniZenNotes
 
             // View Note Reminder Command
             AddCommandBinding(AppCommands.ViewNoteReminderCommand, OnViewNoteReminderCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.R, ModifierKeys.Alt, "Alt-R")));
             // View Note Settings Command
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
 
             // Hide Command
             AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
@@ -279,6 +277,7 @@ namespace OmniZenNotes
 
             // Delete Command
             AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
 
             void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
                 CommandBinding cb = new CommandBinding(command);
@@ -288,7 +287,6 @@ namespace OmniZenNotes
             }
 
             AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
-
         }
 
         private void OnLoaded(object sender, EventArgs e) {
@@ -299,7 +297,11 @@ namespace OmniZenNotes
             uxReminderPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
             UpdatePinTabButton();
-            PositionWindow(RestoreBounds);
+
+            // Make sure we don't go off screen (if user monitor changes etc.)
+            var rect = KeepWindowInBounds(RestoreBounds);
+            Width = rect.Width; Height = rect.Height;
+            Left = rect.Left; Top = rect.Top;
         }
 
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
@@ -363,15 +365,17 @@ namespace OmniZenNotes
 
         void OnViewNoteReminderCommand(object sender, ExecutedRoutedEventArgs e) {
             if (e.Source is ToggleButton toggleButton) {
+                if (e.Parameter is string p && p == "MenuItem") {
+                    toggleButton.IsChecked = !toggleButton.IsChecked;
+                }
                 ShowReminderPanel(toggleButton);
             }
         }
         void OnViewNoteSettingsCommand(object sender, ExecutedRoutedEventArgs e) {
-            if (e.Parameter is string p && p == "MenuItem") {
-                
-
-            }
             if (e.Source is ToggleButton toggleButton) {
+                if (e.Parameter is string p && p == "MenuItem") {
+                    toggleButton.IsChecked = !toggleButton.IsChecked;
+                }
                 ShowSettingsPanel(toggleButton);
             }
         }
@@ -404,7 +408,7 @@ namespace OmniZenNotes
         }
 
         private void OnDeactivated(object sender, EventArgs e) {
-            ToggleToolBar(Visibility.Collapsed);
+            ToggleToolBar(Visibility.Hidden);
         }
 
         private void OnWindow_MouseEnter(object sender, EventArgs e) {
@@ -416,10 +420,9 @@ namespace OmniZenNotes
                 ToggleToolBar(Visibility.Collapsed);
             }
         }
-        private void ToggleToolBar( Visibility visibility) {
-            uxToolBar.Visibility = visibility;
-            uxAddNoteButton.Visibility = visibility;
-            uxNoteTitleLabel.Visibility = visibility;
+        private void ToggleToolBar(Visibility visibility) {
+            //            uxToolBar.Visibility = visibility;
+            uxToolBar.LayoutTransform = visibility == Visibility.Hidden ? new ScaleTransform(0.25, 0.25) : Transform.Identity;
         }
 
         private void OnButton_MouseEnter(object sender, EventArgs e) {
@@ -552,17 +555,58 @@ namespace OmniZenNotes
         }
 
         private void OpenNewWindow(Note note) {
+            System.Windows.Forms.Screen[] allScreens = System.Windows.Forms.Screen.AllScreens;
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
             // Create new NoteViewer at same size & slightly to left & lower than this one
+            /* TODO: Use MS StickyNotes 3.7.71 model for new Note placements. 
+                1. New Notes are created to the right of existing note (with padW)
+                2. If not enough space on the right to fit entire note, 
+                    a) If more than padW avail, align right side of new note to edge of screen
+                    b) If less than padW avail, create to left of new note with padW
+                3. If enough space on right, place new note padW from right side of other note
+                4. If not enough space on either side, then go lower and to the right
+                    If another note occupies the wanted space, then try to go to left side
+                5. If Note is touching or across left side, new Note goes to left side  + padW of next screen
+                6. 
+            */
+            var padW = area.Width * 0.01;
+            double right = Left + Width;
+            double newLeft = Left + Width + padW;    // 1
+            double newRight = newLeft + Width;
+            if (IsScreenAdjacentToARightScreen(screen, allScreens)) {
+                if (newRight > area.Right) {
+                    if (right + padW <= area.Right) { newLeft = area.Right - Width; }  // 2a
+                    if (right + padW >= area.Right) { newLeft = Left - Width - padW; }  // 2b
+                }
+                if (right >= area.Right) { newLeft = area.Right + padW; }    // 5
+            }
+
+            double top = Top;
             var noteViewer = new NoteViewer(note) {
-                Left = Left > area.Left ? Left >= 0 ? Left + (area.Width * 0.02) : Left - (area.Width * 0.02) : Left + (area.Width * 0.02),
-                Top = Top > area.Top ? Top >= 0 ? Top + (area.Height * 0.03) : Top - (area.Height * 0.03) : (area.Height * 0.03),
+                Left = newLeft,
+                Top = top,
                 Width = Width,
                 Height = Height
             };
             noteViewer.Show();
+
+            static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
+                foreach (var s in allScreens) {
+                    if (s.WorkingArea.Right > screen.WorkingArea.Right) { return true; }
+                }
+                return false;
+            }
+
+#pragma warning disable CS8321 // The local function 'f' is declared but never used
+            static bool IsScreenAdjacentToALeftScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
+                foreach (var s in allScreens) {
+                    if (s.WorkingArea.Left < screen.WorkingArea.Left) { return true; }
+                }
+                return false;
+            }
+#pragma warning restore CS8321
         }
 
         private void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
@@ -580,20 +624,6 @@ namespace OmniZenNotes
 
         private void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
             OnDeleteCommand(sender, e);
-        }
-
-        private void ShowReminderPanel(ToggleButton toggleButton) {
-            uxViewNoteReminderMenuItem.IsChecked = toggleButton.IsChecked == true;
-            uxReminderPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-            uxSettingsButton.IsChecked = false;
-            uxViewNoteSettingsMenuItem.IsChecked = false;;
-        }
-
-        private void ShowSettingsPanel(ToggleButton toggleButton) {
-            uxViewNoteSettingsMenuItem.IsChecked = toggleButton.IsChecked == true;
-            uxSettingsPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-            uxReminderButton.IsChecked = false;
-            uxViewNoteReminderMenuItem.IsChecked = false;
         }
 
         private void OnOptionsExpander_Expanded(object sender, RoutedEventArgs e) {
@@ -625,31 +655,33 @@ namespace OmniZenNotes
             image.RenderTransformOrigin = new Point(0.5, 0.5);
         }
 
-#pragma warning disable IDE0051
 
-        private void SaveToFile() {
-            var sfd = new System.Windows.Forms.SaveFileDialog {
-                Filter = "XAML Files (*.xaml)|*.xaml|RichText Files (*.rtf)|*.rtf|All Files (*.*)|*.*"
-            };
+        // Reminder and Settings PropertyGrid UX Management:
+        private void ShowReminderPanel(ToggleButton toggleButton) {
+            uxReminderPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        }
 
-            var dr = sfd.ShowDialog();
-            if (dr == System.Windows.Forms.DialogResult.OK) {
-                TextRange range = new TextRange(uxRichTextBox.Document.ContentStart, uxRichTextBox.Document.ContentEnd);
-                using FileStream fs = File.Create(sfd.FileName);
-                range.Save(fs, DataFormats.XamlPackage);
+        private void ShowSettingsPanel(ToggleButton toggleButton) {
+            uxSettingsPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            if (e.NewValue is bool visible) {
+                uxViewNoteReminderMenuItem.IsChecked = visible;
+                // Toggle Settings panel & button to be mutualy exclusive of the Reminder panel
+                uxSettingsPanel.Visibility = visible ? Visibility.Collapsed : uxSettingsPanel.Visibility;
+                uxSettingsButton.IsChecked = !visible && uxSettingsButton.IsChecked == true;
+                uxViewNoteSettingsMenuItem.IsChecked = uxSettingsButton.IsChecked == true;
             }
         }
 
-        private void LoadFromFile() {
-            var ofd = new System.Windows.Forms.OpenFileDialog {
-                Filter = "XAML Files (*.xaml)|*.xaml|RichText Files (*.rtf)|*.rtf|All Files (*.*)|*.*"
-            };
-
-            var dr = ofd.ShowDialog();
-            if (dr == System.Windows.Forms.DialogResult.OK) {
-                TextRange range = new TextRange(uxRichTextBox.Document.ContentStart, uxRichTextBox.Document.ContentEnd);
-                using FileStream fs = File.OpenRead(ofd.FileName);
-                range.Load(fs, DataFormats.XamlPackage);
+        private void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            if (e.NewValue is bool visible) {
+                uxViewNoteSettingsMenuItem.IsChecked = visible;
+                // Toggle Reminder panel & button to be mutualy exclusive of the Settings panel
+                uxReminderPanel.Visibility = visible ? Visibility.Collapsed : uxReminderPanel.Visibility;
+                uxReminderButton.IsChecked = !visible && uxReminderButton.IsChecked == true;
+                uxViewNoteReminderMenuItem.IsChecked = uxReminderButton.IsChecked == true;
             }
         }
 
@@ -669,6 +701,7 @@ namespace OmniZenNotes
 
         // Loaded from App Settings located @ C:\User\{User}\AppData\Local\OmniZenNotes\OmniZenNote.exe_...
         private void LoadSettings() {
+            // BUG: First time run brings up dark grey background - s/b using System colors
             try {
                 /*                 // Restore Window position and size from user settings save of last session
                                 if (S.Default?.RestoreBounds is Rect restoreBounds)
@@ -787,24 +820,6 @@ namespace OmniZenNotes
             }
         }
 
-        private void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible) {
-                uxViewNoteReminderMenuItem.IsChecked = visible;
-                // Toggle Settings panel & button to be mutualy exclusive of the Reminder panel
-                uxSettingsPanel.Visibility = visible ? Visibility.Collapsed : uxSettingsPanel.Visibility;
-                uxSettingsButton.IsChecked = !visible && uxSettingsButton.IsChecked == true;
-            }
-        }
-
-        private void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
-            if (e.NewValue is bool visible) {
-                uxViewNoteSettingsMenuItem.IsChecked = visible;
-                // Toggle Reminder panel & button to be mutualy exclusive of the Settings panel
-                uxReminderPanel.Visibility = visible ? Visibility.Collapsed : uxReminderPanel.Visibility;
-                uxReminderButton.IsChecked = !visible && uxReminderButton.IsChecked == true;
-            }
-        }
-
         private void uxReminderPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
         }
 
@@ -920,7 +935,7 @@ namespace OmniZenNotes
                 }
             } else {
                 // Create a Hyperlink to the dropped file/folder
-                Hyperlink hyperlink = new Hyperlink(new Run(" "), tp) { NavigateUri = new Uri(fileInfo.FullName),};
+                Hyperlink hyperlink = new Hyperlink(new Run(" "), tp) { NavigateUri = new Uri(fileInfo.FullName), };
 
                 // Add an Imange and Display Name text inside the Hyperlink
                 AddImageToHyperLink(hyperlink, DefaultThumbnailSize.Medium.Height, DefaultThumbnailSize.Medium.Width, addTextRun: true);
@@ -938,7 +953,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void AddImageToHyperLink( Hyperlink hyperlink, double height, double width, bool addTextRun=false){
+        private void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addTextRun = false) {
             // Create a new image with given height and width
             var image = new Image {
                 // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
@@ -989,7 +1004,7 @@ namespace OmniZenNotes
                 e.Handled = true;
             }
         }
-        
+
         public void OnHyperlink_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control) {
 
@@ -1000,7 +1015,7 @@ namespace OmniZenNotes
                 // Scale the thumbnail image using the LayoutTransform until approach closer to the next size
                 // When image size changes across the S/M/L/XL thumbnail boundary size, recreate image to new size
                 double newWidth = image.Width * (double)image.Tag;
-                double newHeight = image.Height * (double)image.Tag;                
+                double newHeight = image.Height * (double)image.Tag;
                 var thumbnail = U.Shell.GetShellThumbnail(hyperlink.NavigateUri.LocalPath, newWidth);
 
                 // Recreate image in order to trigger update of image when new size is wanted
@@ -1009,9 +1024,8 @@ namespace OmniZenNotes
                     ArrayList inlines = new ArrayList(hyperlink.Inlines.Count);
                     foreach (var i in hyperlink.Inlines) { inlines.Add(i); }
                     // foreach (Inline inline in inlines) { hyperlink.Inlines.Remove(inline);}
-                    foreach (var inline in hyperlink.Inlines) 
-                    {
-                        if( inline is InlineUIContainer uiContainer) {
+                    foreach (var inline in hyperlink.Inlines) {
+                        if (inline is InlineUIContainer uiContainer) {
                             hyperlink.Inlines.Remove(uiContainer);
                             // Recreate the new sized image and display text inlines in the hyperlink
                             image.Tag = newWidth / thumbnail.Width;  // Scale to new thumbnail size
@@ -1039,13 +1053,14 @@ namespace OmniZenNotes
         }
     }
 
+    // Convert from Image ToolTip string file path to a Thumbnail BitmapSource (@see Style TargetType="{x:Type Image} Source XAML")
     public class FilePathToThumbNailConverter : IValueConverter
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
             if (o is Image image && image.ToolTip is string tooltip) {
                 FileInfo fileInfo = new FileInfo(tooltip);
                 try {
-                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * (double)image.Tag);                    
+                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * (double)image.Tag);
                 } catch {
                     try {
                         return U.Shell.GetShellIcon(fileInfo);
@@ -1059,6 +1074,7 @@ namespace OmniZenNotes
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
     }
 
+    // Convert a Tag object double value to a ScaleTransform (@see Style TargetType="{x:Type Image} LayoutTransform XAML")
     public class TagToLayoutTransformConverter : IValueConverter
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
@@ -1072,6 +1088,7 @@ namespace OmniZenNotes
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
     }
 
+    // Convert C# Boolean to a Visibility enum for XAML binding conversions (@see uxReminderPanel Visibility XAML)
     public class BooleanToVisibilityConverter : IValueConverter
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
@@ -1087,5 +1104,16 @@ namespace OmniZenNotes
             }
             return true;
         }
+    }
+
+    // Convert from any Object to string (required for some XAML properties not able to do their own conversion)
+    public class ObjectToStringConverter : IValueConverter
+    {
+        object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
+            return o.ToString();
+        }
+
+        object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
+
     }
 }

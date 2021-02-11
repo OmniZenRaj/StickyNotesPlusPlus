@@ -20,6 +20,7 @@
             // The .pdb files that it generates are Windows PDB files and not supported by .NET Core debugger.
             "logging": {"moduleLoad": false},
             "justMyCode": true,
+            "requireExactSource": false,
             "symbolOptions": {
                 "searchPaths": ["http://localhost:33417/"],
                 "searchMicrosoftSymbolServer": false
