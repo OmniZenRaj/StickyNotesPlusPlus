@@ -74,7 +74,7 @@ namespace OmniZenNotes.Models
             }
         }
 
-        public override string ToString() => $"{Todo} {Reminder}"; // NLS:
+        public override string ToString() => $"{Todo} : {Reminder}"; // NLS:
 
     }
 

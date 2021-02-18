@@ -51,190 +51,17 @@ namespace OmniZenNotes
 
         void InitializeControls() {
             uxRichTextBox.IsDocumentEnabled = true;
-            uxRichTextBox.SpellCheck.IsEnabled = false;  // SETTINGS: SpellCheck ON/OFF
-            RTBFB.IsEnabled = false; // SETTINGS: FormatBar Enabled ON/OFF
-            RTBFB.Visibility = Visibility.Hidden; // SETTINGS: FormatBar Visibility ON/OFF
+            OnFormatBarCommand(null, null); // SETTINGS: FormatBar Enabled ON/OFF
+            uxRichTextBox.SpellCheck.IsEnabled = true;
+            OnSpellCheckCommand(null, null); // SETTINGS: SpellCheck ON/OFF
 
-            //MouseEnter += OnWindow_MouseEnter;
-            //MouseLeave += OnWindow_MouseLeave;
-            uxShowNotesMenuItem.SubmenuOpened += OnShowNote_SubmenuOpened;
+            uxShowNotesMenuItem.SubmenuOpened += OnShowNotes_SubmenuOpened;
             uxSelectColorMenuItem.SubmenuOpened += OnSelectColor_SubmenuOpened;
             uxSelectFontMenuItem.SubmenuOpened += OnSelectFont_SubmenuOpened;
 
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
             Icon = AppIcon.Source;
-        }
-
-        private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxSelectColorMenuItem.Items.Clear();
-
-            // Load the Colors if not already loaded
-            if (BackgroundColors == null || BackgroundColors.Count == 0) {
-                BackgroundColors = new List<PropertyInfo>(typeof(Colors).GetProperties());
-            }
-
-            // Add a Colors... Menu Item to bring up Colors Dialog box
-            // TODO: Try to use the newer Wpf Toolkit ColorPicker
-            MenuItem item = new MenuItem { Header = "Colors...", };
-            item.Click += (object sender, RoutedEventArgs e) => {
-                if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
-            };
-            uxSelectColorMenuItem.Items.Add(item);
-            uxSelectColorMenuItem.Items.Add(new Separator());
-
-            foreach (PropertyInfo prop in BackgroundColors) {
-                Color color = (Color)prop.GetValue(null);
-                item = new MenuItem {
-                    Header = prop.Name,
-                    Tag = color,
-                    Background = new SolidColorBrush(color),
-                    Foreground = new SolidColorBrush(AdjustColor(color)),
-                };
-
-                // Handle color selection from auto generated submenu
-                item.Click += (object sender, RoutedEventArgs e) => {
-                    if (sender is MenuItem mi && mi.Tag is Color color) {
-                        SetBackgroundColor(color);
-                    }
-                };
-
-                uxSelectColorMenuItem.Items.Add(item);
-            }
-        }
-
-        private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxSelectFontMenuItem.Items.Clear();
-
-            // Load the Font Families if not already loaded
-            if (FontFamilies == null || FontFamilies.Count == 0) {
-                FontFamilies = new List<FontFamily>(Fonts.SystemFontFamilies);
-                FontFamilies.Sort((FontFamily x, FontFamily y) => { return x.Source.CompareTo(y.Source); });
-            }
-
-            // Add a Fonts... Menu Item to bring up Font Dialog box
-            MenuItem item = new MenuItem { Header = "Fonts...", };
-            item.Click += (object sender, RoutedEventArgs e) => {
-                if (sender is MenuItem mi) { OnTextFormatButton_Click(sender, e); }
-            };
-            uxSelectFontMenuItem.Items.Add(item);
-            uxSelectFontMenuItem.Items.Add(new Separator());
-
-            foreach (var fontFamily in FontFamilies) {
-                item = new MenuItem {
-                    Header = fontFamily.Source,
-                    Tag = fontFamily,
-                    FontFamily = fontFamily
-                };
-
-                // Handle font selection from auto generated submenu
-                item.Click += (object sender, RoutedEventArgs e) => {
-                    if (sender is MenuItem mi && mi.Tag is FontFamily fontFamily) {
-                        SetFont(fontFamily, uxRichTextBox.FontSize, (uxRichTextBox.Foreground as SolidColorBrush), uxRichTextBox.FontStyle);
-                    }
-                };
-
-                uxSelectFontMenuItem.Items.Add(item);
-            };
-        }
-
-        void OnShowNote_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxShowNotesMenuItem.Items.Clear();
-            uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowAllNotesMenuItem",
-                Header = "Show All",    // NLS: 
-                InputGestureText = "Alt-A",
-            });
-            uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowPrivateNotesMenuItem",
-                Header = "Show Private", // NLS:
-                InputGestureText = "Alt-R"
-            });
-
-            uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowPublicNotesMenuItem",
-                Header = "Show Public", // NLS:
-                InputGestureText = "Alt-P"
-            });
-
-            uxShowNotesMenuItem.Items.Add(new Separator());
-
-            App.NoteViewers.Sort((NoteViewer x, NoteViewer y) => { return x.Title.CompareTo(y.Title); });
-
-            foreach (var noteViewer in App.NoteViewers) {
-                MenuItem item = new MenuItem {
-                    Header = noteViewer.Title,
-                    Tag = noteViewer,
-                    IsChecked = noteViewer.Visibility == Visibility.Visible
-                };
-
-                if (noteViewer.uxRichTextBox.Document.Background is null) {
-                    if (noteViewer.uxRichTextBox.Background is null) {
-                        item.Background = noteViewer.Background.Clone();
-                    } else {
-                        item.Background = noteViewer.uxRichTextBox.Background.Clone();
-                    }
-                } else {
-                    item.Background = noteViewer.uxRichTextBox.Document.Background.Clone();
-                }
-
-                uxShowNotesMenuItem.Items.Add(item);
-            }
-
-            foreach (var item in uxShowNotesMenuItem.Items) {
-                if (item is MenuItem menuItem) {
-                    menuItem.Click += NoteSubMenu_Clicked;
-                }
-            }
-        }
-
-        // Handle menu checks and visibility processing
-        void NoteSubMenu_Clicked(object sender, RoutedEventArgs e) {
-
-            if (sender is MenuItem mi) {
-                if (mi.Tag is NoteViewer nv) {
-                    mi.IsChecked = !mi.IsChecked; // Toggle Checked status
-                    if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.OnHideCommand(sender, e); }
-
-                } else if ("uxShowAllNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        noteViewer.Show();
-                    }
-
-                } else if ("uxShowPrivateNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
-                            noteViewer.Show();
-                        } else {
-                            noteViewer.OnHideCommand(sender, e);
-                        }
-                    }
-
-                } else if ("ShowPublicNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
-                            noteViewer.Show();
-                        } else {
-                            noteViewer.OnHideCommand(sender, e);
-                        }
-                    }
-                }
-            }
-        }
-
-        Rect KeepWindowInBounds(Rect restoreBounds) {
-            var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
-            var area = screen.WorkingArea;
-
-            double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
-            double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
-            double left = restoreBounds.Left > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
-            double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
-
-            return new Rect(left, top, width, height); ;
         }
 
         // Create, configure and bind Application Commands
@@ -269,7 +96,7 @@ namespace OmniZenNotes
             InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.R, ModifierKeys.Alt, "Alt-R")));
             // View Note Settings Command
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
+            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteSettingsCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
 
             // Hide Command
             AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
@@ -304,6 +131,18 @@ namespace OmniZenNotes
             Left = rect.Left; Top = rect.Top;
         }
 
+        Rect KeepWindowInBounds(Rect restoreBounds) {
+            var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
+            var area = screen.WorkingArea;
+
+            double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
+            double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
+            double left = restoreBounds.Left > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
+            double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
+
+            return new Rect(left, top, width, height); ;
+        }
+
         private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
             if (VM.Note != null) { Save(saveAsync: false); }
             App.NoteViewers.Remove(this);
@@ -325,11 +164,13 @@ namespace OmniZenNotes
 
         void OnSpellCheckCommand(object sender, RoutedEventArgs e) {
             uxRichTextBox.SpellCheck.IsEnabled = !uxRichTextBox.SpellCheck.IsEnabled;
+            uxSpellCheckMenuItem.IsChecked = uxRichTextBox.SpellCheck.IsEnabled;
         }
 
         void OnFormatBarCommand(object sender, RoutedEventArgs e) {
             RTBFB.IsEnabled = !RTBFB.IsEnabled;
             RTBFB.Visibility = RTBFB.IsEnabled ? Visibility.Visible : Visibility.Hidden;
+            uxFormatBarMenuItem.IsChecked = RTBFB.IsEnabled;
         }
 
         void OnHideCommand(object sender, RoutedEventArgs e) {
@@ -364,20 +205,18 @@ namespace OmniZenNotes
         }
 
         void OnViewNoteReminderCommand(object sender, ExecutedRoutedEventArgs e) {
-            if (e.Source is ToggleButton toggleButton) {
-                if (e.Parameter is string p && p == "MenuItem") {
-                    toggleButton.IsChecked = !toggleButton.IsChecked;
-                }
-                ShowReminderPanel(toggleButton);
+            if (e.Source is RichTextBox || e.Source is NoteViewer) { // Menu item or Accelerator Selected
+                uxViewNoteReminderMenuItem.IsChecked = !uxViewNoteReminderMenuItem.IsChecked;
+                uxReminderButton.IsChecked = uxViewNoteReminderMenuItem.IsChecked;
             }
+            ShowReminderPanel(uxReminderButton);
         }
         void OnViewNoteSettingsCommand(object sender, ExecutedRoutedEventArgs e) {
-            if (e.Source is ToggleButton toggleButton) {
-                if (e.Parameter is string p && p == "MenuItem") {
-                    toggleButton.IsChecked = !toggleButton.IsChecked;
-                }
-                ShowSettingsPanel(toggleButton);
+            if (e.Source is RichTextBox || e.Source is NoteViewer) { // Menu item or Accelerator Selected
+                uxViewNoteSettingsMenuItem.IsChecked = !uxViewNoteSettingsMenuItem.IsChecked;
+                uxSettingsButton.IsChecked = uxViewNoteSettingsMenuItem.IsChecked;
             }
+            ShowSettingsPanel(uxSettingsButton);
         }
 
         private void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
@@ -408,7 +247,7 @@ namespace OmniZenNotes
         }
 
         private void OnDeactivated(object sender, EventArgs e) {
-            ToggleToolBar(Visibility.Hidden);
+            ToggleToolBar(Visibility.Collapsed);
         }
 
         private void OnWindow_MouseEnter(object sender, EventArgs e) {
@@ -421,8 +260,8 @@ namespace OmniZenNotes
             }
         }
         private void ToggleToolBar(Visibility visibility) {
-            //            uxToolBar.Visibility = visibility;
-            uxToolBar.LayoutTransform = visibility == Visibility.Hidden ? new ScaleTransform(0.25, 0.25) : Transform.Identity;
+            uxToolBar.Visibility = visibility;
+            // uxToolBar.LayoutTransform = visibility == Visibility.Hidden ? new ScaleTransform(0.05, 0.05) : Transform.Identity;
         }
 
         private void OnButton_MouseEnter(object sender, EventArgs e) {
@@ -569,17 +408,18 @@ namespace OmniZenNotes
                 4. If not enough space on either side, then go lower and to the right
                     If another note occupies the wanted space, then try to go to left side
                 5. If Note is touching or across left side, new Note goes to left side  + padW of next screen
-                6. 
+                6. If new Note would overlap another existing Note, place it below current Note
             */
             var padW = area.Width * 0.01;
             double right = Left + Width;
             double newLeft = Left + Width + padW;    // 1
             double newRight = newLeft + Width;
+            if (newRight > area.Right) {
+                if (right + padW <= area.Right) { newLeft = area.Right - Width; }  // 2a
+                if (right + padW >= area.Right) { newLeft = Left - Width - padW; }  // 2b
+            }
+
             if (IsScreenAdjacentToARightScreen(screen, allScreens)) {
-                if (newRight > area.Right) {
-                    if (right + padW <= area.Right) { newLeft = area.Right - Width; }  // 2a
-                    if (right + padW >= area.Right) { newLeft = Left - Width - padW; }  // 2b
-                }
                 if (right >= area.Right) { newLeft = area.Right + padW; }    // 5
             }
 
@@ -694,6 +534,165 @@ namespace OmniZenNotes
                 printDialog.PrintDocument((((IDocumentPaginatorSource)uxRichTextBox.Document).DocumentPaginator), $"Printing ");
             }
         }
+        // Dynamic Submenu Open Processing
+        private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e) {
+            uxSelectColorMenuItem.Items.Clear();
+
+            // Load the Colors if not already loaded
+            if (BackgroundColors == null || BackgroundColors.Count == 0) {
+                BackgroundColors = new List<PropertyInfo>(typeof(Colors).GetProperties());
+            }
+
+            // Add a Colors... Menu Item to bring up Colors Dialog box
+            // TODO: Try to use the newer Wpf Toolkit ColorPicker
+            MenuItem item = new MenuItem { Header = "Colors...", };
+            item.Click += (object sender, RoutedEventArgs e) => {
+                if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
+            };
+            uxSelectColorMenuItem.Items.Add(item);
+            uxSelectColorMenuItem.Items.Add(new Separator());
+
+            foreach (PropertyInfo prop in BackgroundColors) {
+                Color color = (Color)prop.GetValue(null);
+                item = new MenuItem {
+                    Header = prop.Name,
+                    Tag = color,
+                    Background = new SolidColorBrush(color),
+                    Foreground = new SolidColorBrush(AdjustColor(color)),
+                };
+
+                // Handle color selection from auto generated submenu
+                item.Click += (object sender, RoutedEventArgs e) => {
+                    if (sender is MenuItem mi && mi.Tag is Color color) {
+                        SetBackgroundColor(color);
+                    }
+                };
+
+                uxSelectColorMenuItem.Items.Add(item);
+            }
+        }
+
+        private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
+            uxSelectFontMenuItem.Items.Clear();
+
+            // Load the Font Families if not already loaded
+            if (FontFamilies == null || FontFamilies.Count == 0) {
+                FontFamilies = new List<FontFamily>(Fonts.SystemFontFamilies);
+                FontFamilies.Sort((FontFamily x, FontFamily y) => { return x.Source.CompareTo(y.Source); });
+            }
+
+            // Add a Fonts... Menu Item to bring up Font Dialog box
+            MenuItem item = new MenuItem { Header = "Fonts...", };
+            item.Click += (object sender, RoutedEventArgs e) => {
+                if (sender is MenuItem mi) { OnTextFormatButton_Click(sender, e); }
+            };
+            uxSelectFontMenuItem.Items.Add(item);
+            uxSelectFontMenuItem.Items.Add(new Separator());
+
+            foreach (var fontFamily in FontFamilies) {
+                item = new MenuItem {
+                    Header = fontFamily.Source,
+                    Tag = fontFamily,
+                    FontFamily = fontFamily
+                };
+
+                // Handle font selection from auto generated submenu
+                item.Click += (object sender, RoutedEventArgs e) => {
+                    if (sender is MenuItem mi && mi.Tag is FontFamily fontFamily) {
+                        SetFont(fontFamily, uxRichTextBox.FontSize, (uxRichTextBox.Foreground as SolidColorBrush), uxRichTextBox.FontStyle);
+                    }
+                };
+
+                uxSelectFontMenuItem.Items.Add(item);
+            };
+        }
+
+        void OnShowNotes_SubmenuOpened(object sender, RoutedEventArgs e) {
+            uxShowNotesMenuItem.Items.Clear();
+
+            int i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
+                Name = "uxShowAllNotesMenuItem",
+                Header = "Show All",    // NLS: Programmatic menu Header texts s/b Globalized
+                ToolTip = FindResource("strShowAllNotesTip"),
+                InputGestureText = "Alt-X",
+            });
+            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
+
+            i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
+                Name = "uxShowPrivateNotesMenuItem",
+                Header = "Show Private",
+                ToolTip = FindResource("strShowPrivateNotesTip"),
+                InputGestureText = "Alt-Y"
+            });
+            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
+
+            i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
+                Name = "uxShowPublicNotesMenuItem",
+                Header = "Show Public",
+                ToolTip = FindResource("strShowPublicNotesTip"),
+                InputGestureText = "Alt-Z"
+            });
+            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
+
+            uxShowNotesMenuItem.Items.Add(new Separator());
+
+            App.NoteViewers.Sort((NoteViewer x, NoteViewer y) => { return x.Title.CompareTo(y.Title); });
+
+            foreach (var noteViewer in App.NoteViewers) {
+                MenuItem item = new MenuItem {
+                    Header = noteViewer.Title,
+                    Tag = noteViewer,
+                    ToolTip = noteViewer.VM.Note.Description,
+                    IsChecked = noteViewer.Visibility == Visibility.Visible
+                };
+
+                // MenuItem Background cloned from Document, RichTextBox or NoteViewer Background (in presidence order)
+                item.Background = null;
+                item.Background ??= noteViewer.uxRichTextBox?.Document?.Background?.Clone();
+                item.Background ??= noteViewer.uxRichTextBox?.Background?.Clone();
+                item.Background ??= noteViewer?.Background?.Clone();
+
+                item.Click += uxShowNotesMenuItem_Clicked;
+                uxShowNotesMenuItem.Items.Add(item);
+            }
+        }
+
+        // Handle Show Notes visibility and check processing
+        void uxShowNotesMenuItem_Clicked(object sender, RoutedEventArgs e) {
+
+            if (sender is MenuItem mi) {
+                if (mi.Tag is NoteViewer nv) {
+                    mi.IsChecked = !mi.IsChecked; // Toggle Checked status
+                    if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.OnHideCommand(sender, e); }
+
+                } else if ("uxShowAllNotesMenuItem".CompareTo(mi.Name) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        noteViewer.Show();
+                    }
+
+                } else if ("uxShowPrivateNotesMenuItem".CompareTo(mi.Name) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
+                            noteViewer.Show();
+                        } else {
+                            noteViewer.OnHideCommand(sender, e);
+                        }
+                    }
+
+                } else if ("ShowPublicNotesMenuItem".CompareTo(mi.Name) == 0) {
+                    mi.IsChecked = true;
+                    foreach (var noteViewer in NoteViewers) {
+                        if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
+                            noteViewer.Show();
+                        } else {
+                            noteViewer.OnHideCommand(sender, e);
+                        }
+                    }
+                }
+            }
+        }
 
         #endregion
 
@@ -799,6 +798,7 @@ namespace OmniZenNotes
         #endregion
 
         private void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
+            Debug.WriteLine($"sender {sender} TextChangedEventArgs {e}");
         }
 
         private void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
