@@ -7,6 +7,7 @@ using System.Reflection;
 
 using U = Utilities;
 using OmniZenNotes.Models;
+using System.Windows.Resources;
 
 namespace OmniZenNotes
 {
@@ -54,18 +55,24 @@ namespace OmniZenNotes
 
             foreach (string noteBookDBFilePath in S.Default?.NoteBooks) {
                 string nbDBFilePath = noteBookDBFilePath;
+                // Replace template tokens with actual file path locations:
                 nbDBFilePath = nbDBFilePath.Replace("{LocalApplicationData}", localAppData);
                 nbDBFilePath = nbDBFilePath.Replace("{RoamingApplicationData}", roamingAppData);
                 nbDBFilePath = nbDBFilePath.Replace("{AssemblyName}", assemblyName);
                 nbDBFilePath = nbDBFilePath.Replace("{UserName}", userName);
 
-                // Create the notebook sqlite db file if it doesn't exist :
+                // Create the notebook SQLite DB file if it doesn't exist :
                 if (!File.Exists(nbDBFilePath)) {
-                    FileInfo asmFileInfo = new FileInfo(Assembly.GetExecutingAssembly().Location);
-                    var db = Path.Combine(asmFileInfo.Directory.FullName, "DB", "OmniZenNotes.sqlite3");
-                    var dir = Path.GetDirectoryName(nbDBFilePath);
-                    Directory.CreateDirectory(dir); // Create the settings directory first time
-                    File.Copy(db, nbDBFilePath);    // Copy from product location
+                    // Create the settings directory first time if required
+                    Directory.CreateDirectory(Path.GetDirectoryName(nbDBFilePath));
+
+                    // Copy SQLite3 DB from Resource to new user SQLite3DB file
+                    Uri resourcePath = new Uri("DB/OmniZenNotes.sqlite3", UriKind.Relative);
+                    StreamResourceInfo sri = GetResourceStream(resourcePath);
+                    using FileStream fs = File.Create(nbDBFilePath);
+                    sri.Stream.CopyTo(fs);
+                    fs.Flush(true);
+                    fs.Close();
                 }
 
                 Repository.NoteBooks.Add(new Notebook(nbDBFilePath));
@@ -90,6 +97,9 @@ namespace OmniZenNotes
         public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
         public static RoutedUICommand HideCommand = new RoutedUICommand("Hide Note", "HideNote", typeof(AppCommands));        
         public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
+        public static RoutedUICommand ShowAllNotesCommand = new RoutedUICommand("Show All", "ShowAllNotes", typeof(AppCommands));
+        public static RoutedUICommand ShowPrivateNotesCommand = new RoutedUICommand("Show Private", "ShowPrivateNote", typeof(AppCommands));
+        public static RoutedUICommand ShowPublicNotesCommand = new RoutedUICommand("Show Public", "ShowPublicNotes", typeof(AppCommands));
         public static RoutedUICommand ExitApplicationCommand = new RoutedUICommand("Exit App", "ExitApplication", typeof(AppCommands));
     }
 }

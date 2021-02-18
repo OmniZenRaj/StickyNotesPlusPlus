@@ -179,7 +179,10 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
                 <RichTextBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="uxShowNotesMenuItem" Header="Show Notes" ToolTip="{StaticResource strShowNotesTip}">
-                            <MenuItem Header="@see code" />
+                            <MenuItem x:Name="uxShowAllNotesMenuItem" Header="Show All" Command="local:AppCommands.ShowAllNotesCommand" InputGestureText="Alt-X" ToolTip="{StaticResource strShowAllNotesTip}"/>
+                            <MenuItem x:Name="uxShowPrivateNotesMenuItem" Header="Show Private" Command="local:AppCommands.ShowPrivateNotesCommand" InputGestureText="Alt-Y" ToolTip="{StaticResource strShowPrivateNotesTip}"/>
+                            <MenuItem x:Name="uxShowPublicNotesMenuItem" Header="Show Public" Command="local:AppCommands.ShowPublicNotesCommand" InputGestureText="Alt-Z" ToolTip="{StaticResource strShowPublicNotesTip}"/>
+                            <Separator/>
                         </MenuItem>
                         <MenuItem x:Name="uxSelectColorMenuItem" Header="Colors" ToolTip="{StaticResource strColorsTip}">
                             <MenuItem Header="@see code" />

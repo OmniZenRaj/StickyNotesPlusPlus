@@ -33,7 +33,6 @@ namespace OmniZenNotes
     {
         public static List<FontFamily> FontFamilies;
         public static List<PropertyInfo> BackgroundColors;
-        public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
 
         public NoteViewModel VM { get; set; }
         DispatcherTimer Timer = new DispatcherTimer();
@@ -66,30 +65,24 @@ namespace OmniZenNotes
 
         // Create, configure and bind Application Commands
         void InitializeCommands() {
-            // Refresh Command
-            AddCommandBinding(NavigationCommands.Refresh, OnRefreshCommand);
-            // New Command
-            AddCommandBinding(ApplicationCommands.New, OnNewCommand);
-            // Save Note
-            AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
-            // Full Screen Toggle
-            AddCommandBinding(NavigationCommands.Zoom, OnZoomCommand);
-            InputBindings.Add(new KeyBinding(NavigationCommands.Zoom, new KeyGesture(Key.F11, ModifierKeys.None, "F11")));
 
-            // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
-            // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
-            // AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
+            // Show Notes Commands
+            AddCommandBinding(AppCommands.ShowAllNotesCommand, OnShowAllNotesCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ShowAllNotesCommand, new KeyGesture(Key.X, ModifierKeys.Alt, "Alt-X")));
+            AddCommandBinding(AppCommands.ShowPrivateNotesCommand, OnShowPrivateNotesCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ShowPrivateNotesCommand, new KeyGesture(Key.Y, ModifierKeys.Alt, "Alt-Y")));
+            AddCommandBinding(AppCommands.ShowPublicNotesCommand, OnShowPublicNotesCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ShowPublicNotesCommand, new KeyGesture(Key.Z, ModifierKeys.Alt, "Alt-X")));
 
-            // Spellcheck Command
-            AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
+            // Set Note Font Command
+            AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
 
             // Format Bar Command
             AddCommandBinding(AppCommands.FormatBarCommand, OnFormatBarCommand);
             InputBindings.Add(new KeyBinding(AppCommands.FormatBarCommand, new KeyGesture(Key.F4, ModifierKeys.None, "F4")));
-
-            // Set Note Font Command
-            AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
+            // Spellcheck Command
+            AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
 
             // View Note Reminder Command
             AddCommandBinding(AppCommands.ViewNoteReminderCommand, OnViewNoteReminderCommand);
@@ -98,13 +91,29 @@ namespace OmniZenNotes
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
             InputBindings.Add(new KeyBinding(AppCommands.ViewNoteSettingsCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
 
+            // New Command
+            AddCommandBinding(ApplicationCommands.New, OnNewCommand);
+            // Refresh Command
+            AddCommandBinding(NavigationCommands.Refresh, OnRefreshCommand);
+            // Save Note
+            AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
             // Hide Command
             AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
             InputBindings.Add(new KeyBinding(AppCommands.HideCommand, new KeyGesture(Key.H, ModifierKeys.Alt, "Alt-H")));
-
             // Delete Command
             AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
+            InputBindings.Add(new KeyBinding(AppCommands.DeleteCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
+            // Full Screen Toggle
+            AddCommandBinding(NavigationCommands.Zoom, OnZoomCommand);
+            InputBindings.Add(new KeyBinding(NavigationCommands.Zoom, new KeyGesture(Key.F11, ModifierKeys.None, "F11")));
+
+            // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
+            // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
+            // AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
+            
+            // Exit Application Command
+            AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "F4")));
 
             void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
                 CommandBinding cb = new CommandBinding(command);
@@ -113,12 +122,10 @@ namespace OmniZenNotes
                 CommandBindings.Add(cb);
             }
 
-            AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
         }
 
         private void OnLoaded(object sender, EventArgs e) {
             DataContext = VM.Note;
-            NoteViewers.Add(this);
 
             uxSettingsPropertyGrid.SelectedObject = VM.Note;
             uxReminderPropertyGrid.SelectedObject = VM.Note.Task;
@@ -174,8 +181,8 @@ namespace OmniZenNotes
         }
 
         void OnHideCommand(object sender, RoutedEventArgs e) {
-            if (NoteViewers.Count == 1) {
-                MessageBox.Show("You cannot HIDE the LAST Sticky Note in Alpha. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
+            if (App.NoteViewers.Count == 1) {
+                MessageBox.Show("You cannot HIDE the LAST Sticky Note. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
             } else {
                 Hide();
             }
@@ -183,16 +190,22 @@ namespace OmniZenNotes
         }
 
         void OnDeleteCommand(object sender, RoutedEventArgs e) {
+            string title = Assembly.GetExecutingAssembly().GetName().Name;
             MessageBoxResult mbr = MessageBoxResult.OK;
-            if (NoteViewers.Count == 1) {
-                mbr = MessageBox.Show("You about to DELETE the LAST Sticky Note. \nThis will EXIT the Application in Alpha. \n\nPress Cancel to go back.", Assembly.GetExecutingAssembly().GetName().Name, MessageBoxButton.OKCancel);
+            if (App.NoteViewers.Count == 1) {
+                mbr = MessageBox.Show("You are about to DELETE the LAST Sticky Note. \nThis will EXIT the Application. \n\nPress OK to continue. \n\nPress Cancel to go back.", $"EXIT Application {title}", MessageBoxButton.OKCancel, MessageBoxImage.Stop, MessageBoxResult.Cancel);
             }
 
             if (mbr == MessageBoxResult.OK) {
-                VM.Note.Delete();
-                VM.Note = null;
-                Close();
+                mbr = MessageBox.Show("Are you sure you want to permanently delete this Note?", $"Delete Note - {title}", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                if (mbr == MessageBoxResult.Yes) {
+                    VM.Note.Delete();
+                    VM.Note = null;
+                    Close();
+                    App.NoteViewers.Remove(this);
+                }
             }
+
             e.Handled = true;
         }
 
@@ -217,6 +230,32 @@ namespace OmniZenNotes
                 uxSettingsButton.IsChecked = uxViewNoteSettingsMenuItem.IsChecked;
             }
             ShowSettingsPanel(uxSettingsButton);
+        }
+
+        void OnShowAllNotesCommand(object sender, RoutedEventArgs e) {
+            foreach (var nv in App.NoteViewers) {
+                if (nv.Visibility != Visibility.Visible) { nv.Show(); }
+            }
+        }
+
+        void OnShowPrivateNotesCommand(object sender, RoutedEventArgs e) {
+            foreach (var nv in App.NoteViewers) {
+                if (nv.VM.Note.Security.Permissions == EntityPermissions.Private) {
+                    if (nv.Visibility != Visibility.Visible) { nv.Show(); }
+                } else {
+                    if (nv.Visibility == Visibility.Visible) { nv.Hide(); }
+                }
+            }
+        }
+
+        void OnShowPublicNotesCommand(object sender, RoutedEventArgs e) {
+            foreach (var nv in App.NoteViewers) {
+                if (nv.VM.Note.Security.Permissions != EntityPermissions.Private) {
+                    if (nv.Visibility != Visibility.Visible) { nv.Show(); }
+                } else {
+                    if (nv.Visibility == Visibility.Visible) { nv.Hide(); }
+                }
+            }
         }
 
         private void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
@@ -369,9 +408,7 @@ namespace OmniZenNotes
 
             Color colorScRgb = AdjustColor(color);
             if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
-
-            Background = new SolidColorBrush(colorScRgb);
-            uxToolBar.Background = Background;
+            uxToolBar.Background = new SolidColorBrush(colorScRgb);
 
             if (uxRichTextBox.Document.Background is ImageBrush backgroundBrush) {
                 backgroundBrush.Opacity = colorScRgb.A / 255.0f;
@@ -608,31 +645,6 @@ namespace OmniZenNotes
         }
 
         void OnShowNotes_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxShowNotesMenuItem.Items.Clear();
-
-            int i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowAllNotesMenuItem",
-                Header = "Show All",    // NLS: Programmatic menu Header texts s/b Globalized
-                ToolTip = FindResource("strShowAllNotesTip"),
-                InputGestureText = "Alt-X",
-            });
-            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
-
-            i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowPrivateNotesMenuItem",
-                Header = "Show Private",
-                ToolTip = FindResource("strShowPrivateNotesTip"),
-                InputGestureText = "Alt-Y"
-            });
-            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
-
-            i = uxShowNotesMenuItem.Items.Add(new MenuItem() {
-                Name = "uxShowPublicNotesMenuItem",
-                Header = "Show Public",
-                ToolTip = FindResource("strShowPublicNotesTip"),
-                InputGestureText = "Alt-Z"
-            });
-            (uxShowNotesMenuItem.Items[i] as MenuItem).Click += uxShowNotesMenuItem_Clicked;
 
             uxShowNotesMenuItem.Items.Add(new Separator());
 
@@ -657,39 +669,12 @@ namespace OmniZenNotes
             }
         }
 
-        // Handle Show Notes visibility and check processing
+        // Handle Show Notes visibility processing
         void uxShowNotesMenuItem_Clicked(object sender, RoutedEventArgs e) {
-
             if (sender is MenuItem mi) {
                 if (mi.Tag is NoteViewer nv) {
                     mi.IsChecked = !mi.IsChecked; // Toggle Checked status
                     if (mi.IsChecked) { nv.Show(); nv.Activate(); } else { nv.OnHideCommand(sender, e); }
-
-                } else if ("uxShowAllNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        noteViewer.Show();
-                    }
-
-                } else if ("uxShowPrivateNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        if (noteViewer.VM.Note.Security.Permissions == EntityPermissions.Private) {
-                            noteViewer.Show();
-                        } else {
-                            noteViewer.OnHideCommand(sender, e);
-                        }
-                    }
-
-                } else if ("ShowPublicNotesMenuItem".CompareTo(mi.Name) == 0) {
-                    mi.IsChecked = true;
-                    foreach (var noteViewer in NoteViewers) {
-                        if (noteViewer.VM.Note.Security.Permissions != EntityPermissions.Private) {
-                            noteViewer.Show();
-                        } else {
-                            noteViewer.OnHideCommand(sender, e);
-                        }
-                    }
                 }
             }
         }
@@ -702,21 +687,22 @@ namespace OmniZenNotes
         private void LoadSettings() {
             // BUG: First time run brings up dark grey background - s/b using System colors
             try {
-                /*                 // Restore Window position and size from user settings save of last session
-                                if (S.Default?.RestoreBounds is Rect restoreBounds)
-                                {
-                                    Left = restoreBounds.Left; Top = restoreBounds.Top;
-                                    Width = restoreBounds.Width; Height = restoreBounds.Height;
-                                }
-                                // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
-                                WindowState = S.Default?.WindowState is WindowState windowState ? windowState : System.Windows.WindowState.Normal;
-                                WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
-                                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
-                                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
-                                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
-                                uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
-                                Topmost = S.Default.Topmost;
-                 */
+                    // Restore Window position and size from user settings save of last session
+                if (S.Default?.RestoreBounds is Rect restoreBounds)
+                {
+                    Left = restoreBounds.Left; Top = restoreBounds.Top;
+                    Width = restoreBounds.Width; Height = restoreBounds.Height;
+                }
+                // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
+                WindowState = S.Default?.WindowState is WindowState windowState ? windowState : System.Windows.WindowState.Normal;
+                WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
+                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
+                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
+
+                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
+                uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
+                Topmost = S.Default.Topmost;
+
                 // Auto Save Settings
                 if (S.Default.AutoSave is int seconds && seconds > 0) {
                     Timer = new DispatcherTimer();
@@ -771,7 +757,7 @@ namespace OmniZenNotes
         private void SaveSettings() {
 
             SaveUXSettings();
-            /*
+
             // Save the App wide default settings:
             S.Default.RestoreBounds = RestoreBounds;
             S.Default.WindowState = WindowState;
@@ -790,7 +776,6 @@ namespace OmniZenNotes
 
             S.Default.OptionsExpanded = uxOptionsExpander.IsExpanded;
             S.Default.Topmost = Topmost;
-            */
 
             S.Default.Save();
         }
