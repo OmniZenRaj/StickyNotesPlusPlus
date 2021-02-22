@@ -66,7 +66,7 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
         <Run x:Key="strRedoTip" Text="Redo Last Edit Action"/>
         <Run x:Key="strFormatBarTip" Text="Toggle Font FormatBar"/>
         <Run x:Key="strSpellCheckTip" Text="Toggle Spell Checking"/>
-        <Run x:Key="strConfigAppTip" Text="Configure Application level Settings"/>
+        <Run x:Key="strAppPrefsTip" Text="Manage Application Preferences"/>
         <Run x:Key="strExitApp" Text="Close All Notes and Exit Application"/>
 
     </Window.Resources>
@@ -102,7 +102,7 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
                         <ToggleButton x:Name="uxReminderButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder_Image}" ToolTip="{StaticResource strToggleReminderTip}"/>
                         <ToggleButton x:Name="uxSettingsButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info_Image}" ToolTip="{StaticResource strToggleSettingsTip}"/>
                         <Separator/>
-                        <ToggleButton x:Name="uxPinTab" Margin="4,0,0,0" Click="OnPinTabButton_Click" Content="{StaticResource PinTabOff_Image}" ToolTip="{StaticResource strTogglePinTip}"/>
+                        <ToggleButton x:Name="uxPinTab" Margin="4,0,0,0" Command="local:AppCommands.TogglePinCommand" Content="{StaticResource PinTabOff_Image}" ToolTip="{StaticResource strTogglePinTip}"/>
                     </StackPanel>
                 </Expander>
             </StackPanel>
@@ -184,33 +184,38 @@ Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMo
                             <MenuItem x:Name="uxShowPublicNotesMenuItem" Header="Show Public" Command="local:AppCommands.ShowPublicNotesCommand" InputGestureText="Alt-Z" ToolTip="{StaticResource strShowPublicNotesTip}"/>
                             <Separator/>
                         </MenuItem>
-                        <MenuItem x:Name="uxSelectColorMenuItem" Header="Colors" ToolTip="{StaticResource strColorsTip}">
-                            <MenuItem Header="@see code" />
-                        </MenuItem>
-                        <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts" ToolTip="{StaticResource strFontsTip}">
-                            <MenuItem Header="@see code" />
-                        </MenuItem>
                         <Separator/>
+                        <MenuItem Header="File">
+                            <MenuItem Header="New Note" Command="New" ToolTip="{StaticResource strAddNoteTip}" />
+                            <MenuItem Header="Refresh" Command="Refresh" ToolTip="{StaticResource strRefreshNoteTip}"/>
+                            <MenuItem Header="Save" Command="Save" ToolTip="{StaticResource strSaveNoteTip}"/>
+                            <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H" ToolTip="{StaticResource strHideNoteTip}"/>
+                            <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" InputGestureText="Alt-D" ToolTip="{StaticResource strDeleteNoteTip}"/>
+                        </MenuItem>
+                        
+                        <MenuItem Header="Edit">
                         <MenuItem Header="Copy" Command="Copy" ToolTip="{StaticResource strCopyTip}"/>
                         <MenuItem Header="Cut" Command="Cut" ToolTip="{StaticResource strCutTip}"/>
                         <MenuItem Header="Paste" Command="Paste" ToolTip="{StaticResource strPasteTip}"/>
                         <Separator/>
                         <MenuItem Header="Undo" Command="Undo" ToolTip="{StaticResource strUndoTip}"/>
                         <MenuItem Header="Redo" Command="Redo" ToolTip="{StaticResource strRedoTip}"/>
-                        <Separator/>
+                        </MenuItem>
+
                         <MenuItem x:Name="uxFormatBarMenuItem" Header="Format Bar" Command="local:AppCommands.FormatBarCommand" InputGestureText="F4" ToolTip="{StaticResource strFormatBarTip}"/>
                         <MenuItem x:Name="uxSpellCheckMenuItem" Header="Spell Check" Command="local:AppCommands.SpellCheckCommand" InputGestureText="F7" ToolTip="{StaticResource strSpellCheckTip}"/>
                         <Separator/>
+                        <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts" ToolTip="{StaticResource strFontsTip}">
+                            <MenuItem Header="@see code" />
+                        </MenuItem>
+                        <MenuItem x:Name="uxSelectColorMenuItem" Header="Colors" ToolTip="{StaticResource strColorsTip}">
+                            <MenuItem Header="@see code" />
+                        </MenuItem>
                         <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="MenuItem" InputGestureText="Alt-R" ToolTip="{StaticResource strToggleReminderTip}"/>
                         <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem" InputGestureText="Alt-S" ToolTip="{StaticResource strToggleSettingsTip}"/>
+                        <MenuItem x:Name="uxTogglePinMenuItem" Header="Pin To Top" Command="local:AppCommands.TogglePinCommand" InputGestureText="Alt-P" ToolTip="{StaticResource strTogglePinTip}"/>
                         <Separator/>
-                        <MenuItem Header="New Note" Command="New" ToolTip="{StaticResource strAddNoteTip}" />
-                        <MenuItem Header="Refresh" Command="Refresh" ToolTip="{StaticResource strRefreshNoteTip}"/>
-                        <MenuItem Header="Save" Command="Save" ToolTip="{StaticResource strSaveNoteTip}"/>
-                        <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H" ToolTip="{StaticResource strHideNoteTip}"/>
-                        <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" InputGestureText="Alt-D" ToolTip="{StaticResource strDeleteNoteTip}"/>
-                        <Separator/>
-                        <MenuItem Header="App Settings..." ToolTip="{StaticResource strConfigAppTip}"/>
+                        <MenuItem Header="Preferences..." Command="local:AppCommands.ApplicationPrefsCommand" InputGestureText="Alt-F1" ToolTip="{StaticResource strAppPrefsTip}"/>
                         <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="Alt-F4" ToolTip="{StaticResource strExitApp}"/>
                     </ContextMenu>
                 </RichTextBox.ContextMenu>

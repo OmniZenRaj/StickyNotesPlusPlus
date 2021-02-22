@@ -139,11 +139,11 @@ namespace OmniZenNotes.Models
 
         public UXSettings() {
             RestoreBounds = new Rect(0, 0, 364, 256);
-            FontFamily = SystemFonts.MessageFontFamily;
-            FontSize = SystemFonts.MessageFontSize + 10;
-            FontStyle = SystemFonts.MessageFontStyle;
-            FontColor = SystemColors.WindowTextColor;
-            BackgroundColor = SystemColors.WindowColor;
+            FontFamily = SystemFonts.MenuFontFamily;
+            FontStyle = SystemFonts.MenuFontStyle;
+            FontSize = Properties.Settings.Default.FontSize;
+            FontColor = Properties.Settings.Default.FontColor;
+            BackgroundColor = Properties.Settings.Default.BackgroundColor;
         }
 
         public void CloneFrom(UXSettings copy) {

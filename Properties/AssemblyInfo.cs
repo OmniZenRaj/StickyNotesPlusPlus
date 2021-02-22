@@ -8,7 +8,7 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyDescription("Sticky Notes ++")]
-[assembly: AssemblyCopyright("Copyright ©  2020 OmniZen Technology")]
+[assembly: AssemblyCopyright("Copyright © 2021 OmniZen Technology")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

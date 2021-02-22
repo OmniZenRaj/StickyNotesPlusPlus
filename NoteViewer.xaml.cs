@@ -90,6 +90,9 @@ namespace OmniZenNotes
             // View Note Settings Command
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
             InputBindings.Add(new KeyBinding(AppCommands.ViewNoteSettingsCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
+            // Toggle Pin On/Off Command
+            AddCommandBinding(AppCommands.TogglePinCommand, OnTogglePinCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.TogglePinCommand, new KeyGesture(Key.P, ModifierKeys.Alt, "Alt-P")));
 
             // New Command
             AddCommandBinding(ApplicationCommands.New, OnNewCommand);
@@ -110,10 +113,14 @@ namespace OmniZenNotes
             // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
             // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
             // AddCommandBinding(ApplicationCommands.PrintPreview , OnPrintPreviewCommand);
-            
+
+            // Config Application Command
+            AddCommandBinding(AppCommands.ApplicationPrefsCommand, OnApplicationPrefsCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.ApplicationPrefsCommand, new KeyGesture(Key.F1, ModifierKeys.Alt, "Alt-F1")));
+
             // Exit Application Command
             AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "F4")));
+            InputBindings.Add(new KeyBinding(AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
 
             void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
                 CommandBinding cb = new CommandBinding(command);
@@ -130,7 +137,7 @@ namespace OmniZenNotes
             uxSettingsPropertyGrid.SelectedObject = VM.Note;
             uxReminderPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
-            UpdatePinTabButton();
+            UpdatePinTabUX();
 
             // Make sure we don't go off screen (if user monitor changes etc.)
             var rect = KeepWindowInBounds(RestoreBounds);
@@ -201,6 +208,7 @@ namespace OmniZenNotes
                 if (mbr == MessageBoxResult.Yes) {
                     VM.Note.Delete();
                     VM.Note = null;
+                    SaveSettings();
                     Close();
                     App.NoteViewers.Remove(this);
                 }
@@ -213,8 +221,26 @@ namespace OmniZenNotes
             Application.Current.Shutdown();
         }
 
+        void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
+            string title = Assembly.GetExecutingAssembly().GetName().Name;
+
+            string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company} \n" +
+                         $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
+                         $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
+                         $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
+                         $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n";
+
+            MessageBox.Show(msg, title, MessageBoxButton.OK);
+        }
+
         void OnSelectFontCommand(object sender, RoutedEventArgs e) {
             OnTextFormatButton_Click(sender, e);
+        }
+
+        void OnTogglePinCommand(object sender, RoutedEventArgs e) {
+            Topmost = !Topmost;
+            UpdatePinTabUX();
+            uxSettingsPropertyGrid.Update();
         }
 
         void OnViewNoteReminderCommand(object sender, ExecutedRoutedEventArgs e) {
@@ -408,6 +434,7 @@ namespace OmniZenNotes
 
             Color colorScRgb = AdjustColor(color);
             if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
+//            Background = new SolidColorBrush(colorScRgb);
             uxToolBar.Background = new SolidColorBrush(colorScRgb);
 
             if (uxRichTextBox.Document.Background is ImageBrush backgroundBrush) {
@@ -516,12 +543,10 @@ namespace OmniZenNotes
         }
 
         private void OnPinTabButton_Click(object sender, RoutedEventArgs e) {
-            Topmost = !Topmost;
-            UpdatePinTabButton();
-            uxSettingsPropertyGrid.Update();
+            OnTogglePinCommand(sender, e);
         }
 
-        private void UpdatePinTabButton() {
+        private void UpdatePinTabUX() {
             VM.Note.UXSettings.Topmost = Topmost;
 
             Image image = uxPinTab.Content as Image;
@@ -530,8 +555,8 @@ namespace OmniZenNotes
 
             image.RenderTransform = new RotateTransform(Topmost ? 0 : 90);
             image.RenderTransformOrigin = new Point(0.5, 0.5);
+            uxTogglePinMenuItem.IsChecked = Topmost;
         }
-
 
         // Reminder and Settings PropertyGrid UX Management:
         private void ShowReminderPanel(ToggleButton toggleButton) {
@@ -685,23 +710,24 @@ namespace OmniZenNotes
 
         // Loaded from App Settings located @ C:\User\{User}\AppData\Local\OmniZenNotes\OmniZenNote.exe_...
         private void LoadSettings() {
-            // BUG: First time run brings up dark grey background - s/b using System colors
             try {
-                    // Restore Window position and size from user settings save of last session
-                if (S.Default?.RestoreBounds is Rect restoreBounds)
-                {
-                    Left = restoreBounds.Left; Top = restoreBounds.Top;
-                    Width = restoreBounds.Width; Height = restoreBounds.Height;
-                }
                 // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
-                WindowState = S.Default?.WindowState is WindowState windowState ? windowState : System.Windows.WindowState.Normal;
                 WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
-                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
-                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
 
-                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
-                uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
-                Topmost = S.Default.Topmost;
+                // Use App Defaults for Note if not UX Settings exist
+                if (VM.Note.UXSettings is null) {
+                    // Restore Window position and size from user settings save of last session
+                    if (S.Default?.RestoreBounds is Rect restoreBounds) {
+                        Left = restoreBounds.Left; Top = restoreBounds.Top;
+                        Width = restoreBounds.Width; Height = restoreBounds.Height;
+                    }
+
+                    SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
+                    uxColorPicker.SelectedColor = S.Default.BackgroundColor;
+                    SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
+                    uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
+                    Topmost = S.Default.Topmost;
+                }
 
                 // Auto Save Settings
                 if (S.Default.AutoSave is int seconds && seconds > 0) {
@@ -715,7 +741,7 @@ namespace OmniZenNotes
             }
 
             LoadUXSettings();
-            if (uxRichTextBox.Background is SolidColorBrush scba) {
+            if (uxRichTextBox.Document.Background is SolidColorBrush scba) {
                 uxColorPicker.SelectedColor = scba.Color;
             }
         }
@@ -746,7 +772,7 @@ namespace OmniZenNotes
                 if (uxRichTextBox.Foreground is SolidColorBrush fgscb) {
                     VM.Note.UXSettings.FontColor = fgscb.Color;
                 }
-                if (uxRichTextBox.Background is SolidColorBrush scba) {
+                if (uxRichTextBox.Document.Background is SolidColorBrush scba) {
                     VM.Note.UXSettings.BackgroundColor = scba.Color;
                 }
                 VM.Note.UXSettings.OptionsExpanded = uxOptionsExpander.IsExpanded;
@@ -754,7 +780,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void SaveSettings() {
+        internal void SaveSettings() {
 
             SaveUXSettings();
 
@@ -769,7 +795,7 @@ namespace OmniZenNotes
                 S.Default.FontColor = fgscb2.Color;
             }
 
-            if (uxRichTextBox.Background is SolidColorBrush scb)
+            if (uxRichTextBox.Document.Background is SolidColorBrush scb)
             {
                 S.Default.BackgroundColor = scb.Color;
             }
@@ -833,7 +859,7 @@ namespace OmniZenNotes
                         break;
                     case "Topmost":
                         Topmost = (bool)e.NewValue;
-                        UpdatePinTabButton();
+                        UpdatePinTabUX();
                         break;
                     case "Title":
                         Title = (string)e.NewValue;
@@ -1102,3 +1128,4 @@ namespace OmniZenNotes
 
     }
 }
+
