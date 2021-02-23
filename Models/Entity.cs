@@ -135,10 +135,10 @@ namespace OmniZenNotes.Models
         public string CSS { get; set; }
 
         public string FontName => G.GetFamilyFontName(FontFamily);
-        public override string ToString() => $@"{G.GetFamilyFontName(FontFamily)} {FontSize:F2} {FontStyle}";
+        public override string ToString() => $@"{G.GetFamilyFontName(FontFamily)} {FontSize:F0} {FontStyle}";
 
         public UXSettings() {
-            RestoreBounds = new Rect(0, 0, 364, 256);
+            RestoreBounds = Properties.Settings.Default.RestoreBounds;
             FontFamily = SystemFonts.MenuFontFamily;
             FontStyle = SystemFonts.MenuFontStyle;
             FontSize = Properties.Settings.Default.FontSize;

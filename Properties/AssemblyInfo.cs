@@ -9,7 +9,7 @@ using System.Windows;
 // associated with an assembly.
 [assembly: AssemblyDescription("Sticky Notes ++")]
 [assembly: AssemblyCopyright("Copyright © 2021 OmniZen Technology")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyTrademark("OmniZen Technology")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible

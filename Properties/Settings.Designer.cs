@@ -25,7 +25,7 @@ namespace OmniZenNotes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0,0,364,256")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0,0,320,320")]
         public global::System.Windows.Rect RestoreBounds {
             get {
                 return ((global::System.Windows.Rect)(this["RestoreBounds"]));
@@ -76,7 +76,7 @@ namespace OmniZenNotes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("#FFFFFFE0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("#FFFFF2AB")]
         public global::System.Windows.Media.Color BackgroundColor {
             get {
                 return ((global::System.Windows.Media.Color)(this["BackgroundColor"]));

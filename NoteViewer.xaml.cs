@@ -224,7 +224,7 @@ namespace OmniZenNotes
         void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
             string title = Assembly.GetExecutingAssembly().GetName().Name;
 
-            string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company} \n" +
+            string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
                          $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
                          $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
                          $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
@@ -309,6 +309,7 @@ namespace OmniZenNotes
 
         private void OnActivated(object sender, EventArgs e) {
             ToggleToolBar(Visibility.Visible);
+            uxRichTextBox.Focus();
         }
 
         private void OnDeactivated(object sender, EventArgs e) {
@@ -428,28 +429,27 @@ namespace OmniZenNotes
             };
 
             uxColorPicker.SelectedColor = color;
-
-            Background = new SolidColorBrush(color);
-            uxRichTextBox.Document.Background = new SolidColorBrush(color);
-
             Color colorScRgb = AdjustColor(color);
-            if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
-//            Background = new SolidColorBrush(colorScRgb);
-            uxToolBar.Background = new SolidColorBrush(colorScRgb);
 
             if (uxRichTextBox.Document.Background is ImageBrush backgroundBrush) {
                 backgroundBrush.Opacity = colorScRgb.A / 255.0f;
+                uxRichTextBox.Background = null;
+                Background = null;
+            } else {
+                Background = new SolidColorBrush(color);
+                uxRichTextBox.Document.Background = new SolidColorBrush(color);
+                if (colorScRgb.A == 0) { colorScRgb.A = 0x01; }
             }
 
+            uxToolBar.Background = new SolidColorBrush(colorScRgb);
             uxRichTextBox.SelectionBrush = colorScRgb.ScA <= 0.75 ? new SolidColorBrush(Colors.Black) : new SolidColorBrush(colorScRgb);
         }
 
         private Color AdjustColor(Color color) {
             // Tweak the textbox color for a nice background accent color for the toolbar.
             U.Graphics.RgbToHls(color.R, color.G, color.B, out double h, out double l, out double s);
-            if (l > 0.50f) l *= 0.25f; else if (l > 0.35f) l *= 0.35f; else if (l > 0.25f) l *= 1.25f; else if (l > 0.00f) l *= 2.00f; else l = 0.35f;
-            if (l < 0.35f) s *= 0.50f; else if (l < 0.35f) s *= 0.75f;
-
+            if (l > 0.75f) l *= 0.70f; else if (l > 0.50f) l *= 0.45f; else if (l > 0.35f) l *= 0.25f; else if (l > 0.25f) l *= 1.50f; else if (l > 0.00f) l *= 1.75f; else l = 0.35f;
+            if (l < 0.35f) l *= 1.75f; else if (l < 0.50f) l *= 1.50f;
             U.Graphics.HlsToRgb(h, l, s, out int r, out int g, out int b);
             float scA = color.A / 255.0f, scR = r / 255.0f, scG = g / 255.0f, scB = b / 255.0f;
             var colorScRgb = Color.FromScRgb(scA, scR, scG, scB);
@@ -516,6 +516,13 @@ namespace OmniZenNotes
         private void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
             if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
             uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
+        }
+
+        private void OnMouseDoubleClick(object sender, RoutedEventArgs e) {
+            if (e.OriginalSource is DockPanel dp && dp == uxToolBar) {
+                if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
+                uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
+            }
         }
 
         private void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
@@ -671,6 +678,11 @@ namespace OmniZenNotes
 
         void OnShowNotes_SubmenuOpened(object sender, RoutedEventArgs e) {
 
+            uxShowNotesMenuItem.Items.Clear();
+
+            uxShowNotesMenuItem.Items.Add(uxShowAllNotesMenuItem);
+            uxShowNotesMenuItem.Items.Add(uxShowPrivateNotesMenuItem);
+            uxShowNotesMenuItem.Items.Add(uxShowPublicNotesMenuItem);
             uxShowNotesMenuItem.Items.Add(new Separator());
 
             App.NoteViewers.Sort((NoteViewer x, NoteViewer y) => { return x.Title.CompareTo(y.Title); });

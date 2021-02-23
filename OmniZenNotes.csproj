@@ -2,8 +2,6 @@
 
     <PropertyGroup>
     <Version>1.3.0</Version>
-    <Company>OmniZen Technology</Company>
-
     <OutputType>WinExe</OutputType>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.1</TargetFramework>

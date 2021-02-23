@@ -18,7 +18,7 @@
       <Value Profile="(Default)">Segoe UI</Value>
     </Setting>
     <Setting Name="BackgroundColor" Type="System.Windows.Media.Color" Scope="User">
-      <Value Profile="(Default)">#FFFFFFE0</Value>
+      <Value Profile="(Default)">#FFFFF2AB</Value>
     </Setting>
     <Setting Name="FontColor" Type="System.Windows.Media.Color" Scope="User">
       <Value Profile="(Default)">#FF000000</Value>
