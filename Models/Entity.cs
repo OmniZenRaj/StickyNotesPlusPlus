@@ -5,11 +5,11 @@ using System.Data.SQLite;
 using System.IO;
 using System.Security.Principal;
 
-using G = Utilities.Graphics;
-using EX = Utilities.Exceptions;
-
 namespace OmniZenNotes.Models
 {
+    using G = Utilities.Graphics;
+    using EX = Utilities.Exceptions;
+
     public class Entity
     {
         // Identity Fields:

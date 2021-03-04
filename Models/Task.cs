@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Data.SQLite;
-using EX = Utilities.Exceptions;
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace OmniZenNotes.Models
 {
+    using EX = Utilities.Exceptions;
+
     public enum TaskStatus { New, InProgress, Completed, Waiting, Deferred };
     public enum TaskPriority { Low, Normal, High, Urgent, Immediate };
 

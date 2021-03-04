@@ -1,5 +1,5 @@
 ﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:local="clr-namespace:OmniZenNotes" xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" WindowStyle="None" Topmost="True" AllowsTransparency="True" Title="OmniZen Notes" Loaded="OnLoaded"
- MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" Deactivated="OnDeactivated" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
+ MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" Deactivated="OnDeactivated" Closed="OnClosed" Closing="OnClosing" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1">
 
     <Window.Resources>
         <Image x:Key="AppIcon" Source="App.ico" x:Shared="False" />
@@ -11,6 +11,7 @@
         <Image x:Key="Info_Image" Source="assets/images/settings-24x.png" x:Shared="False" />
         <Image x:Key="PinTabOff_Image" Source="assets/images/pin-blue_small-24x.png" x:Shared="False" />
         <Image x:Key="PinTabOn_Image" Source="assets/images/pin-green_small-24x.png" x:Shared="False" />
+        <Image x:Key="Close_Note_Image" Source="assets/images/ic_close.png" x:Shared="False" />
 
         <Style TargetType="{x:Type Image}">
             <Setter Property="Width" Value="20" />
@@ -44,10 +45,14 @@
             <Setter Property="ShowButtonSpinner" Value="False" />
         </Style>
         <!-- NLS: Globalization with x:Uid & Translation into satellite resource assembly -->
+        <!-- NLS: ToolTip Strings -->
         <Run x:Key="strAddNoteTip" Text="Create a new Note using current Note as template."/>
         <Run x:Key="strExpandTip" Text="Press to Expand or Collapse additional Toolbar actions"/>
         <Run x:Key="strFontsTip" Text="Select Note Text Font Properties"/>
-        <Run x:Key="strColorsTip" Text="Select and Customize Note Background Color Properties"/>
+        <Run x:Key="strBackgroundsTip" Text="Select and Customize Note Background Color Properties"/>
+        <Run x:Key="strSetBackgroundFromColorDialogTip" Text="Set Background from Color Selection Dialog"/>
+        <Run x:Key="strSetBackgroundFromImageTip" Text="Set Background from Selected Image"/>
+        <Run x:Key="strSetBackgroundToColorTip" Text="Set Background to "/>
         <Run x:Key="strToggleReminderTip" Text="Toggle Reminder and Todo Properties"/>
         <Run x:Key="strToggleSettingsTip" Text="Toggle Settings and Security Properties"/>
         <Run x:Key="strTogglePinTip" Text="Toggle Pin Note above all Windows"/>
@@ -55,6 +60,7 @@
         <Run x:Key="strSaveNoteTip" Text="Save Note to Storage DB"/>
         <Run x:Key="strDeleteNoteTip" Text="Remove Note Permanently"/>
         <Run x:Key="strHideNoteTip" Text="Hide this Note. Show it again using ShowNotes"/>
+        <Run x:Key="strCloseNoteTip" Text="Close this Note. Show it again using Notes Manager"/>
         <Run x:Key="strShowNotesTip" Text="Show or Hide Specific Notes"/>
         <Run x:Key="strShowAllNotesTip" Text="Toggle Show All Private and Public Notes"/>
         <Run x:Key="strShowPrivateNotesTip" Text="Toggle Show All Private Notes"/>
@@ -67,8 +73,18 @@
         <Run x:Key="strFormatBarTip" Text="Toggle Font FormatBar"/>
         <Run x:Key="strSpellCheckTip" Text="Toggle Spell Checking"/>
         <Run x:Key="strAppPrefsTip" Text="Manage Application Preferences"/>
-        <Run x:Key="strExitApp" Text="Close All Notes and Exit Application"/>
-
+        <Run x:Key="strExitAppTip" Text="Close All Notes and Exit Application"/>
+        <!-- NLS: UX and Dialog Strings -->
+        <Run x:Key="strExitAppTitle" Text="EXIT Application"/>
+        <Run x:Key="strCloseLastNoteTitle" Text="Close Note : "/>
+        <Run x:Key="strHideLastNoteTitle" Text="Hide Note : "/>
+        <Run x:Key="strDeleteLastNoteTitle" Text="Delete Note : "/>
+        <Run x:Key="strCloseLastNoteConfirmPrompt" Text="You are about to CLOSE the LAST Sticky Note. &#x0a;This will EXIT the Application. &#x0a;&#x0a;Press OK to continue. &#x0a;&#x0a;Press Cancel to go back."/>
+        <Run x:Key="strHideLastNoteConfirmPrompt" Text="You are about to HIDE the LAST Sticky Note. &#x0a;This will EXIT the Application. &#x0a;&#x0a;Press OK to continue. &#x0a;&#x0a;Press Cancel to go back."/>
+        <Run x:Key="strDeleteLastNoteConfirmPrompt" Text="You are about to DELETE the LAST Sticky Note. &#x0a;This will EXIT the Application. &#x0a;&#x0a;Press OK to continue. &#x0a;&#x0a;Press Cancel to go back."/>
+        <Run x:Key="strDeleteNoteConfirmPrompt" Text="Are you sure you want to permanently delete this Note?"/>
+        <!-- NLS: Error and User Message Strings -->
+        <Run x:Key="strMediaFailedMsg" Text="Media FAILED for "/>
     </Window.Resources>
 
     <Grid x:Name="uxLayoutRoot">
@@ -78,6 +94,7 @@
                 <MenuItem Header="_File">
                     <MenuItem Header="New Note" Command="New" ToolTip="{StaticResource strAddNoteTip}" />
                     <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H" ToolTip="{StaticResource strHideNoteTip}"/>
+                    <MenuItem Header="Close Note" Command="local:AppCommands.CloseCommand" InputGestureText="Alt-F4" ToolTip="{StaticResource strCloseNoteTip}"/>
                     <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" InputGestureText="Alt-D" ToolTip="{StaticResource strDeleteNoteTip}"/>
                     <MenuItem Header="Refresh" Command="Refresh" ToolTip="{StaticResource strRefreshNoteTip}"/>
                     <MenuItem Header="Save" Command="Save" ToolTip="{StaticResource strSaveNoteTip}"/>
@@ -98,7 +115,7 @@
                 <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts" ToolTip="{StaticResource strFontsTip}">
                     <MenuItem Header="@see code" />
                 </MenuItem>
-                <MenuItem x:Name="uxSelectColorMenuItem" Header="Colors" ToolTip="{StaticResource strColorsTip}">
+                <MenuItem x:Name="uxSelectBackgroundMenuItem" Header="Backgrounds" ToolTip="{StaticResource strBackgroundsTip}">
                     <MenuItem Header="@see code" />
                 </MenuItem>
                 <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="MenuItem" InputGestureText="Alt-R" ToolTip="{StaticResource strToggleReminderTip}"/>
@@ -112,7 +129,7 @@
                     <Separator/>
                 </MenuItem>
                 <MenuItem Header="Preferences..." Command="local:AppCommands.ApplicationPrefsCommand" InputGestureText="Alt-F1" ToolTip="{StaticResource strAppPrefsTip}"/>
-                <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="Alt-F4" ToolTip="{StaticResource strExitApp}"/>
+                <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="F3" ToolTip="{StaticResource strExitAppTip}"/>
             </ContextMenu>
         </Grid.ContextMenu>
 
@@ -141,12 +158,14 @@
                 <Expander x:Name="uxOptionsExpander" Height="28" Margin="4,0,8,0" Padding="8,0,8,0" ExpandDirection="Right" Background="{x:Null}" Style="{DynamicResource RGBExpanderStyle}" Expanded="OnOptionsExpander_Expanded" Collapsed="OnOptionsExpander_Collapsed" ToolTip="{StaticResource strExpandTip}">
                     <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                         <Button x:Name="uxTextFormatButton" Click="OnTextFormatButton_Click" Content="{StaticResource TextFormat_Image}" ToolTip="{StaticResource strFontsTip}"/>
-                        <xctk:ColorPicker x:Name="uxColorPicker" Width="36" Margin="4,0,0,0" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged"  ToolTip="{StaticResource strColorsTip}"/>
+                        <xctk:ColorPicker x:Name="uxColorPicker" Width="36" Margin="4,0,0,0" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged"  ToolTip="{StaticResource strBackgroundsTip}"/>
                         <Separator/>
                         <ToggleButton x:Name="uxReminderButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder_Image}" ToolTip="{StaticResource strToggleReminderTip}"/>
                         <ToggleButton x:Name="uxSettingsButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info_Image}" ToolTip="{StaticResource strToggleSettingsTip}"/>
                         <Separator/>
                         <ToggleButton x:Name="uxPinTab" Margin="4,0,0,0" Command="local:AppCommands.TogglePinCommand" Content="{StaticResource PinTabOff_Image}" ToolTip="{StaticResource strTogglePinTip}"/>
+                        <Separator/>
+                        <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strDeleteNoteTip}"/>
                     </StackPanel>
                 </Expander>
             </StackPanel>
@@ -154,7 +173,7 @@
                 <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strDeleteNoteTip}"/>
+                <Button x:Name="uxCloseNoteButton" Command="local:AppCommands.CloseCommand"  Content="{StaticResource Close_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strCloseNoteTip}"/>
             </StackPanel>
         </DockPanel>
         <StackPanel Grid.Row="1">
@@ -196,7 +215,7 @@
                         <xctk:PropertyDefinition TargetProperties="Title" DisplayOrder="0" />
                         <xctk:PropertyDefinition TargetProperties="UXSettings" DisplayName="Settings" DisplayOrder="1">
                             <xctk:PropertyDefinition.PropertyDefinitions>
-                                <xctk:PropertyDefinition TargetProperties="BackgroundColor" DisplayName="Fill Color" DisplayOrder="0" />
+                                <xctk:PropertyDefinition TargetProperties="BackgroundColor" DisplayName="Background Color" DisplayOrder="0" />
                                 <xctk:PropertyDefinition TargetProperties="FontFamily" DisplayName="Font Name " DisplayOrder="1" />
                                 <xctk:PropertyDefinition TargetProperties="FontSize" DisplayName="Font Size" DisplayOrder="2" />
                                 <xctk:PropertyDefinition TargetProperties="FontColor" DisplayName="Font Color" DisplayOrder="3" />

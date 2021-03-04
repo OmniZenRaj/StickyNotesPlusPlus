@@ -2,20 +2,20 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Resources;
 using System.Collections.Generic;
 using System.Reflection;
 
-using U = Utilities;
-using OmniZenNotes.Models;
-using System.Windows.Resources;
-
 namespace OmniZenNotes
 {
+    using OmniZenNotes.Models;
     using S = Properties.Settings;
+    using U = Utilities;
 
     public partial class App : Application
     {
         public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
+
         protected override void OnStartup(StartupEventArgs e) {
             try {
                 LoadSettings();
@@ -47,7 +47,7 @@ namespace OmniZenNotes
             SaveAppSettings();
         }
 
-        private void LoadSettings() {
+        void LoadSettings() {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var roamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var assemblyName = Assembly.GetEntryAssembly().GetName().Name;
@@ -79,7 +79,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void SaveAppSettings() {
+        void SaveAppSettings() {
             S.Default.NoteBooks.Clear();
             foreach (Notebook nb in Repository.NoteBooks) {
                 S.Default.NoteBooks.Add(nb.DbPathUri);
@@ -101,6 +101,7 @@ namespace OmniZenNotes
         public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
         public static RoutedUICommand TogglePinCommand = new RoutedUICommand("Toggle Pin On Off", "TogglePin", typeof(AppCommands));
         public static RoutedUICommand HideCommand = new RoutedUICommand("Hide Note", "HideNote", typeof(AppCommands));
+        public static RoutedUICommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(AppCommands));
         public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
         public static RoutedUICommand ShowAllNotesCommand = new RoutedUICommand("Show All", "ShowAllNotes", typeof(AppCommands));
         public static RoutedUICommand ShowPrivateNotesCommand = new RoutedUICommand("Show Private", "ShowPrivateNote", typeof(AppCommands));

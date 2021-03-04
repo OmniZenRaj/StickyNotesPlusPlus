@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 
-using EX = Utilities.Exceptions;
-
 namespace OmniZenNotes.Models
 {
+    using EX = Utilities.Exceptions;
+
     internal class Repository
     {
         private static SQLiteConnection _Connection;

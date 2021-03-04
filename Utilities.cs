@@ -318,6 +318,7 @@ namespace Utilities
                 using ShellObject shellObject = ShellObject.FromParsingName(localPath);
                 return width switch
                 {
+                    // RND: Cleaner scaling might be done by using delta with size diff accounted for
                     double w when w >= DefaultThumbnailSize.ExtraLarge.Width => XL < L ? shellObject?.Thumbnail.ExtraLargeBitmapSource : shellObject?.Thumbnail.LargeBitmapSource,
                     double w when w >= DefaultThumbnailSize.Large.Width => XL < L ? shellObject?.Thumbnail.ExtraLargeBitmapSource : shellObject?.Thumbnail.LargeBitmapSource,
                     double w when w >= DefaultThumbnailSize.Medium.Width => L < M ? shellObject?.Thumbnail.LargeBitmapSource : shellObject?.Thumbnail.MediumBitmapSource,
@@ -448,13 +449,20 @@ namespace Utilities
             return false;
         }
 
+        // ItemCollection Extension Methods
+        public static void Map(System.Windows.Controls.ItemCollection self, Predicate<object> filter, Action<object> action) {
+            foreach (object item in self) {
+                if (filter(item)) { action(item); }
+            }
+        }
+
         // Exception Handling Extension Methods:
         // Pretty format an Exception including the inner exception(s)
-        public static string FormatException(this System.Exception self, string errorMessage, int indent = 0) {
-            String indentStr = new String('\t', indent);
+        public static string FormatException(this Exception self, string errorMessage, int indent = 0) {
+            string indentStr = new string('\t', indent);
             StringBuilder msg = new StringBuilder(errorMessage + "\n\n");
-            String[] exMessageLines = self.ToString().Split('\n');
-            foreach (String line in exMessageLines) {
+            string[] exMessageLines = self.ToString().Split('\n');
+            foreach (string line in exMessageLines) {
                 msg.Append(indentStr);
                 msg.Append(line);
                 msg.Append('\n');
@@ -464,13 +472,6 @@ namespace Utilities
                 msg.Append(self.InnerException.FormatException("", indent + 1));
             }
             return msg.ToString();
-        }
-
-        // ItemCollection Extension Methods
-        public static void Map(System.Windows.Controls.ItemCollection self, Predicate<object> filter, Action<object> action) {
-            foreach (object item in self) {
-                if (filter(item)) { action(item); }
-            }
         }
 
         // string Extension Methods:
@@ -508,12 +509,5 @@ namespace Utilities
         }
 
         #endregion
-    }
-
-    // Application Level Commands
-    public static class AppCommands
-    {
-        public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));
-        public static RoutedUICommand DeleteCommand = new RoutedUICommand("DeleteNote", "DeleteNote", typeof(AppCommands));
     }
 }

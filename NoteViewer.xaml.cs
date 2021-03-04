@@ -6,9 +6,11 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using System.Windows.Data;
 using System.Windows.Interop;
@@ -17,24 +19,23 @@ using System.Globalization;
 
 using Microsoft.WindowsAPICodePack.Shell;
 using Xceed.Wpf.Toolkit.PropertyGrid;
-using System.Windows.Navigation;
-
-using OmniZenNotes.Models;
-using U = Utilities;
-using System.Collections;
 
 #pragma warning disable IDE1006 // Ignore name rule violation for XAML element objects starting with ux
 
 namespace OmniZenNotes
 {
+    using OmniZenNotes.Models;
     using S = Properties.Settings;
+    using U = Utilities;
 
     public partial class NoteViewer : Window
     {
-        public static List<FontFamily> FontFamilies;
-        public static List<PropertyInfo> BackgroundColors;
+        NoteViewModel VM { get; set; }
 
-        public NoteViewModel VM { get; set; }
+        static List<FontFamily> FontFamilies;
+        static List<PropertyInfo> BackgroundColors;
+
+        static bool IsExiting = false;
         DispatcherTimer Timer = new DispatcherTimer();
 
         public NoteViewer(Note note) {
@@ -55,7 +56,7 @@ namespace OmniZenNotes
             OnSpellCheckCommand(null, null); // SETTINGS: SpellCheck ON/OFF
 
             uxShowNotesMenuItem.SubmenuOpened += OnShowNotes_SubmenuOpened;
-            uxSelectColorMenuItem.SubmenuOpened += OnSelectColor_SubmenuOpened;
+            uxSelectBackgroundMenuItem.SubmenuOpened += OnSelectBackgroundColor_SubmenuOpened;
             uxSelectFontMenuItem.SubmenuOpened += OnSelectFont_SubmenuOpened;
 
             Title = VM.Note.Title;
@@ -103,6 +104,9 @@ namespace OmniZenNotes
             // Hide Command
             AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
             InputBindings.Add(new KeyBinding(AppCommands.HideCommand, new KeyGesture(Key.H, ModifierKeys.Alt, "Alt-H")));
+            // Close Command
+            AddCommandBinding(AppCommands.CloseCommand, OnCloseCommand);
+            InputBindings.Add(new KeyBinding(AppCommands.CloseCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
             // Delete Command
             AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
             InputBindings.Add(new KeyBinding(AppCommands.DeleteCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
@@ -122,6 +126,7 @@ namespace OmniZenNotes
             AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
             InputBindings.Add(new KeyBinding(AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
 
+            // Local Function to Simplify Default Command Binding
             void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
                 CommandBinding cb = new CommandBinding(command);
                 cb.Executed += new ExecutedRoutedEventHandler(handler);
@@ -131,7 +136,7 @@ namespace OmniZenNotes
 
         }
 
-        private void OnLoaded(object sender, EventArgs e) {
+        void OnLoaded(object sender, EventArgs e) {
             DataContext = VM.Note;
 
             uxSettingsPropertyGrid.SelectedObject = VM.Note;
@@ -157,16 +162,25 @@ namespace OmniZenNotes
             return new Rect(left, top, width, height); ;
         }
 
-        private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
-            if (VM.Note != null) { Save(saveAsync: false); }
+        void OnClosed(object sender, EventArgs e) {
             App.NoteViewers.Remove(this);
+        }
+
+        void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+            if (!IsExiting && App.NoteViewers.Count == 1 && VM.Note != null) {
+                string title = $"{STR("strCloseLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+                string msg = $"{STR("strCloseLastNoteConfirmPrompt")}";
+                e.Cancel = !ConfirmUserAction(title, msg);
+            }
+
+            if (VM.Note != null) { Save(saveAsync: false); }
         }
 
         void OnSaveCommand(object sender, RoutedEventArgs e) {
             Save(saveAsync: false);
         }
 
-        private void Save(bool saveAsync = true) {
+        void Save(bool saveAsync = true) {
             SaveSettings();
             if (VM.Note != null) {
                 VM.Note.Save(saveAsync);
@@ -188,27 +202,52 @@ namespace OmniZenNotes
         }
 
         void OnHideCommand(object sender, RoutedEventArgs e) {
-            if (App.NoteViewers.Count == 1) {
-                MessageBox.Show("You cannot HIDE the LAST Sticky Note. \n\nUse Alt-F4 to Exit Application", Assembly.GetExecutingAssembly().GetName().Name);
+            int visibleNotes = 0;
+            foreach (var nv in App.NoteViewers) {
+                if (nv.Visibility == Visibility.Visible) {
+                    visibleNotes++;
+                }
+
+                if (visibleNotes > 1) break;    // More than 1 is only factor
+            }
+
+            if (visibleNotes == 1) {
+                string title = $"{STR("strHideLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+                string msg = $"{STR("strHideLastNoteConfirmPrompt")}";
+                if (ConfirmUserAction(title, msg)) {
+                    Close();
+                }
             } else {
                 Hide();
             }
+
+            e.Handled = true;
+        }
+
+        void OnCloseCommand(object sender, RoutedEventArgs e) {
+            Close();
             e.Handled = true;
         }
 
         void OnDeleteCommand(object sender, RoutedEventArgs e) {
-            string title = Assembly.GetExecutingAssembly().GetName().Name;
-            MessageBoxResult mbr = MessageBoxResult.OK;
             if (App.NoteViewers.Count == 1) {
-                mbr = MessageBox.Show("You are about to DELETE the LAST Sticky Note. \nThis will EXIT the Application. \n\nPress OK to continue. \n\nPress Cancel to go back.", $"EXIT Application {title}", MessageBoxButton.OKCancel, MessageBoxImage.Stop, MessageBoxResult.Cancel);
+                string title = $"{STR("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+                string msg = $"{STR("strDeleteLastNoteConfirmPrompt")} ";
+
+                if (ConfirmUserAction(title, msg)) {
+                    ConfirmDeleteNote();
+                    SaveSettings();
+                }
+            } else {
+                ConfirmDeleteNote();
             }
 
-            if (mbr == MessageBoxResult.OK) {
-                mbr = MessageBox.Show("Are you sure you want to permanently delete this Note?", $"Delete Note - {title}", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-                if (mbr == MessageBoxResult.Yes) {
+            void ConfirmDeleteNote() {
+                string title = $"{STR("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+                string msg = $"{STR("strDeleteNoteConfirmPrompt")}";
+                if (ConfirmUserAction(title, msg, MessageBoxButton.YesNoCancel, MessageBoxImage.Stop, MessageBoxResult.Cancel)) {
                     VM.Note.Delete();
                     VM.Note = null;
-                    SaveSettings();
                     Close();
                     App.NoteViewers.Remove(this);
                 }
@@ -217,8 +256,28 @@ namespace OmniZenNotes
             e.Handled = true;
         }
 
+        // TODO: Add User Option to suppress this message on the dialog box (@see MS Sticky Notes)
+        bool ConfirmUserAction(string title, string msg, MessageBoxButton button = MessageBoxButton.OKCancel, MessageBoxImage image = MessageBoxImage.Question, MessageBoxResult result = MessageBoxResult.Cancel) {
+            MessageBoxResult mbr;
+            mbr = MessageBox.Show($"{msg}", $"{title}", button, image, result);
+            return mbr == MessageBoxResult.Yes || mbr == MessageBoxResult.OK;
+        }
+
+        string STR(string resourceKey) {
+            if (TryFindResource(resourceKey) is Run run) {
+                return run.Text;
+            };
+            return "*** NOT FOUND ***";
+        }
+
         void OnExitApplicationCommand(object sender, RoutedEventArgs e) {
-            Application.Current.Shutdown();
+            IsExiting = true;
+            SaveSettings();
+
+            var nvs = new ArrayList(App.NoteViewers); // Clone to safely iterate
+            foreach( NoteViewer nv in nvs) {
+                nv.Close();
+            }
         }
 
         void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
@@ -269,7 +328,7 @@ namespace OmniZenNotes
                 if (nv.VM.Note.Security.Permissions == EntityPermissions.Private) {
                     if (nv.Visibility != Visibility.Visible) { nv.Show(); }
                 } else {
-                    if (nv.Visibility == Visibility.Visible) { nv.Hide(); }
+                    if (nv.Visibility == Visibility.Visible) { OnHideCommand(sender, e); }
                 }
             }
         }
@@ -279,12 +338,12 @@ namespace OmniZenNotes
                 if (nv.VM.Note.Security.Permissions != EntityPermissions.Private) {
                     if (nv.Visibility != Visibility.Visible) { nv.Show(); }
                 } else {
-                    if (nv.Visibility == Visibility.Visible) { nv.Hide(); }
+                    if (nv.Visibility == Visibility.Visible) { OnHideCommand(sender, e); }
                 }
             }
         }
 
-        private void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
+        void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (Keyboard.Modifiers == ModifierKeys.Control) {
                 // TODO: Make Text Selections work
                 TextRange range = uxRichTextBox.Selection;
@@ -297,48 +356,50 @@ namespace OmniZenNotes
                 }
             }
         }
-        private void OnZoomCommand(object sender, RoutedEventArgs e) {
+
+        void OnZoomCommand(object sender, RoutedEventArgs e) {
             WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         }
 
-        private void OnToolBar_MouseDown(object sender, MouseButtonEventArgs e) {
+        void OnToolBar_MouseDown(object sender, MouseButtonEventArgs e) {
             if (e.LeftButton == MouseButtonState.Pressed) {
                 DragMove();
             }
         }
 
-        private void OnActivated(object sender, EventArgs e) {
+        void OnActivated(object sender, EventArgs e) {
             ToggleToolBar(Visibility.Visible);
             uxRichTextBox.Focus();
         }
 
-        private void OnDeactivated(object sender, EventArgs e) {
+        void OnDeactivated(object sender, EventArgs e) {
             ToggleToolBar(Visibility.Collapsed);
         }
 
-        private void OnWindow_MouseEnter(object sender, EventArgs e) {
+        void OnWindow_MouseEnter(object sender, EventArgs e) {
             ToggleToolBar(Visibility.Visible);
         }
 
-        private void OnWindow_MouseLeave(object sender, EventArgs e) {
+        void OnWindow_MouseLeave(object sender, EventArgs e) {
             if (!IsActive) {
                 ToggleToolBar(Visibility.Collapsed);
             }
         }
-        private void ToggleToolBar(Visibility visibility) {
+
+        void ToggleToolBar(Visibility visibility) {
             uxToolBar.Visibility = visibility;
             // uxToolBar.LayoutTransform = visibility == Visibility.Hidden ? new ScaleTransform(0.05, 0.05) : Transform.Identity;
         }
 
-        private void OnButton_MouseEnter(object sender, EventArgs e) {
+        void OnButton_MouseEnter(object sender, EventArgs e) {
         }
 
-        private void OnButton_MouseLeave(object sender, EventArgs e) {
+        void OnButton_MouseLeave(object sender, EventArgs e) {
         }
 
         #region UX Control Event Handlers
 
-        private void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
+        void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
 
             using var fd = new System.Windows.Forms.FontDialog {
                 Font = new System.Drawing.Font(U.Graphics.GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
@@ -363,13 +424,13 @@ namespace OmniZenNotes
             }
         }
 
-        private void SetFont(FontFamily fontFamily, double fontSize, Brush foreGround, FontStyle fontStyle, bool updateUXSettings = true) {
+        void SetFont(FontFamily fontFamily, double fontSize, Brush foreGround, FontStyle fontStyle, bool updateUXSettings = true) {
             if (foreGround is SolidColorBrush scb) {
                 SetFont(fontFamily, fontSize, scb.Color, fontStyle, updateUXSettings);
             }
         }
 
-        private void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
+        void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
             // Keep the Window Font in sync with the RichTextBox Font:
             if (fontFamily != null) {
                 var doc = uxRichTextBox.Document;
@@ -408,7 +469,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
+        void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
 
             using var cd = new System.Windows.Forms.ColorDialog();
             if (uxRichTextBox.Background is SolidColorBrush scb) {
@@ -423,7 +484,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void SetBackgroundColor(Color color, bool updateUXSettings = true) {
+        void SetBackgroundColor(Color color, bool updateUXSettings = true) {
             if (updateUXSettings) {
                 VM.Note.UXSettings.BackgroundColor = color;
             };
@@ -445,7 +506,7 @@ namespace OmniZenNotes
             uxRichTextBox.SelectionBrush = colorScRgb.ScA <= 0.75 ? new SolidColorBrush(Colors.Black) : new SolidColorBrush(colorScRgb);
         }
 
-        private Color AdjustColor(Color color) {
+        Color AdjustColor(Color color) {
             // Tweak the textbox color for a nice background accent color for the toolbar.
             U.Graphics.RgbToHls(color.R, color.G, color.B, out double h, out double l, out double s);
             if (l > 0.75f) l *= 0.70f; else if (l > 0.50f) l *= 0.45f; else if (l > 0.35f) l *= 0.25f; else if (l > 0.25f) l *= 1.50f; else if (l > 0.00f) l *= 1.75f; else l = 0.35f;
@@ -457,7 +518,7 @@ namespace OmniZenNotes
             return colorScRgb;
         }
 
-        private void OpenNewWindow(Note note) {
+        void OpenNewWindow(Note note) {
             System.Windows.Forms.Screen[] allScreens = System.Windows.Forms.Screen.AllScreens;
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
@@ -513,47 +574,47 @@ namespace OmniZenNotes
 #pragma warning restore CS8321
         }
 
-        private void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
+        void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
             if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
             uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
         }
 
-        private void OnMouseDoubleClick(object sender, RoutedEventArgs e) {
+        void OnMouseDoubleClick(object sender, RoutedEventArgs e) {
             if (e.OriginalSource is DockPanel dp && dp == uxToolBar) {
                 if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
                 uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
             }
         }
 
-        private void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
+        void OnAddNoteButton_Click(object sender, RoutedEventArgs e) {
             OnNewCommand(sender, e);
         }
 
-        private void OnNewCommand(object sender, RoutedEventArgs e) {
+        void OnNewCommand(object sender, RoutedEventArgs e) {
             OpenNewWindow(VM.CreateNewNote(copy: VM.Note));
         }
 
-        private void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
+        void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
             OnDeleteCommand(sender, e);
         }
 
-        private void OnOptionsExpander_Expanded(object sender, RoutedEventArgs e) {
+        void OnOptionsExpander_Expanded(object sender, RoutedEventArgs e) {
             if (sender is Expander expander) {
                 VM.Note.UXSettings.OptionsExpanded = expander.IsExpanded;
             }
         }
 
-        private void OnOptionsExpander_Collapsed(object sender, RoutedEventArgs e) {
+        void OnOptionsExpander_Collapsed(object sender, RoutedEventArgs e) {
             if (sender is Expander expander) {
                 VM.Note.UXSettings.OptionsExpanded = expander.IsExpanded;
             }
         }
 
-        private void OnPinTabButton_Click(object sender, RoutedEventArgs e) {
+        void OnPinTabButton_Click(object sender, RoutedEventArgs e) {
             OnTogglePinCommand(sender, e);
         }
 
-        private void UpdatePinTabUX() {
+        void UpdatePinTabUX() {
             VM.Note.UXSettings.Topmost = Topmost;
 
             Image image = uxPinTab.Content as Image;
@@ -566,15 +627,15 @@ namespace OmniZenNotes
         }
 
         // Reminder and Settings PropertyGrid UX Management:
-        private void ShowReminderPanel(ToggleButton toggleButton) {
+        void ShowReminderPanel(ToggleButton toggleButton) {
             uxReminderPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void ShowSettingsPanel(ToggleButton toggleButton) {
+        void ShowSettingsPanel(ToggleButton toggleButton) {
             uxSettingsPanel.Visibility = toggleButton.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+        void uxReminderPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
             if (e.NewValue is bool visible) {
                 uxViewNoteReminderMenuItem.IsChecked = visible;
                 // Toggle Settings panel & button to be mutualy exclusive of the Reminder panel
@@ -584,7 +645,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+        void uxSettingsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
             if (e.NewValue is bool visible) {
                 uxViewNoteSettingsMenuItem.IsChecked = visible;
                 // Toggle Reminder panel & button to be mutualy exclusive of the Settings panel
@@ -595,7 +656,7 @@ namespace OmniZenNotes
         }
 
         // TODO: Print & PrintPreview NOT working (may only work with FixedDocument (not FlowDocument))
-        private void OnPrintCommand(object sender, RoutedEventArgs e) {
+        void OnPrintCommand(object sender, RoutedEventArgs e) {
             var printDialog = new PrintDialog(); // Create a PrintDialog.
 
             // Show the dialog and print the document if successful
@@ -604,8 +665,8 @@ namespace OmniZenNotes
             }
         }
         // Dynamic Submenu Open Processing
-        private void OnSelectColor_SubmenuOpened(object sender, RoutedEventArgs e) {
-            uxSelectColorMenuItem.Items.Clear();
+        void OnSelectBackgroundColor_SubmenuOpened(object sender, RoutedEventArgs e) {
+            uxSelectBackgroundMenuItem.Items.Clear();
 
             // Load the Colors if not already loaded
             if (BackgroundColors == null || BackgroundColors.Count == 0) {
@@ -614,12 +675,18 @@ namespace OmniZenNotes
 
             // Add a Colors... Menu Item to bring up Colors Dialog box
             // TODO: Try to use the newer Wpf Toolkit ColorPicker
-            MenuItem item = new MenuItem { Header = "Colors...", };
+            MenuItem item = new MenuItem { Header = "Colors...", ToolTip = $"{STR("strSetBackgroundFromColorDialogTip")}"};
             item.Click += (object sender, RoutedEventArgs e) => {
                 if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
             };
-            uxSelectColorMenuItem.Items.Add(item);
-            uxSelectColorMenuItem.Items.Add(new Separator());
+            uxSelectBackgroundMenuItem.Items.Add(item);
+
+            item = new MenuItem { Header = "Insert Image...", ToolTip = $"{STR("strSetBackgroundFromImageTip")}"};
+            item.Click += (object sender, RoutedEventArgs e) => {
+                // TODO: Add Open File Dialog to Select an Image to Insert
+            };
+            uxSelectBackgroundMenuItem.Items.Add(item);
+            uxSelectBackgroundMenuItem.Items.Add(new Separator());
 
             foreach (PropertyInfo prop in BackgroundColors) {
                 Color color = (Color)prop.GetValue(null);
@@ -628,7 +695,8 @@ namespace OmniZenNotes
                     Tag = color,
                     Background = new SolidColorBrush(color),
                     Foreground = new SolidColorBrush(AdjustColor(color)),
-                };
+                    ToolTip = $"{STR("strSetBackgroundToColorTip")} {prop.Name}",
+            };
 
                 // Handle color selection from auto generated submenu
                 item.Click += (object sender, RoutedEventArgs e) => {
@@ -637,11 +705,11 @@ namespace OmniZenNotes
                     }
                 };
 
-                uxSelectColorMenuItem.Items.Add(item);
+                uxSelectBackgroundMenuItem.Items.Add(item);
             }
         }
 
-        private void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
+        void OnSelectFont_SubmenuOpened(object sender, RoutedEventArgs e) {
             uxSelectFontMenuItem.Items.Clear();
 
             // Load the Font Families if not already loaded
@@ -721,7 +789,7 @@ namespace OmniZenNotes
         #region Settings & Configuration
 
         // Loaded from App Settings located @ C:\User\{User}\AppData\Local\OmniZenNotes\OmniZenNote.exe_...
-        private void LoadSettings() {
+        void LoadSettings() {
             try {
                 // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
                 WindowState = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
@@ -759,7 +827,7 @@ namespace OmniZenNotes
         }
 
         // Restore the Note specific settings (which override the App level settings)
-        private void LoadUXSettings() {
+        void LoadUXSettings() {
             if (VM.Note.UXSettings.RestoreBounds is Rect restoreBounds && double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top)) {
                 Left = restoreBounds.Left; Top = restoreBounds.Top;
                 Width = restoreBounds.Width; Height = restoreBounds.Height;
@@ -773,7 +841,7 @@ namespace OmniZenNotes
             Topmost = VM.Note.UXSettings.Topmost;
         }
 
-        private void SaveUXSettings() {
+        void SaveUXSettings() {
             // Save the Note specific settings (which override the App level settings)
             if (VM.Note != null) {
                 VM.Note.UXSettings ??= new UXSettings();
@@ -820,33 +888,33 @@ namespace OmniZenNotes
 
         #endregion
 
-        private void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
+        void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
             Debug.WriteLine($"sender {sender} TextChangedEventArgs {e}");
         }
 
-        private void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
+        void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
             SetBackgroundColor((Color)e.NewValue);
             uxSettingsPropertyGrid.Update();
         }
 
-        private void uxReminderPanel_KeyDown(object sender, KeyEventArgs e) {
+        void uxReminderPanel_KeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Escape) {
                 uxReminderPanel.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
         }
 
-        private void uxSettingsPanel_KeyDown(object sender, KeyEventArgs e) {
+        void uxSettingsPanel_KeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Escape) {
                 uxSettingsPanel.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
         }
 
-        private void uxReminderPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
+        void uxReminderPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
         }
 
-        private void uxSettingsPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
+        void uxSettingsPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
             if (e.OriginalSource is PropertyItem item) {
                 Color foregroundColor = Colors.Black;
                 if (uxRichTextBox.Foreground is SolidColorBrush scba) {
@@ -882,12 +950,12 @@ namespace OmniZenNotes
             }
         }
 
-        private void OnRichTextBox_PreviewDragOver(object sender, DragEventArgs args) {
+        void OnRichTextBox_PreviewDragOver(object sender, DragEventArgs args) {
             args.Effects = args.KeyStates == (DragDropKeyStates.LeftMouseButton | DragDropKeyStates.ControlKey) ? DragDropEffects.Copy : DragDropEffects.Link;
             args.Handled = true;
         }
 
-        private void OnRichTextBox_PreviewDrop(object sender, DragEventArgs args) {
+        void OnRichTextBox_PreviewDrop(object sender, DragEventArgs args) {
             args.Handled = true;
             var fileName = IsSingleFileOrDir(args);
             if (fileName == null) return;
@@ -915,7 +983,7 @@ namespace OmniZenNotes
                     case ".bmp":
                         var image = new Image();
                         var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
-                        image.Source = bitmap;
+                        image.Source = bitmap.Clone();
                         image.Width = Math.Min(bitmap.PixelWidth, Width);
                         image.Height = Math.Min(bitmap.PixelHeight, Height);
                         if (bitmap.PixelWidth > Width || bitmap.PixelHeight > Height) {
@@ -946,12 +1014,18 @@ namespace OmniZenNotes
                     case ".bmp":
                         var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
                         var imageBrush = new ImageBrush(bitmap);
-                        if (uxRichTextBox.Background is SolidColorBrush scb && scb.Color.A < 255) {
+                        if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
                             imageBrush.Opacity = scb.Color.A / 255.0f;
                         }
-                        uxRichTextBox.Document.Background = imageBrush;
+                        uxRichTextBox.Document.Background = imageBrush.Clone();
                         break;
+                    case ".mp4":
+                    case ".mpg":
+                    case ".mp3":
+                    case ".wma":
                     case ".wmv":
+                    case ".avi":
+                    case ".mkv":
                         var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
                         var iuic_me = new InlineUIContainer(me, tp);
                         break;
@@ -976,7 +1050,7 @@ namespace OmniZenNotes
             }
         }
 
-        private void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addTextRun = false) {
+        void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addTextRun = false) {
             // Create a new image with given height and width
             var image = new Image {
                 // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
@@ -1012,7 +1086,7 @@ namespace OmniZenNotes
 
         public void OnMediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e) {
             if (sender is MediaElement me) {
-                var error = $"Media FAILED for {me.Source} : ";
+                var error = $"{STR("strMediaFailedMsg")} {me.Source} : ";
                 var iuic = me.Parent as InlineUIContainer;
                 iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
                 //U.Exceptions.LogException(e.ErrorException, error);
@@ -1030,11 +1104,10 @@ namespace OmniZenNotes
 
         public void OnHyperlink_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control) {
-
                 // Each Hyperlink has an associated image stored in the Tag object property
                 Image image = hyperlink.Tag as Image;
                 // Each Image uses Tag object to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
-                image.Tag = e.Delta > 0 ? (double)image.Tag * 1.01 : (double)image.Tag * 0.99;
+                image.Tag = e.Delta > 0 ? (double)image.Tag * 1.10 : (double)image.Tag * 0.90;
                 // Scale the thumbnail image using the LayoutTransform until approach closer to the next size
                 // When image size changes across the S/M/L/XL thumbnail boundary size, recreate image to new size
                 double newWidth = image.Width * (double)image.Tag;
@@ -1043,11 +1116,8 @@ namespace OmniZenNotes
 
                 // Recreate image in order to trigger update of image when new size is wanted
                 if (thumbnail.Width > image.Width || thumbnail.Width < image.Width) {
-                    // Must create a copy of the collection for safe iteration when updating same collection
-                    ArrayList inlines = new ArrayList(hyperlink.Inlines.Count);
-                    foreach (var i in hyperlink.Inlines) { inlines.Add(i); }
-                    // foreach (Inline inline in inlines) { hyperlink.Inlines.Remove(inline);}
-                    foreach (var inline in hyperlink.Inlines) {
+                    var inlines = new ArrayList(hyperlink.Inlines); // Clone to safely iterate
+                    foreach (var inline in inlines) {
                         if (inline is InlineUIContainer uiContainer) {
                             hyperlink.Inlines.Remove(uiContainer);
                             // Recreate the new sized image and display text inlines in the hyperlink
@@ -1062,7 +1132,7 @@ namespace OmniZenNotes
             }
         }
 
-        private string IsSingleFileOrDir(DragEventArgs args) {
+        string IsSingleFileOrDir(DragEventArgs args) {
             // Check for files in the hovering data object.
             if (args.Data.GetDataPresent(DataFormats.FileDrop, true)) {
                 var fileNames = args.Data.GetData(DataFormats.FileDrop, true) as string[];

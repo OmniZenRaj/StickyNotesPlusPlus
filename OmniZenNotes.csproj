@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
     <PropertyGroup>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <OutputType>WinExe</OutputType>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -46,6 +46,7 @@
     <Resource Include="assets/images/pin-blue_small-24x.png" />
     <Resource Include="assets/images/ic_save_black_18dp.png" />
     <Resourcec Include="assets/images/pin-green_small-24x.png" />
+    <Resource Include="assets/images/ic_close.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
