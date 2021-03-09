@@ -218,6 +218,73 @@ namespace Utilities
             return fontName;
         }
 
+        public static int GetMonitorNumber(System.Windows.Window window) {
+            var allScreens = new ArrayList(Screen.AllScreens);
+            var screen = Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(window).Handle);
+            return allScreens.IndexOf(screen) + 1;
+        }
+
+        public static Rectangle GetWorkingArea(System.Windows.Window window) {
+
+            var allScreens = new ArrayList(Screen.AllScreens);
+            var screen = Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(window).Handle);
+
+            RECT lprc = new RECT() {
+                Left = (int)window.Left,
+                Top = (int)window.Top,
+                Bottom = (int)(window.Top + window.Height),
+                Right = (int)(window.Left + window.Width)
+            };
+
+            uint dwFlags1 = 2; uint dwFlags2 = 0;
+            // if (!(MonitorFromRect(ref lprc, dwFlags2) == IntPtr.Zero)) return new Rectangle();
+
+            IntPtr hMonitor = MonitorFromRect(ref lprc, dwFlags1);
+            if (!(hMonitor != IntPtr.Zero)) return new Rectangle();
+
+            MONITORINFO lpmi = new MONITORINFO();
+            lpmi.cbSize = Marshal.SizeOf((object)lpmi);
+
+            bool rc = GetMonitorInfo(hMonitor, lpmi);
+            if (rc) {
+                RECT wa = lpmi.rcWork;
+                return new Rectangle(wa.Left, wa.Top, wa.Right, wa.Bottom);
+            }
+            
+            return new Rectangle();
+        }
+
+        public static bool MonitorExists(int monitorNumber) {
+            return monitorNumber <= Screen.AllScreens.Length;
+        }
+        
+        public struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class MONITORINFO
+        {
+            public int cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+            public RECT rcMonitor;
+            public RECT rcWork;
+            public int dwFlags;
+        }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+        
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetMonitorInfo(IntPtr hMonitor, [In, Out] MONITORINFO lpmi);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromRect([In] ref RECT lprc, uint dwFlags);
+
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern int ExtractIconEx(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconSmall, int nIcons);
 

@@ -132,6 +132,9 @@ namespace OmniZenNotes.Models
         public Color BackgroundColor { get; set; }
         public bool OptionsExpanded { get; set; }
         public bool Topmost { get; set; }
+        public bool ToolBarCollapsed { get; set; }
+        public int ZOrder { get; set; }
+        public int MonitorNumber { get; set; }
         public string CSS { get; set; }
 
         public string FontName => G.GetFamilyFontName(FontFamily);
@@ -155,6 +158,9 @@ namespace OmniZenNotes.Models
             BackgroundColor = copy.BackgroundColor;
             OptionsExpanded = copy.OptionsExpanded;
             Topmost = copy.Topmost;
+            ToolBarCollapsed = copy.ToolBarCollapsed;
+            ZOrder = copy.ZOrder;
+            MonitorNumber = copy.MonitorNumber;
             CSS = copy.CSS;
         }
     }

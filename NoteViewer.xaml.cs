@@ -145,22 +145,23 @@ namespace OmniZenNotes
             UpdatePinTabUX();
 
             // Make sure we don't go off screen (if user monitor changes etc.)
+/* 
             var rect = KeepWindowInBounds(RestoreBounds);
             Width = rect.Width; Height = rect.Height;
             Left = rect.Left; Top = rect.Top;
-        }
 
+ */        }
+/* 
         Rect KeepWindowInBounds(Rect restoreBounds) {
-            var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
-            var area = screen.WorkingArea;
+            var area = U.Graphics.GetWorkingArea(this);
 
-            double width = restoreBounds.Width > 20 ? restoreBounds.Width : area.Width / 2.25;
-            double height = restoreBounds.Height > 20 ? restoreBounds.Height : area.Height / 5.5;
-            double left = restoreBounds.Left > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
-            double top = restoreBounds.Top > area.Top ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
+            double width = restoreBounds.Width <= 20 ? area.Width / 2.25 : restoreBounds.Width;
+            double height = restoreBounds.Height <= 20 ? area.Height / 5.5 : restoreBounds.Height;
+            double left = restoreBounds.Left < area.Left || restoreBounds.Right > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
+            double top = restoreBounds.Bottom > area.Bottom ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
 
             return new Rect(left, top, width, height); ;
-        }
+        } */
 
         void OnClosed(object sender, EventArgs e) {
             App.NoteViewers.Remove(this);
@@ -387,8 +388,10 @@ namespace OmniZenNotes
         }
 
         void ToggleToolBar(Visibility visibility) {
-            uxToolBar.Visibility = visibility;
-            // uxToolBar.LayoutTransform = visibility == Visibility.Hidden ? new ScaleTransform(0.05, 0.05) : Transform.Identity;
+            uxToolBarStackPanel.Visibility = visibility == Visibility.Visible ? Visibility.Visible : Visibility.Hidden;
+            uxNoteTitleLabel.Opacity = visibility == Visibility.Visible ? 1 : .50;
+            uxCloseNoteButton.Visibility = visibility == Visibility.Visible ? Visibility.Visible : Visibility.Hidden;
+            // uxToolBar.Visibility = visibility;
         }
 
         void OnButton_MouseEnter(object sender, EventArgs e) {
@@ -576,13 +579,13 @@ namespace OmniZenNotes
 
         void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
             if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
-            uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
+            uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.75, 0.75) : Transform.Identity;
         }
 
         void OnMouseDoubleClick(object sender, RoutedEventArgs e) {
             if (e.OriginalSource is DockPanel dp && dp == uxToolBar) {
                 if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
-                uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.5, 0.5) : Transform.Identity;
+                uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.75, 0.75) : Transform.Identity;
             }
         }
 
@@ -828,18 +831,25 @@ namespace OmniZenNotes
 
         // Restore the Note specific settings (which override the App level settings)
         void LoadUXSettings() {
-            if (VM.Note.UXSettings.RestoreBounds is Rect restoreBounds && double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top)) {
-                Left = restoreBounds.Left; Top = restoreBounds.Top;
-                Width = restoreBounds.Width; Height = restoreBounds.Height;
-            }
 
             // Restore the Window State (minimized gets converted to be Normal to avoid user not seeing it)
             SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
             uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
             SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
             uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
-            Topmost = VM.Note.UXSettings.Topmost;
-        }
+            uxToolBar.LayoutTransform = VM.Note.UXSettings.ToolBarCollapsed == true ? new ScaleTransform(0.75, 0.75) : Transform.Identity;
+
+            if (U.Graphics.MonitorExists(VM.Note.UXSettings.MonitorNumber) && VM.Note.UXSettings.RestoreBounds is Rect restoreBounds && double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top)) {
+                    Left = restoreBounds.Left; Top = restoreBounds.Top;
+                    Width = restoreBounds.Width; Height = restoreBounds.Height;
+            } else {
+                // Default the restored bounds to current screen center:
+                var area = U.Graphics.GetWorkingArea(this);
+                Left = area.Width / 2 - Width / 2; Top = area.Height /2 + Height / 2;
+                Width = S.Default.RestoreBounds.Width;
+                Height = S.Default.RestoreBounds.Height;
+            }
+    }
 
         void SaveUXSettings() {
             // Save the Note specific settings (which override the App level settings)
@@ -857,6 +867,9 @@ namespace OmniZenNotes
                 }
                 VM.Note.UXSettings.OptionsExpanded = uxOptionsExpander.IsExpanded;
                 VM.Note.UXSettings.Topmost = Topmost;
+                VM.Note.UXSettings.ToolBarCollapsed = uxToolBar.LayoutTransform != Transform.Identity;
+                VM.Note.UXSettings.ZOrder = 1;
+                VM.Note.UXSettings.MonitorNumber = U.Graphics.GetMonitorNumber(this);
             }
         }
 
