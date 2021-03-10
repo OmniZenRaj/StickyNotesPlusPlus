@@ -226,9 +226,6 @@ namespace Utilities
 
         public static Rectangle GetWorkingArea(System.Windows.Window window) {
 
-            var allScreens = new ArrayList(Screen.AllScreens);
-            var screen = Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(window).Handle);
-
             RECT lprc = new RECT() {
                 Left = (int)window.Left,
                 Top = (int)window.Top,
@@ -236,11 +233,11 @@ namespace Utilities
                 Right = (int)(window.Left + window.Width)
             };
 
-            uint dwFlags1 = 2; uint dwFlags2 = 0;
+            uint dwFlags1 = 2; /* uint dwFlags2 = 0;*/
             // if (!(MonitorFromRect(ref lprc, dwFlags2) == IntPtr.Zero)) return new Rectangle();
 
             IntPtr hMonitor = MonitorFromRect(ref lprc, dwFlags1);
-            if (!(hMonitor != IntPtr.Zero)) return new Rectangle();
+            if (hMonitor == IntPtr.Zero) return new Rectangle();
 
             MONITORINFO lpmi = new MONITORINFO();
             lpmi.cbSize = Marshal.SizeOf((object)lpmi);

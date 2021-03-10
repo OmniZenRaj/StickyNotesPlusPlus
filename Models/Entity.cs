@@ -130,10 +130,13 @@ namespace OmniZenNotes.Models
         public FontStyle FontStyle { get; set; }
         public Color FontColor { get; set; }
         public Color BackgroundColor { get; set; }
-        public bool OptionsExpanded { get; set; }
-        public bool Topmost { get; set; }
-        public bool ToolBarCollapsed { get; set; }
-        public int ZOrder { get; set; }
+        public bool OptionsExpanded { get; set; } = false;
+        public bool FormatBar { get; set; } = false;
+        public bool SpellCheck { get; set; } = false;
+        public bool Topmost { get; set; } = false;
+        public Visibility Visibility { get; set; } = Visibility.Visible;
+        public int ZOrder { get; set; } = 1;
+        public double ToolBarScale { get; set; } = 1.0;
         public int MonitorNumber { get; set; }
         public string CSS { get; set; }
 
@@ -149,17 +152,21 @@ namespace OmniZenNotes.Models
             BackgroundColor = Properties.Settings.Default.BackgroundColor;
         }
 
+        // RND: May need to do a deeper Clone to avoid duplicate references
         public void CloneFrom(UXSettings copy) {
-            RestoreBounds = new Rect(copy.RestoreBounds.Size);
+            RestoreBounds = copy.RestoreBounds;
             FontFamily = copy.FontFamily;
             FontSize = copy.FontSize;
             FontStyle = copy.FontStyle;
             FontColor = copy.FontColor;
             BackgroundColor = copy.BackgroundColor;
             OptionsExpanded = copy.OptionsExpanded;
+            FormatBar = copy.FormatBar;
+            SpellCheck = copy.SpellCheck;
             Topmost = copy.Topmost;
-            ToolBarCollapsed = copy.ToolBarCollapsed;
+            Visibility = copy.Visibility;
             ZOrder = copy.ZOrder;
+            ToolBarScale = copy.ToolBarScale;
             MonitorNumber = copy.MonitorNumber;
             CSS = copy.CSS;
         }

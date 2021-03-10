@@ -38,7 +38,7 @@ namespace OmniZenNotes
         static bool IsExiting = false;
         DispatcherTimer Timer = new DispatcherTimer();
 
-        public NoteViewer(Note note) {
+        public NoteViewer(Note note, Rect placement = new Rect()) {
             InitializeComponent();
             VM = new NoteViewModel(this, note);
             App.NoteViewers.Add(this);
@@ -47,13 +47,17 @@ namespace OmniZenNotes
             InitializeCommands();
 
             LoadSettings();
+
+            if (!placement.IsEmpty && placement.Height != 0 && placement.Width != 0) {
+                Top = placement.Top; Left = placement.Left;
+                Width = placement.Width; Height = placement.Height;
+            }
+
+            Visibility = VM.Note.UXSettings.Visibility;
         }
 
         void InitializeControls() {
             uxRichTextBox.IsDocumentEnabled = true;
-            OnFormatBarCommand(null, null); // SETTINGS: FormatBar Enabled ON/OFF
-            uxRichTextBox.SpellCheck.IsEnabled = true;
-            OnSpellCheckCommand(null, null); // SETTINGS: SpellCheck ON/OFF
 
             uxShowNotesMenuItem.SubmenuOpened += OnShowNotes_SubmenuOpened;
             uxSelectBackgroundMenuItem.SubmenuOpened += OnSelectBackgroundColor_SubmenuOpened;
@@ -79,10 +83,10 @@ namespace OmniZenNotes
             AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
 
             // Format Bar Command
-            AddCommandBinding(AppCommands.FormatBarCommand, OnFormatBarCommand);
+            AddCommandBinding(AppCommands.FormatBarCommand, OnToggleFormatBarCommand);
             InputBindings.Add(new KeyBinding(AppCommands.FormatBarCommand, new KeyGesture(Key.F4, ModifierKeys.None, "F4")));
             // Spellcheck Command
-            AddCommandBinding(AppCommands.SpellCheckCommand, OnSpellCheckCommand);
+            AddCommandBinding(AppCommands.SpellCheckCommand, OnToggleSpellCheckCommand);
             InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
 
             // View Note Reminder Command
@@ -143,25 +147,31 @@ namespace OmniZenNotes
             uxReminderPropertyGrid.SelectedObject = VM.Note.Task;
             uxRichTextBox.Document = VM.Note.Document;
             UpdatePinTabUX();
+            
+            VM.Note.UXSettings.RestoreBounds = RestoreBounds;
 
             // Make sure we don't go off screen (if user monitor changes etc.)
+            /* 
 /* 
-            var rect = KeepWindowInBounds(RestoreBounds);
-            Width = rect.Width; Height = rect.Height;
-            Left = rect.Left; Top = rect.Top;
-
- */        }
+            /* 
 /* 
-        Rect KeepWindowInBounds(Rect restoreBounds) {
-            var area = U.Graphics.GetWorkingArea(this);
+            /* 
+/* 
+            /* 
+/* 
+            /* 
+                        KeepInsideNearestMonitor();
 
-            double width = restoreBounds.Width <= 20 ? area.Width / 2.25 : restoreBounds.Width;
-            double height = restoreBounds.Height <= 20 ? area.Height / 5.5 : restoreBounds.Height;
-            double left = restoreBounds.Left < area.Left || restoreBounds.Right > area.Right ? area.Width / 2 - Width / 2 : restoreBounds.Left; // Center Horz
-            double top = restoreBounds.Bottom > area.Bottom ? restoreBounds.Top : area.Height / 2 - Height / 2;  // Center Vert
+                        void KeepInsideNearestMonitor() {
+                            var area = U.Graphics.GetWorkingArea(this);
+                            double padW = area.Width * 0.01, padH = area.Height * 0.01;
+                            if (Left < area.Left) Left = area.Left + padW;
+                            if (Left + Width > area.Right) Left = area.Right - Width + padW;
+                            if (Top < area.Top) Top = area.Top + padH;
+                        }
+             */
+        }
 
-            return new Rect(left, top, width, height); ;
-        } */
 
         void OnClosed(object sender, EventArgs e) {
             App.NoteViewers.Remove(this);
@@ -191,12 +201,12 @@ namespace OmniZenNotes
         void OnRefreshCommand(object sender, RoutedEventArgs e) {
         }
 
-        void OnSpellCheckCommand(object sender, RoutedEventArgs e) {
+        void OnToggleSpellCheckCommand(object sender, RoutedEventArgs e) {
             uxRichTextBox.SpellCheck.IsEnabled = !uxRichTextBox.SpellCheck.IsEnabled;
             uxSpellCheckMenuItem.IsChecked = uxRichTextBox.SpellCheck.IsEnabled;
         }
 
-        void OnFormatBarCommand(object sender, RoutedEventArgs e) {
+        void OnToggleFormatBarCommand(object sender, RoutedEventArgs e) {
             RTBFB.IsEnabled = !RTBFB.IsEnabled;
             RTBFB.Visibility = RTBFB.IsEnabled ? Visibility.Visible : Visibility.Hidden;
             uxFormatBarMenuItem.IsChecked = RTBFB.IsEnabled;
@@ -535,46 +545,44 @@ namespace OmniZenNotes
                 3. If enough space on right, place new note padW from right side of other note
                 4. If not enough space on either side, then go lower and to the right
                     If another note occupies the wanted space, then try to go to left side
-                5. If Note is touching or across left side, new Note goes to left side  + padW of next screen
+                5. If Note is touching or across right side, new Note goes to left side + padW of next right screen
                 6. If new Note would overlap another existing Note, place it below current Note
+
+                double right = Left + Width;
+
+                if (newLeft + Width > area.Right) {
+                    if (right + padW <= area.Right) { newLeft = area.Right - Width - padW; } // 2a
+                    if (right + padW >= area.Right) { newLeft = Left - Width - padW; } // 2b
+                }
+
+                if (right >= area.Right && IsScreenAdjacentToARightScreen(screen, allScreens)) {
+                    newLeft = area.Right + padW; // 5
+                }
             */
-            var padW = area.Width * 0.01;
-            double right = Left + Width;
-            double newLeft = Left + Width + padW;    // 1
-            double newRight = newLeft + Width;
-            if (newRight > area.Right) {
-                if (right + padW <= area.Right) { newLeft = area.Right - Width; }  // 2a
-                if (right + padW >= area.Right) { newLeft = Left - Width - padW; }  // 2b
-            }
 
-            if (IsScreenAdjacentToARightScreen(screen, allScreens)) {
-                if (right >= area.Right) { newLeft = area.Right + padW; }    // 5
-            }
+            // Just drop it down and to the right for now:
+            double padW = area.Width * 0.01, padH = area.Height * 0.01;
+            double newTop = Top + uxToolBar.ActualHeight + padH;
+            double newLeft = Left + padW * 2;
 
-            double top = Top;
-            var noteViewer = new NoteViewer(note) {
-                Left = newLeft,
-                Top = top,
-                Width = Width,
-                Height = Height
-            };
-            noteViewer.Show();
+            new NoteViewer(note, new Rect(newLeft, newTop, Width, Height));
 
+#pragma warning disable CS8321 // The local function 'f' is declared but never used
             static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
                 foreach (var s in allScreens) {
-                    if (s.WorkingArea.Right > screen.WorkingArea.Right) { return true; }
+                    if (screen.WorkingArea.Right <= s.WorkingArea.Left) { return true; }
                 }
                 return false;
             }
 
-#pragma warning disable CS8321 // The local function 'f' is declared but never used
             static bool IsScreenAdjacentToALeftScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
                 foreach (var s in allScreens) {
-                    if (s.WorkingArea.Left < screen.WorkingArea.Left) { return true; }
+                    if (screen.WorkingArea.Left >= s.WorkingArea.Right) { return true; }
                 }
                 return false;
             }
 #pragma warning restore CS8321
+
         }
 
         void OnNoteTitleLabel_MouseDoubleClick(object sender, RoutedEventArgs e) {
@@ -586,6 +594,10 @@ namespace OmniZenNotes
             if (e.OriginalSource is DockPanel dp && dp == uxToolBar) {
                 if (WindowState == WindowState.Maximized) { WindowState = WindowState.Normal; }
                 uxToolBar.LayoutTransform = uxToolBar.LayoutTransform == Transform.Identity ? new ScaleTransform(0.75, 0.75) : Transform.Identity;
+            }
+            // Control-DoubleClick will auto copy selection into clipboard
+            if (e.OriginalSource is Run run && Keyboard.Modifiers == ModifierKeys.Control) {
+                System.Windows.Forms.Clipboard.SetText(run.Text);
             }
         }
 
@@ -820,7 +832,8 @@ namespace OmniZenNotes
                     Timer.Start();
                 }
             } catch {
-                Left = 1; Top = 1; Width = 480; Height = 480;
+                Width = 320; Height = 320;
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
 
             LoadUXSettings();
@@ -837,17 +850,24 @@ namespace OmniZenNotes
             uxColorPicker.SelectedColor = VM.Note.UXSettings.BackgroundColor;
             SetBackgroundColor(VM.Note.UXSettings.BackgroundColor);
             uxOptionsExpander.IsExpanded = VM.Note.UXSettings.OptionsExpanded;
-            uxToolBar.LayoutTransform = VM.Note.UXSettings.ToolBarCollapsed == true ? new ScaleTransform(0.75, 0.75) : Transform.Identity;
 
-            if (U.Graphics.MonitorExists(VM.Note.UXSettings.MonitorNumber) && VM.Note.UXSettings.RestoreBounds is Rect restoreBounds && double.IsFinite(restoreBounds.Left) && double.IsFinite(restoreBounds.Top)) {
-                    Left = restoreBounds.Left; Top = restoreBounds.Top;
-                    Width = restoreBounds.Width; Height = restoreBounds.Height;
-            } else {
-                // Default the restored bounds to current screen center:
-                var area = U.Graphics.GetWorkingArea(this);
-                Left = area.Width / 2 - Width / 2; Top = area.Height /2 + Height / 2;
-                Width = S.Default.RestoreBounds.Width;
-                Height = S.Default.RestoreBounds.Height;
+            RTBFB.IsEnabled = !VM.Note.UXSettings.FormatBar;
+            OnToggleFormatBarCommand(null, null); 
+            uxRichTextBox.SpellCheck.IsEnabled = !VM.Note.UXSettings.SpellCheck;
+            OnToggleSpellCheckCommand(null, null);
+            Topmost = VM.Note.UXSettings.Topmost;
+            UpdatePinTabUX();
+
+            uxToolBar.LayoutTransform = new ScaleTransform(VM.Note.UXSettings.ToolBarScale, VM.Note.UXSettings.ToolBarScale);
+            Visibility = VM.Note.UXSettings.Visibility;
+
+            if (VM.Note.UXSettings.RestoreBounds is Rect rb && double.IsFinite(rb.Left) && double.IsFinite(rb.Top)
+                && U.Graphics.MonitorExists(VM.Note.UXSettings.MonitorNumber)) {
+                Width = rb.Width; Height = rb.Height;
+                if (rb.Top != 0 && rb.Left != 0) {
+                    Top = rb.Top; Left = rb.Left; 
+                } else
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
     }
 
@@ -866,8 +886,13 @@ namespace OmniZenNotes
                     VM.Note.UXSettings.BackgroundColor = scba.Color;
                 }
                 VM.Note.UXSettings.OptionsExpanded = uxOptionsExpander.IsExpanded;
+                VM.Note.UXSettings.FormatBar = RTBFB.IsEnabled;
+                VM.Note.UXSettings.SpellCheck = uxRichTextBox.SpellCheck.IsEnabled;
                 VM.Note.UXSettings.Topmost = Topmost;
-                VM.Note.UXSettings.ToolBarCollapsed = uxToolBar.LayoutTransform != Transform.Identity;
+                if( uxToolBar.LayoutTransform is ScaleTransform st) {
+                    VM.Note.UXSettings.ToolBarScale = st.ScaleX;
+                }
+                VM.Note.UXSettings.Visibility = Visibility;
                 VM.Note.UXSettings.ZOrder = 1;
                 VM.Note.UXSettings.MonitorNumber = U.Graphics.GetMonitorNumber(this);
             }
@@ -902,7 +927,6 @@ namespace OmniZenNotes
         #endregion
 
         void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
-            Debug.WriteLine($"sender {sender} TextChangedEventArgs {e}");
         }
 
         void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {

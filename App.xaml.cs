@@ -24,7 +24,7 @@ namespace OmniZenNotes
 
                 foreach (Notebook notebook in Repository.NoteBooks) {
                     foreach (Note note in notebook.Notes) {
-                        new NoteViewer(note).Show();
+                        new NoteViewer(note);
                     }
                 }
 
