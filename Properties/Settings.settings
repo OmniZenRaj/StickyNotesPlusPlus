@@ -38,5 +38,11 @@
     <Setting Name="Topmost" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="PlugInRunInterval" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">300</Value>
+    </Setting>
+    <Setting Name="PlugInDir" Type="System.String" Scope="User">
+      <Value Profile="(Default)">S:\\Furniture Shop\\Access\\PlugIns</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

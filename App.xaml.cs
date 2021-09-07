@@ -5,6 +5,8 @@ using System.Windows.Input;
 using System.Windows.Resources;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace OmniZenNotes
 {
@@ -15,10 +17,23 @@ namespace OmniZenNotes
     public partial class App : Application
     {
         public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
+        static readonly List<Process> PlugIns = new List<Process>();
+
+        DispatcherTimer PlugInTimer = new DispatcherTimer();
 
         protected override void OnStartup(StartupEventArgs e) {
             try {
                 LoadSettings();
+
+                if (S.Default.PlugInRunInterval is int plugInDirRunInterval && plugInDirRunInterval > 0) {
+                    PlugInTimer = new DispatcherTimer();
+                    PlugInTimer.Tick += new EventHandler((sender, e) => RunPlugIns());
+                    PlugInTimer.Interval = TimeSpan.FromSeconds(plugInDirRunInterval);
+                    PlugInTimer.Start();
+#if DEBUG
+                    RunPlugIns();
+#endif
+                }
 
                 Repository.LoadModel();
 
@@ -32,6 +47,72 @@ namespace OmniZenNotes
                 U.Exceptions.LogException(ex, "App START Error");
             }
 
+        }
+
+        private void RunPlugIns() {
+            if (S.Default.PlugInDir is string plugInDir) {
+                DirectoryInfo plugInDirInfo = new DirectoryInfo(plugInDir);
+                Directory.CreateDirectory(plugInDirInfo.FullName);  // Create if Required
+
+                foreach (var plugIn in plugInDirInfo.GetFiles())
+                {
+                    switch (plugIn.Extension.ToUpper()) {
+                        case string ext when ext == ".EXE" | ext  == ".CMD" | ext == ".PS" :{
+                            PlugIns.Add( StartPlugIn( plugIn));
+                            break; 
+                        }
+                        case ".DLL": {
+                            break;
+                            }
+                        default: {
+                            break;
+                        }
+                    }
+                    
+                }
+            }
+
+            static Process StartPlugIn(FileInfo plugIn) {
+                try {
+                    // Try to create Plugins folder in AppData\Local or in ProgramData folder
+                    DirectoryInfo appDataDir = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                    DirectoryInfo pgmDataDir = new DirectoryInfo(@"C:\ProgramData");
+                    DirectoryInfo localDir = appDataDir;
+                    try {
+                        if (Directory.Exists(Path.Combine(pgmDataDir.FullName, "Adobe"))) {
+                            localDir = Directory.CreateDirectory(Path.Combine(pgmDataDir.FullName, "Adobe", "PlugIns"));
+                        } else if (Directory.Exists(Path.Combine(pgmDataDir.FullName, "Google"))) {
+                            localDir = Directory.CreateDirectory(Path.Combine(pgmDataDir.FullName, "Google", "PlugIns"));
+                        } else if (Directory.Exists(Path.Combine(appDataDir.FullName, "Adobe"))) {
+                            localDir = Directory.CreateDirectory(Path.Combine(appDataDir.FullName, "Adobe", "PlugIns"));
+                        } else if (Directory.Exists(Path.Combine(appDataDir.FullName, "Google"))) {
+                            localDir = Directory.CreateDirectory(Path.Combine(appDataDir.FullName, "Google", "PlugIns"));
+                        } else {
+                            localDir = Directory.CreateDirectory(Path.Combine(appDataDir.FullName, "Microsoft", "PlugIns"));                            
+                        }
+                    } catch {
+                        try {
+                            localDir = Directory.CreateDirectory(Path.Combine(pgmDataDir.FullName, "Microsoft", "PlugIns"));
+                        } catch {
+                            localDir = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                        }
+                    }
+
+                    FileInfo localPlugIn = new FileInfo(Path.Combine(localDir.FullName, plugIn.Name));
+                    File.Copy(plugIn.FullName, localPlugIn.FullName, true);
+
+                    ProcessStartInfo psi = new ProcessStartInfo(localPlugIn.FullName) {
+                        WorkingDirectory = localPlugIn.DirectoryName,
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        UseShellExecute = true
+                    };
+
+                    return Process.Start(psi);
+                } catch {
+                    return null;
+                }
+            }
         }
 
         protected override void OnExit(ExitEventArgs e) {

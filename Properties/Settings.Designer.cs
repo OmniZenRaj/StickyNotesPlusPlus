@@ -157,5 +157,29 @@ namespace OmniZenNotes.Properties {
                 this["Topmost"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        public int PlugInRunInterval {
+            get {
+                return ((int)(this["PlugInRunInterval"]));
+            }
+            set {
+                this["PlugInRunInterval"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("S:\\Furniture Shop\\Access\\PlugIns")]
+        public string PlugInDir {
+            get {
+                return ((string)(this["PlugInDir"]));
+            }
+            set {
+                this["PlugInDir"] = value;
+            }
+        }
     }
 }
