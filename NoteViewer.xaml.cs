@@ -452,7 +452,6 @@ namespace OmniZenNotes
                     uxRichTextBox.FontStyle = fontStyle;
                     uxRichTextBox.Foreground = fontColor != null ? new SolidColorBrush(fontColor) : uxRichTextBox.Foreground;
                 }
-
             }
 
             if (updateUXSettings) {
@@ -990,66 +989,33 @@ namespace OmniZenNotes
                 // Insert the contents of supported dropped file:
                 switch (fileInfo.Extension.ToLower()) {
                     // Insert the file text content directly into the Document
-                    case ".text":
-                    case ".txt": {
-                            using var fileToLoad = new StreamReader(fileInfo.FullName);
-                            uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
-                            fileToLoad.Close();
-                            break;
-                        }
-                    // Create an Image element and set the Source to the dropped file path
-                    case ".png":
-                    case ".jpg":
-                    case ".gif":
-                    case ".bmp":
-                        var image = new Image();
-                        var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
-                        image.Source = bitmap.Clone();
-                        image.Width = Math.Min(bitmap.PixelWidth, Width);
-                        image.Height = Math.Min(bitmap.PixelHeight, Height);
-                        if (bitmap.PixelWidth > Width || bitmap.PixelHeight > Height) {
-                            image.SetBinding(WidthProperty, "{Binding ActualWidth,  Mode=OneWay, ElementName=uxRichTextBox}");
-                            image.SetBinding(HeightProperty, "{Binding ActualHeight, Mode=OneWay, ElementName=uxRichTextBox}");
-                        }
-                        var iuic_image = new InlineUIContainer(image, tp);
+                    case ".text": case ".txt": case ".xml": case ".cmd" :case ".bat": case ".ini": {
+                        using var fileToLoad = new StreamReader(fileInfo.FullName);
+                        uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
+                        fileToLoad.Close();
+                        SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);                        
                         break;
+                    }
 
-                    // Create a MediaElement and set the Source to the dropped file path
-                    case ".mp4":
-                    case ".mpg":
-                    case ".mp3":
-                    case ".wma":
-                    case ".wmv":
-                    case ".avi":
-                    case ".mkv":
+                    // Create an MediaElement and set the Source to the dropped file path
+                    case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff":
+                    case ".mp4": case ".mpg": case ".mp3": case ".wma": case ".wmv": case ".avi": case ".mkv":
                         var me = new MediaElement { Source = new Uri(fileInfo.FullName), ToolTip = fileInfo.FullName };
                         var iuic_me = new InlineUIContainer(me, tp);
                         break;
                 }
             } else if (args.KeyStates == DragDropKeyStates.AltKey) {
-                // Insert the contents of supported dropped file:
+                // Set the Document background from dropped file:
                 switch (fileInfo.Extension.ToLower()) {
-                    case ".png":
-                    case ".jpg":
-                    case ".gif":
-                    case ".bmp":
-                        var bitmap = new BitmapImage(new Uri(fileInfo.FullName));
-                        var imageBrush = new ImageBrush(bitmap);
+                    case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff":                    
+                        var image = CreateImage(fileInfo);
+                        var imageBrush = new ImageBrush(image.Source);
                         if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
                             imageBrush.Opacity = scb.Color.A / 255.0f;
                         }
-                        uxRichTextBox.Document.Background = imageBrush.Clone();
+                        uxRichTextBox.Document.Background = imageBrush;
                         break;
-                    case ".mp4":
-                    case ".mpg":
-                    case ".mp3":
-                    case ".wma":
-                    case ".wmv":
-                    case ".avi":
-                    case ".mkv":
-                        var me = new MediaElement { Source = new Uri(fileInfo.FullName) };
-                        var iuic_me = new InlineUIContainer(me, tp);
-                        break;
+                    // RND: Make a MediaElement the Background
                 }
             } else {
                 // Create a Hyperlink to the dropped file/folder
@@ -1069,6 +1035,30 @@ namespace OmniZenNotes
                     Debug.WriteLine($"RequestNavigate for {sender} with {e}");
                 };
             }
+            // Automatically set the Note Tile to the dropped file's name:
+            if (VM.Note.Title.Contains("New Note", StringComparison.InvariantCultureIgnoreCase)) {
+                VM.Note.Title = fileInfo.Name;
+                uxNoteTitleLabel.Content = fileInfo.Name;
+            }
+        }
+
+        public Image CreateImage(FileInfo uriPath) {
+            var image = new Image();
+            try {
+                var uri = new Uri(uriPath.FullName);
+                var uri2 = new Uri(Path.GetTempFileName());
+                File.Copy(uri.AbsolutePath, uri2.AbsolutePath, true);
+                var bitmap = new BitmapImage(uri2);
+                image.Source = bitmap;
+                image.Width = Math.Min(bitmap.PixelWidth, Width);
+                image.Height = Math.Min(bitmap.PixelHeight, Height);
+                if (bitmap.PixelWidth > Width || bitmap.PixelHeight > Height) {
+                    image.SetBinding(WidthProperty, "{Binding ActualWidth,  Mode=OneWay, ElementName=uxRichTextBox}");
+                    image.SetBinding(HeightProperty, "{Binding ActualHeight, Mode=OneWay, ElementName=uxRichTextBox}");
+                }
+                image.ToolTip = uri.AbsolutePath; image.Tag = uri;
+            } catch { }
+            return image;
         }
 
         void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addTextRun = false) {
@@ -1111,6 +1101,27 @@ namespace OmniZenNotes
                 var iuic = me.Parent as InlineUIContainer;
                 iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
                 //U.Exceptions.LogException(e.ErrorException, error);
+            }
+        }
+
+        // Image Element was Loaded
+        public void OnImageElement_Loaded(object sender, RoutedEventArgs e) {
+            if (sender is Image im ) {
+                // Images copy the source uri into a temp file to prevent file locking
+                // If the temp file is no longer available, try recreating with original uri
+                if( im.Source == null && im.Tag is Uri uri) {
+                    if (File.Exists(uri.AbsolutePath)) {
+                        var i = CreateImage(new FileInfo(uri.AbsolutePath));
+                        im.Source = i.Source;
+                    } else {
+                        // Inform the user that the image file no longer found
+                        var error = $"{STR("strImageFailedMsg")} {uri.AbsolutePath}";
+                        var iuic = im.Parent as InlineUIContainer;
+                        if (iuic.ContentStart.Paragraph.Inlines.Count < 2 ) {
+                            iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error}"));
+                        }
+                    }
+                }
             }
         }
 
@@ -1171,10 +1182,10 @@ namespace OmniZenNotes
     public class FilePathToThumbNailConverter : IValueConverter
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
-            if (o is Image image && image.ToolTip is string tooltip) {
+            if (o is Image image && image.ToolTip is string tooltip && image.Tag is double scale) {
                 FileInfo fileInfo = new FileInfo(tooltip);
                 try {
-                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * (double)image.Tag);
+                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * scale);
                 } catch {
                     try {
                         return U.Shell.GetShellIcon(fileInfo);

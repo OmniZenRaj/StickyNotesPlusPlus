@@ -92,6 +92,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         <Run x:Key="strDeleteNoteConfirmPrompt" Text="Are you sure you want to permanently delete this Note?"/>
         <!-- NLS: Error and User Message Strings -->
         <Run x:Key="strMediaFailedMsg" Text="Media FAILED for "/>
+        <Run x:Key="strImageFailedMsg" Text="Image NOT FOUND at"/>
     </Window.Resources>
 
     <Grid x:Name="uxLayoutRoot">
@@ -258,6 +259,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                             <Setter Property="Source" Value="{Binding Converter={StaticResource FilePathToThumbNailConverter}, RelativeSource={RelativeSource Self}}"/>
                             <Setter Property="LayoutTransform" Value="{Binding Path=Tag, Converter={StaticResource TagToLayoutTransformConverter}, RelativeSource={RelativeSource Self}, Mode=TwoWay}"/>   
                             <Setter Property="Cursor" Value="Hand"/>
+                            <EventSetter Event="Loaded" Handler="OnImageElement_Loaded"/>
                         </Style>
 
                         <!-- This Style (& associated code) enables using a Hyperlink with active links in a RichTextDocument -->
