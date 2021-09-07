@@ -149,27 +149,6 @@ namespace OmniZenNotes
             UpdatePinTabUX();
             
             VM.Note.UXSettings.RestoreBounds = RestoreBounds;
-
-            // Make sure we don't go off screen (if user monitor changes etc.)
-            /* 
-/* 
-            /* 
-/* 
-            /* 
-/* 
-            /* 
-/* 
-            /* 
-                        KeepInsideNearestMonitor();
-
-                        void KeepInsideNearestMonitor() {
-                            var area = U.Graphics.GetWorkingArea(this);
-                            double padW = area.Width * 0.01, padH = area.Height * 0.01;
-                            if (Left < area.Left) Left = area.Left + padW;
-                            if (Left + Width > area.Right) Left = area.Right - Width + padW;
-                            if (Top < area.Top) Top = area.Top + padH;
-                        }
-             */
         }
 
 
@@ -314,14 +293,16 @@ namespace OmniZenNotes
         }
 
         void OnViewNoteReminderCommand(object sender, ExecutedRoutedEventArgs e) {
-            if (e.Source is RichTextBox || e.Source is NoteViewer) { // Menu item or Accelerator Selected
+            // Event was triggered from Menu item or Accelerator (so we auto check the button)
+            if (e.Source is RichTextBox || e.Source is NoteViewer || (e.Parameter is string s && s.Equals("MenuItem"))) { 
                 uxViewNoteReminderMenuItem.IsChecked = !uxViewNoteReminderMenuItem.IsChecked;
                 uxReminderButton.IsChecked = uxViewNoteReminderMenuItem.IsChecked;
             }
             ShowReminderPanel(uxReminderButton);
         }
         void OnViewNoteSettingsCommand(object sender, ExecutedRoutedEventArgs e) {
-            if (e.Source is RichTextBox || e.Source is NoteViewer) { // Menu item or Accelerator Selected
+            // Event was triggered from Menu item or Accelerator (so we auto check the button)
+            if (e.Source is RichTextBox || e.Source is NoteViewer || (e.Parameter is string s && s.Equals("MenuItem"))) {
                 uxViewNoteSettingsMenuItem.IsChecked = !uxViewNoteSettingsMenuItem.IsChecked;
                 uxSettingsButton.IsChecked = uxViewNoteSettingsMenuItem.IsChecked;
             }
@@ -783,6 +764,9 @@ namespace OmniZenNotes
                 item.Background ??= noteViewer.uxRichTextBox?.Document?.Background?.Clone();
                 item.Background ??= noteViewer.uxRichTextBox?.Background?.Clone();
                 item.Background ??= noteViewer?.Background?.Clone();
+                if (item.Background is SolidColorBrush scb) {
+                    item.Foreground = new SolidColorBrush(AdjustColor(scb.Color));
+                }
 
                 item.Click += uxShowNotesMenuItem_Clicked;
                 uxShowNotesMenuItem.Items.Add(item);
