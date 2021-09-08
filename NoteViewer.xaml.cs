@@ -1097,10 +1097,13 @@ namespace OmniZenNotes
 
         public void OnMediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e) {
             if (sender is MediaElement me) {
-                var error = $"{STR("strMediaFailedMsg")} {me.Source} : ";
-                var iuic = me.Parent as InlineUIContainer;
-                iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
-                //U.Exceptions.LogException(e.ErrorException, error);
+                // Ignore {System.Runtime.InteropServices.COMException(0xC00D109B): 0xC00D109B}
+                if (e.ErrorException.HResult != -1072885605) {   // Erroneous error before MediaOpen is OK
+                    var error = $"{STR("strMediaFailedMsg")} {me.Source} : ";
+                    var iuic = me.Parent as InlineUIContainer;
+                    iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
+                    //U.Exceptions.LogException(e.ErrorException, error);
+                }
             }
         }
 
