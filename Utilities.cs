@@ -10,6 +10,8 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using Microsoft.WindowsAPICodePack.Shell;
+using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
+using MS.WindowsAPICodePack.Internal;
 
 namespace Utilities
 {
@@ -423,6 +425,40 @@ namespace Utilities
             }
         }
 
+        public static FileInfo CreateURLShortcut( Uri uri) {
+
+            ShellLink shellLink = new ShellLink();
+            IShellLinkW iShellLink = (IShellLinkW)shellLink;
+            iShellLink.SetPath(uri.AbsoluteUri);
+
+            // TODO: Set the Shortcut / Link Properties (not working yet)
+            using PropVariant target = new PropVariant(uri.AbsoluteUri);
+            using PropVariant comment = new PropVariant("COMMENT COOL");
+            (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.TargetParsingPath, target);
+            (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.Comment, comment);
+            (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.Description, target);
+            (iShellLink as IPropertyStore).Commit();
+
+            FileInfo fi = new FileInfo(Path.GetTempFileName());
+            string file = Path.ChangeExtension(fi.FullName, "lnk");
+            (iShellLink as IPersistFile).Save(file, true); // Save the shortcut
+
+            fi.Delete();    // delete the original temp file
+            return new FileInfo(file);
+        }
+
+        static void TEST1() {
+            ShellLink shellLink = new ShellLink();
+            IShellLinkW iShellLink = (IShellLinkW)shellLink;
+            long dwMode = 2;
+            var d1 = (dwMode & 4096) == 4096;
+            var d2 = dwMode & 3;
+
+            (iShellLink as IPersistFile).Load(@"C:\Temp\TEST1.url", dwMode);
+            var t = (iShellLink as IPropertyStore).GetValue(SystemProperties.System.Link.TargetUrl);
+            var d = (iShellLink as IPropertyStore).GetValue(SystemProperties.System.Link.Description);
+        }
+
         // Get Office Binary from different versions of Office and return the latest version found:
         public static FileInfo GetOfficeBinary(string binaryName, string subDir = ".") {
             string[] officeVersions = { "Office19", "Office16", "Office15", "Office14", "Office13" };
@@ -468,6 +504,74 @@ namespace Utilities
             public string szTypeName;
         };
     }
+    
+    [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IShellLinkW
+        {
+            void GetPath(
+                [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
+                int cchMaxPath,
+                IntPtr pfd,
+                uint fFlags);
+            void GetIDList(out IntPtr ppidl);
+            void SetIDList(IntPtr pidl);
+            void GetDescription(
+                [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
+                int cchMaxName);
+            void SetDescription(
+                [MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            void GetWorkingDirectory(
+                [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir,
+                int cchMaxPath
+                );
+            void SetWorkingDirectory(
+                [MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+            void GetArguments(
+                [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs,
+                int cchMaxPath);
+            void SetArguments(
+                [MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+            void GetHotKey(out short wHotKey);
+            void SetHotKey(short wHotKey);
+            void GetShowCmd(out uint iShowCmd);
+            void SetShowCmd(uint iShowCmd);
+            void GetIconLocation(
+                [Out(), MarshalAs(UnmanagedType.LPWStr)] out StringBuilder pszIconPath,
+                int cchIconPath,
+                out int iIcon);
+            void SetIconLocation(
+                [MarshalAs(UnmanagedType.LPWStr)] string pszIconPath,
+                int iIcon);
+            void SetRelativePath(
+                [MarshalAs(UnmanagedType.LPWStr)] string pszPathRel,
+                uint dwReserved);
+            void Resolve(IntPtr hwnd, uint fFlags);
+            void SetPath(string pszFile);
+        }
+
+        [ComImport, Guid("0000010b-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IPersistFile
+        {
+            string GetCurFile();
+            [PreserveSig]
+            uint IsDirty();
+            void Load(string pszFileName, long dwMode);
+            void Save(string pszFileName, bool fRemember);
+            void SaveCompleted(string pszFileName);
+        }
+
+        [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IPropertyStore
+        {
+            uint GetCount();
+            PropertyKey GetAt(uint propertyIndex);
+            PropVariant GetValue([In] ref PropertyKey key);
+            void SetValue([In] ref PropertyKey key, PropVariant pv);
+            void Commit();
+        }
+
+        [ComImport, Guid("00021401-0000-0000-C000-000000000046"), ClassInterface(ClassInterfaceType.None)]
+        class ShellLink { }    
     #endregion
 
     #region Exception Handling Utilities

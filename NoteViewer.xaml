@@ -267,8 +267,10 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                             <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="ForceCursor" Value="True" />
                             </Trigger>
                             </Style.Triggers>
+                            <EventSetter Event="RequestNavigate" Handler="OnHyperlink_RequestNavigate" />
                             <EventSetter Event="MouseDown" Handler="OnHyperlink_MouseDown" />
                             <EventSetter Event="MouseWheel" Handler="OnHyperlink_MouseWheel" />
                         </Style>

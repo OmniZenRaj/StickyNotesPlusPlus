@@ -27,6 +27,7 @@ namespace OmniZenNotes
     using OmniZenNotes.Models;
     using S = Properties.Settings;
     using U = Utilities;
+    using Utilities;
 
     public partial class NoteViewer : Window
     {
@@ -967,6 +968,7 @@ namespace OmniZenNotes
                         break;
                     case "Title":
                         Title = (string)e.NewValue;
+                        uxNoteTitleLabel.Content = Title;
                         break;
 
                     default: break;
@@ -988,6 +990,19 @@ namespace OmniZenNotes
                         DropFile(new FileInfo(file), args);
                     } catch { }
                 }
+            }
+
+            if (args.Data.GetDataPresent(DataFormats.Text, true)) {
+                FlowDocument doc = uxRichTextBox.Document;
+                TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
+                TextPointer tp = uxRichTextBox.CaretPosition;
+                try {
+                    string uri = args.Data.GetData(DataFormats.Text, true) as string;
+                    TextRange range = uxRichTextBox.Selection;
+                    TextPointer tpStart = range.IsEmpty? tp : range.Start; 
+                    TextPointer tpEnd = range.IsEmpty? tp : range.End;
+                    CreateHyperLink(tpStart, tpEnd, new Uri(uri));
+                } catch { }
             }
 
             // Handle File based Drag & Drop Operation:
@@ -1033,17 +1048,17 @@ namespace OmniZenNotes
                     }
                 } else {
                     try {
-                        createHyperLink();
+                        CreateHyperLink(tp, tp, new Uri(fi.FullName));
                     } catch (Exception ex) {
                         if (ex.HResult == -2146233079) {
                             // Add the new Hyperlink to the end of the current Hyperlink
                             tp = tp.GetNextInsertionPosition(LogicalDirection.Forward);
                             try {
-                                createHyperLink();
+                                CreateHyperLink(tp, tp, new Uri(fi.FullName));
                             } catch {
                                 tp = tp.Paragraph != null ? tp.Paragraph.ElementEnd : tp.DocumentEnd ;
                                 tp.InsertLineBreak();
-                                createHyperLink();
+                                CreateHyperLink(tp, tp, new Uri(fi.FullName));
                             }
                         }
                     }
@@ -1055,20 +1070,18 @@ namespace OmniZenNotes
                     uxSettingsPropertyGrid.Update();
                 }
 
-                // Local function for hyperlink creation (uses closure variables tp & fi)
-                Hyperlink createHyperLink() {
-                    // Create a Hyperlink to the dropped file/folder
-                    Hyperlink hyperlink = new Hyperlink(new Run($""), tp) { NavigateUri = new Uri(fi.FullName), };
-                    // Add an Imange and Display Name text inside the Hyperlink
-                    AddImageToHyperLink(hyperlink, DefaultThumbnailSize.Medium.Height, DefaultThumbnailSize.Medium.Width, addTextRun: true);
-
-                    // RND: Experiments with programatic hyperlink navigation 
-                    hyperlink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
-                        Debug.WriteLine($"RequestNavigate for {sender} with {e}");
-                    };
-
-                    return hyperlink;
+            }
+            // Create Hyperlink at given TextPointer position for given URI
+            Hyperlink CreateHyperLink(TextPointer tpStart, TextPointer tpEnd, Uri uri) {
+                // Create a Hyperlink to the dropped file/folder
+                Hyperlink hyperlink = new Hyperlink(tpStart, tpEnd) { NavigateUri = uri, };
+                if (tpStart.CompareTo(tpEnd) == 0) {
+                    // Add an Image and Display Name text inside the Hyperlink
+                    double height = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Medium.Height : DefaultIconSize.Large.Height;
+                    double width =  hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Medium.Width: DefaultIconSize.Large.Width;
+                    AddImageToHyperLink(hyperlink, height, width, addText: true);
                 }
+                return hyperlink;
             }
         }
 
@@ -1092,24 +1105,26 @@ namespace OmniZenNotes
             return image;
         }
 
-        void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addTextRun = false) {
+        void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addText = false) {
+            
+            var uri = hyperlink.NavigateUri;
+            var name = !uri.IsFile ? uri.PathAndQuery : new FileInfo(uri.LocalPath).Name;
+
             // Create a new image with given height and width
             var image = new Image {
                 // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
-                ToolTip = hyperlink.NavigateUri.LocalPath,
+                ToolTip = !uri.IsFile ? uri.OriginalString : uri.LocalPath,
                 // Tag object is used to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
                 Tag = 1.0d,
                 Height = height,
                 Width = width,
             };
 
-            // Add an image and name text for the Hyperlink using Windows Shell thumbnail image & display name
-            using ShellObject shellObject = ShellObject.FromParsingName(hyperlink.NavigateUri.LocalPath);
-            if (addTextRun) { hyperlink.Inlines.FirstInline.ContentStart.InsertTextInRun($"{ shellObject?.Name} ");}
-
+            // Add an image and name text for the Hyperlink
+            if (addText) { hyperlink.Inlines.Add($"{ name} ");}
             InlineUIContainer iluic = new InlineUIContainer(image);
             hyperlink.Inlines.InsertBefore(hyperlink.Inlines.FirstInline, iluic);
-            if (addTextRun) { iluic.ElementEnd.InsertLineBreak(); }
+            if (addText) { iluic.ElementEnd.InsertLineBreak(); }
             hyperlink.Tag = image;
         }
 
@@ -1157,18 +1172,32 @@ namespace OmniZenNotes
                 }
             }
         }
-
-        public void OnHyperlink_MouseDown(object sender, MouseButtonEventArgs e) {
-            Debug.WriteLine($"OnHyperlink_MouseDown for {e.Source}");
-            if (sender is Hyperlink hyperlink && e.MouseDevice.LeftButton == MouseButtonState.Pressed) {
+        public void OnHyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
+            Debug.WriteLine($"OnHyperlink_RequestNavigate for {sender} with {e}");
+            if (sender is Hyperlink hyperlink) {
                 var fileInfo = new FileInfo(Uri.UnescapeDataString(hyperlink.NavigateUri.AbsolutePath));
+
+                if (!hyperlink.NavigateUri.IsFile) {    // For  non File/Folder hyperlinks
+                    // Create a temporary short cut with the target set to our hyperlink url
+                    fileInfo = Shell.CreateURLShortcut(hyperlink.NavigateUri);
+                }
                 U.Shell.ShellOpen(fileInfo);
                 e.Handled = true;
             }
         }
 
+        public void OnHyperlink_MouseDown(object sender, MouseButtonEventArgs e) {
+            Debug.WriteLine($"OnHyperlink_MouseDown for {e.Source}");
+            if (sender is Hyperlink hyperlink && e.MouseDevice.LeftButton == MouseButtonState.Pressed) {
+                OnHyperlink_RequestNavigate(sender, new RequestNavigateEventArgs(hyperlink.NavigateUri, hyperlink.Name));
+            }
+        }
+
         public void OnHyperlink_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (sender is Hyperlink hyperlink && Keyboard.Modifiers == ModifierKeys.Control) {
+                e.Handled = true;
+                if (!hyperlink.NavigateUri.IsFile) {return;}
+
                 // Each Hyperlink has an associated image stored in the Tag object property
                 Image image = hyperlink.Tag as Image;
                 // Each Image uses Tag object to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
@@ -1193,7 +1222,6 @@ namespace OmniZenNotes
                     }
                 }
                 Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta:F0} newWidth {newWidth:F0} Thumbnail {thumbnail.Width} scaled by {image.Tag:F2}");
-                e.Handled = true;
             }
         }
     }
@@ -1203,14 +1231,20 @@ namespace OmniZenNotes
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
             if (o is Image image && image.ToolTip is string tooltip && image.Tag is double scale) {
-                FileInfo fileInfo = new FileInfo(tooltip);
-                try {
-                    return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * scale);
-                } catch {
+                Uri uri = new Uri(tooltip);
+                if (uri.IsFile) {
+                    FileInfo fileInfo = new FileInfo(tooltip);
                     try {
-                        System.Drawing.Icon icon = U.Shell.GetShellIcon(fileInfo);
-                        return U.Graphics.GetBitmapImage(icon);
-                    } catch { }
+                        return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * scale);
+                    } catch {
+                        try {
+                            System.Drawing.Icon icon = U.Shell.GetShellIcon(fileInfo);
+                            return U.Graphics.GetBitmapImage(icon);
+                        } catch { }
+                    }
+                } else {
+                    // TODO: Get the favicon for the given url site OR just a system one for now
+                    return Graphics.GetBitmapImage(Shell.SHELL32_DLL, 13);
                 }
             }
 
