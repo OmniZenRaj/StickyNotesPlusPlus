@@ -31,6 +31,10 @@ namespace OmniZenNotes
     public partial class NoteViewer : Window
     {
         NoteViewModel VM { get; set; }
+        public static List<FontFamily> FontFamilies1 { get => FontFamilies; set => FontFamilies = value; }
+        public static List<PropertyInfo> BackgroundColors1 { get => BackgroundColors; set => BackgroundColors = value; }
+        public static bool IsExiting1 { get => IsExiting; set => IsExiting = value; }
+        public DispatcherTimer Timer1 { get => Timer; set => Timer = value; }
 
         static List<FontFamily> FontFamilies;
         static List<PropertyInfo> BackgroundColors;
@@ -977,72 +981,99 @@ namespace OmniZenNotes
 
         void OnRichTextBox_PreviewDrop(object sender, DragEventArgs args) {
             args.Handled = true;
-            var fileName = IsSingleFileOrDir(args);
-            if (fileName == null) return;
-            var fileInfo = new FileInfo(fileName);
-            FlowDocument doc = uxRichTextBox.Document;
-            TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
-            TextPointer tp = uxRichTextBox.CaretPosition;
+            // Check for files in the hovering data object.
+            if (args.Data.GetDataPresent(DataFormats.FileDrop, true)) {
+                foreach (var file in args.Data.GetData(DataFormats.FileDrop, true) as string[]) {
+                    try {
+                        DropFile(new FileInfo(file), args);
+                    } catch { }
+                }
+            }
 
-            if (args.KeyStates == DragDropKeyStates.ControlKey) {
+            // Handle File based Drag & Drop Operation:
+            void DropFile(FileInfo fi, DragEventArgs args) {
+
+                FlowDocument doc = uxRichTextBox.Document;
+                TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
+                TextPointer tp = uxRichTextBox.CaretPosition;
 
                 // Insert the contents of supported dropped file:
-                switch (fileInfo.Extension.ToLower()) {
-                    // Insert the file text content directly into the Document
-                    case ".text": case ".txt": case ".xml": case ".cmd" :case ".bat": case ".ini": {
-                        using var fileToLoad = new StreamReader(fileInfo.FullName);
-                        uxRichTextBox.AppendText(fileToLoad.ReadToEnd());
-                        fileToLoad.Close();
-                        SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);                        
-                        break;
+                if (args.KeyStates == DragDropKeyStates.ControlKey) {
+                    switch (fi.Extension.ToLower()) {
+                        // Create an MediaElement and set the Source to the dropped file path
+                        case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff": case ".ico":
+                        case ".mp4": case ".mpg": case ".mp3": case ".wma": case ".wmv": case ".avi": case ".mkv":
+                            var me = new MediaElement { Source = new Uri(fi.FullName), ToolTip = fi.FullName };
+                            var iuic_me = new InlineUIContainer(me, tp);
+                            break;
+                        default: {
+                                // Try to insert it into the Note as Text:
+                                // Detect byte order marks at the beginning of the file to see if we have text
+                                using StreamReader sr = new StreamReader(fi.FullName, true);
+                                if (sr.CurrentEncoding.EncodingName.Contains("utf", StringComparison.InvariantCultureIgnoreCase)) {
+                                    tp.InsertTextInRun(sr.ReadToEnd());     // TODO: Determine MAX size text file supported
+                                    sr.Close();
+                                    SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
+                                }
+                                break;
+                            }
                     }
-
-                    // Create an MediaElement and set the Source to the dropped file path
-                    case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff":
-                    case ".mp4": case ".mpg": case ".mp3": case ".wma": case ".wmv": case ".avi": case ".mkv":
-                        var me = new MediaElement { Source = new Uri(fileInfo.FullName), ToolTip = fileInfo.FullName };
-                        var iuic_me = new InlineUIContainer(me, tp);
-                        break;
-                }
-            } else if (args.KeyStates == DragDropKeyStates.AltKey) {
-                // Set the Document background from dropped file:
-                switch (fileInfo.Extension.ToLower()) {
-                    case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff":                    
-                        var image = CreateImage(fileInfo);
-                        var imageBrush = new ImageBrush(image.Source);
-                        if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
-                            imageBrush.Opacity = scb.Color.A / 255.0f;
+                } else if (args.KeyStates == DragDropKeyStates.AltKey) {
+                    // Set the Document background from dropped file:
+                    switch (fi.Extension.ToLower()) {
+                        case ".png": case ".jpg": case ".jpeg": case ".gif": case ".bmp": case ".tiff": case ".ico":
+                            var image = CreateImage(fi);
+                            var imageBrush = new ImageBrush(image.Source);
+                            if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
+                                imageBrush.Opacity = scb.Color.A / 255.0f;
+                            }
+                            uxRichTextBox.Document.Background = imageBrush;
+                            break;
+                            // RND: Make a MediaElement the Background
+                    }
+                } else {
+                    try {
+                        createHyperLink();
+                    } catch (Exception ex) {
+                        if (ex.HResult == -2146233079) {
+                            // Add the new Hyperlink to the end of the current Hyperlink
+                            tp = tp.GetNextInsertionPosition(LogicalDirection.Forward);
+                            try {
+                                createHyperLink();
+                            } catch {
+                                tp = tp.Paragraph != null ? tp.Paragraph.ElementEnd : tp.DocumentEnd ;
+                                tp.InsertLineBreak();
+                                createHyperLink();
+                            }
                         }
-                        uxRichTextBox.Document.Background = imageBrush;
-                        break;
-                    // RND: Make a MediaElement the Background
+                    }
                 }
-            } else {
-                // Create a Hyperlink to the dropped file/folder
-                Hyperlink hyperlink = new Hyperlink(new Run(" "), tp) { NavigateUri = new Uri(fileInfo.FullName), };
+                // Automatically set the Note Title to the Dropped file's name:
+                if (VM.Note.Title.Contains("New Note", StringComparison.InvariantCultureIgnoreCase)) {
+                    VM.Note.Title = fi.Name; Title = fi.Name;
+                    uxNoteTitleLabel.Content = fi.Name;
+                    uxSettingsPropertyGrid.Update();
+                }
 
-                // Add an Imange and Display Name text inside the Hyperlink
-                AddImageToHyperLink(hyperlink, DefaultThumbnailSize.Medium.Height, DefaultThumbnailSize.Medium.Width, addTextRun: true);
+                // Local function for hyperlink creation (uses closure variables tp & fi)
+                Hyperlink createHyperLink() {
+                    // Create a Hyperlink to the dropped file/folder
+                    Hyperlink hyperlink = new Hyperlink(new Run($""), tp) { NavigateUri = new Uri(fi.FullName), };
+                    // Add an Imange and Display Name text inside the Hyperlink
+                    AddImageToHyperLink(hyperlink, DefaultThumbnailSize.Medium.Height, DefaultThumbnailSize.Medium.Width, addTextRun: true);
 
-                // Wrap the Hyperlink in a Paragraph to keep it isolated and editable
-                var para = new Paragraph(new Run(" "));
-                para.Inlines.Add(hyperlink);
-                para.Inlines.Add(new Run(" ", tp));
-                uxRichTextBox.Document.Blocks.Add(para);
+                    // RND: Experiments with programatic hyperlink navigation 
+                    hyperlink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
+                        Debug.WriteLine($"RequestNavigate for {sender} with {e}");
+                    };
 
-                // RND: Experiments with programatic hyperlink navigation 
-                hyperlink.RequestNavigate += (object sender, RequestNavigateEventArgs e) => {
-                    Debug.WriteLine($"RequestNavigate for {sender} with {e}");
-                };
-            }
-            // Automatically set the Note Tile to the dropped file's name:
-            if (VM.Note.Title.Contains("New Note", StringComparison.InvariantCultureIgnoreCase)) {
-                VM.Note.Title = fileInfo.Name;
-                uxNoteTitleLabel.Content = fileInfo.Name;
+                    return hyperlink;
+                }
             }
         }
 
-        public Image CreateImage(FileInfo uriPath) {
+        // Create an Image Element for use in Document
+        Image CreateImage(FileInfo uriPath) {
             var image = new Image();
             try {
                 var uri = new Uri(uriPath.FullName);
@@ -1074,12 +1105,11 @@ namespace OmniZenNotes
 
             // Add an image and name text for the Hyperlink using Windows Shell thumbnail image & display name
             using ShellObject shellObject = ShellObject.FromParsingName(hyperlink.NavigateUri.LocalPath);
-            if (addTextRun) {
-                hyperlink.Inlines.Add(new Run($" {shellObject?.Name} "));
-            }
+            if (addTextRun) { hyperlink.Inlines.FirstInline.ContentStart.InsertTextInRun($"{ shellObject?.Name} ");}
 
             InlineUIContainer iluic = new InlineUIContainer(image);
-            hyperlink.Inlines.InsertBefore(hyperlink.Inlines.LastInline, iluic);
+            hyperlink.Inlines.InsertBefore(hyperlink.Inlines.FirstInline, iluic);
+            if (addTextRun) { iluic.ElementEnd.InsertLineBreak(); }
             hyperlink.Tag = image;
         }
 
@@ -1166,19 +1196,6 @@ namespace OmniZenNotes
                 e.Handled = true;
             }
         }
-
-        string IsSingleFileOrDir(DragEventArgs args) {
-            // Check for files in the hovering data object.
-            if (args.Data.GetDataPresent(DataFormats.FileDrop, true)) {
-                var fileNames = args.Data.GetData(DataFormats.FileDrop, true) as string[];
-                if (fileNames?.Length is 1) {
-                    if (File.Exists(fileNames[0]) || Directory.Exists(fileNames[0])) {
-                        return fileNames[0];
-                    }
-                }
-            }
-            return null;
-        }
     }
 
     // Convert from Image ToolTip string file path to a Thumbnail BitmapSource (@see Style TargetType="{x:Type Image} Source XAML")
@@ -1191,7 +1208,8 @@ namespace OmniZenNotes
                     return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * scale);
                 } catch {
                     try {
-                        return U.Shell.GetShellIcon(fileInfo);
+                        System.Drawing.Icon icon = U.Shell.GetShellIcon(fileInfo);
+                        return U.Graphics.GetBitmapImage(icon);
                     } catch { }
                 }
             }

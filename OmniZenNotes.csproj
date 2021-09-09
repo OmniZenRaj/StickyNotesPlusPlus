@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
     <PropertyGroup>
-    <Version>1.6.0</Version>
+    <Version>1.7.0</Version>
     <OutputType>WinExe</OutputType>
     <ApplicationIcon>App.ico</ApplicationIcon>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -10,6 +10,13 @@
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+
+    <!--Setup for Self Published EXE 
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+-->
 
   <!--Ignore Nuget package WARNINGS: -->
     <NoWarn>NU1701</NoWarn> <!-- WARNING: This package may not be fully compatible with your project -->

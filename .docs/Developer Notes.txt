@@ -10,3 +10,17 @@ Developer Notes:
     Re open the Project Workspace and the superfulous errors should be cleared
     The errors may reappear once you start editing the project files (this is a known VS Code issue)
     Dont worry about the VS Code IDE error messages too much, just ensure dotnet build completes without errors or warnings
+
+
+To build Project as self contained EXE, add the following entries under <PropertyGroup> in the .csproj file:
+
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+Run the following command:
+
+dotnet publish -r win-x64 -c release --self-contained
+
+* Don't forget the EXe will be in ..\bin\release\netcoreapp3.1\win-x64\publish & s/b a larger size than before *

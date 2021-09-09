@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
-using System.Windows.Input;
 using Microsoft.WindowsAPICodePack.Shell;
 
 namespace Utilities
@@ -378,8 +377,19 @@ namespace Utilities
             double M = Math.Abs(DefaultThumbnailSize.Medium.Width - width);
             double S = Math.Abs(DefaultThumbnailSize.Small.Width - width);
 
+            /* BUG: #85 If Shell API in Microsoft.WindowsAPICodePack.Shell cannot get/generate a Thumbnail (eg from PDF files), 
+                An deadly exception occurs when accessing Thumbnail properties (as we do below) and also 
+                causes a major problem of suspending the Dispatcher! which locks up the UI.
+                To reproduce, try dragging in a PDF (one that Windows Shell has not created a thumbnail for yet)
+                It will not work and it will lockup the UI. (In Release Mode it manages to chug along after a while)
+                Use S:\Furniture Shop\PDF Standard Prints\Series (PDF)\Series - Fremont (PDF)\Fremont Assemblies (PDF)\Desks (1mm) PDF\FRD6630-01-STD.pdf
+                The problem is that Windows starts up Acrobat Reader to generate a thumbnail if one does not exist for the file.
+                Adobe Acrobat is so slow that the Shell API times out waiting for it - and we crash inside WindowsBase.dll.
+            */
+
             try {
                 using ShellObject shellObject = ShellObject.FromParsingName(localPath);
+                var o = shellObject.Thumbnail?.LargeIcon; // check Thumbnail OK
                 return width switch
                 {
                     // RND: Cleaner scaling might be done by using delta with size diff accounted for
@@ -390,7 +400,8 @@ namespace Utilities
                     _ => shellObject?.Thumbnail.SmallBitmapSource
                 };
             } catch {
-                return null;
+                Icon icon = GetShellIcon(new FileInfo(localPath));
+                return Graphics.GetBitmapImage(icon);
             }
         }
 
@@ -423,6 +434,10 @@ namespace Utilities
                 if (exe32.Exists) { return exe32; }
             }
             return null;
+        }
+
+        public static void Speak(string text) {
+            
         }
 
         public static readonly FileInfo IMAGERES_DLL = new FileInfo(Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "imageres.dll"));
