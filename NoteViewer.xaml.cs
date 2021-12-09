@@ -1108,12 +1108,12 @@ namespace OmniZenNotes
         void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addText = false) {
             
             var uri = hyperlink.NavigateUri;
-            var name = !uri.IsFile ? uri.PathAndQuery : new FileInfo(uri.LocalPath).Name;
+            var name = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.PathAndQuery) : new FileInfo(uri.LocalPath).Name;
 
             // Create a new image with given height and width
             var image = new Image {
                 // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
-                ToolTip = !uri.IsFile ? uri.OriginalString : uri.LocalPath,
+                ToolTip = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.OriginalString) : uri.LocalPath,
                 // Tag object is used to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
                 Tag = 1.0d,
                 Height = height,
@@ -1175,13 +1175,9 @@ namespace OmniZenNotes
         public void OnHyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e) {
             Debug.WriteLine($"OnHyperlink_RequestNavigate for {sender} with {e}");
             if (sender is Hyperlink hyperlink) {
-                var fileInfo = new FileInfo(Uri.UnescapeDataString(hyperlink.NavigateUri.AbsolutePath));
-
-                if (!hyperlink.NavigateUri.IsFile) {    // For  non File/Folder hyperlinks
-                    // Create a temporary short cut with the target set to our hyperlink url
-                    fileInfo = Shell.CreateURLShortcut(hyperlink.NavigateUri);
-                }
-                U.Shell.ShellOpen(fileInfo);
+                var uriPath = Uri.UnescapeDataString( hyperlink.NavigateUri.IsFile ?
+                    hyperlink.NavigateUri.AbsolutePath : hyperlink.NavigateUri.AbsoluteUri);
+                Shell.ShellOpen(uriPath);
                 e.Handled = true;
             }
         }

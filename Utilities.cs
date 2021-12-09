@@ -411,6 +411,20 @@ namespace Utilities
             ShellOpen(new DirectoryInfo(fileInfo.DirectoryName));
         }
 
+        public static void ShellOpen(string uriPath) {
+            try {
+                ProcessStartInfo psi = new ProcessStartInfo() {
+                    FileName = uriPath,
+                    UseShellExecute = true,
+                    Verb = "Open"
+                };
+
+                Process.Start(psi);
+            } catch (Exception ex) {
+                Exceptions.LogException(ex, $"Unable to Shell Open {uriPath}");
+            }
+        }
+
         public static void ShellOpen(FileSystemInfo fileInfoOrDirectoryInfo) {
             try {
                 ProcessStartInfo psi = new ProcessStartInfo() {

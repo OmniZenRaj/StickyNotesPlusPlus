@@ -50,11 +50,16 @@ namespace OmniZenNotes
         }
 
         private void RunPlugIns() {
-            if (S.Default.PlugInDir is string plugInDir) {
-                DirectoryInfo plugInDirInfo = new DirectoryInfo(plugInDir);
-                Directory.CreateDirectory(plugInDirInfo.FullName);  // Create if Required
+            if (S.Default.PlugInDir is string plugInDirConfig) {
+                DirectoryInfo plugInDir = new DirectoryInfo(plugInDirConfig);
+                Directory.CreateDirectory(plugInDir.FullName);  // Create base if Required
+                // If a user specific plug in directory exists, use that one
+                var userPlugInDir = Path.Combine(plugInDir.FullName, System.Security.Principal.WindowsIdentity.GetCurrent()?.Name);
+                if (Directory.Exists(userPlugInDir)) {
+                    plugInDir = new DirectoryInfo(userPlugInDir);
+                }
 
-                foreach (var plugIn in plugInDirInfo.GetFiles())
+                foreach (var plugIn in plugInDir.GetFiles())
                 {
                     switch (plugIn.Extension.ToUpper()) {
                         case string ext when ext == ".EXE" | ext  == ".CMD" | ext == ".PS" :{
