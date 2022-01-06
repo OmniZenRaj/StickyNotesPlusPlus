@@ -82,37 +82,38 @@ namespace OmniZenNotes.Models
             }
         }
 
-        protected string GetString(SQLiteDataReader reader, string colName) {
+        protected static string GetString(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
             return GetString(reader, colIndex);
         }
 
-        protected string GetString(SQLiteDataReader reader, int colIndex) {
+        protected static string GetString(SQLiteDataReader reader, int colIndex) {
             return reader.IsDBNull(colIndex) ? null : reader.GetString(colIndex);
         }
 
-        protected DateTime GetDateTime(SQLiteDataReader reader, string colName) {
+        protected static DateTime GetDateTime(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
             return reader.IsDBNull(colIndex) ? new DateTime() : reader.GetDateTime(colIndex);
         }
 
-        protected decimal GetDecimal(SQLiteDataReader reader, string colName) {
+        protected static decimal GetDecimal(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
             return reader.IsDBNull(colIndex) ? 0M : reader.GetDecimal(colIndex);
         }
 
-        protected bool GetBoolean(SQLiteDataReader reader, string colName) {
+        protected static bool GetBoolean(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
-            return reader.IsDBNull(colIndex) ? false : reader.GetBoolean(colIndex);
+            if (reader.IsDBNull(colIndex)) return reader.GetBoolean(colIndex);
+            return false;
         }
 
-        protected Guid GetGuid(SQLiteDataReader reader, string colName) {
+        protected static Guid GetGuid(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
             return reader.IsDBNull(colIndex) ? Guid.NewGuid() : Guid.Parse(reader.GetString(colIndex));
         }
 
         // We can't just use reader.GetBlob because our Table was created WITHOUT ROWID
-        protected long GetBlob(SQLiteDataReader reader, int colIndex, MemoryStream ms) {
+        protected static long GetBlob(SQLiteDataReader reader, int colIndex, MemoryStream ms) {
             long byteCount = reader.GetBytes(colIndex, 0, null, 0, 0);  // Get total byte count
             byte[] buffer = new byte[byteCount];
             long bytesRead = reader.GetBytes(colIndex, 0, buffer, 0, buffer.Length);

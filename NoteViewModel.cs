@@ -17,7 +17,7 @@ namespace OmniZenNotes
             Note = note;
         }
 
-        public Note CreateNewNote(Note copy) {
+        public static Note CreateNewNote(Note copy) {
             return Repository.CreateNote(copy);
         }
     }

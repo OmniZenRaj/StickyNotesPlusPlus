@@ -2,8 +2,8 @@
 
     <PropertyGroup>
     <Version>1.7.0</Version>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <ApplicationIcon>App.ico</ApplicationIcon>
 
     <!--Use the latest language features of C# that are compatible with TargetFramework version -->
@@ -19,12 +19,19 @@
 -->
 
   <!--Ignore Nuget package WARNINGS: -->
-    <NoWarn>NU1701</NoWarn> <!-- WARNING: This package may not be fully compatible with your project -->
+    <NoWarn>
+      NU1701,   <!-- WARNING: This package may not be fully compatible with your project -->
+      CA2211,   <!-- WARNING: Non-constant fields should not be visible -->
+      IDE0090,  <!-- WARNING: 'new' expression can be simplified -->      
+    </NoWarn> 
   </PropertyGroup>
 
   <ItemGroup>
     <!--Required for Wpf Toolkit Controls and Features-->  
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />  
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.1" />  
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />  
+    <PackageReference Include="NetOffice.Core" Version="1.7.4.4" />
     <!--Required for JSON data conversion and formatting-->
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <!--Required for SQLite access to read SQLite Databases -->
@@ -54,6 +61,7 @@
     <Resource Include="assets/images/ic_save_black_18dp.png" />
     <Resourcec Include="assets/images/pin-green_small-24x.png" />
     <Resource Include="assets/images/ic_close.png" />
+    <Resource Include="assets/images/overlay.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />

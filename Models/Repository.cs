@@ -84,7 +84,7 @@ namespace OmniZenNotes.Models
             try {
                 SQLiteConnection conn = GetDBConnection();
 
-                string query = $@"SELECT * FROM Note WHERE ID = '{GUID.ToString()}'";
+                string query = $@"SELECT * FROM Note WHERE ID = '{GUID}'";
                 using SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
 
@@ -104,7 +104,7 @@ namespace OmniZenNotes.Models
             try {
                 SQLiteConnection conn = GetDBConnection();
 
-                string query = $"DELETE FROM Note WHERE ID == '{note.ID.ToString()}'";
+                string query = $"DELETE FROM Note WHERE ID == '{note.ID}'";
                 using SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 int result = cmd.ExecuteNonQuery();
 
@@ -222,7 +222,7 @@ namespace OmniZenNotes.Models
             var task = new Task(GUID);
             try {
                 SQLiteConnection conn = GetDBConnection();
-                string query = $@"SELECT * FROM Task WHERE ID = '{GUID.ToString()}'";
+                string query = $@"SELECT * FROM Task WHERE ID = '{GUID}'";
                 using SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read()) {
@@ -238,7 +238,7 @@ namespace OmniZenNotes.Models
             try {
                 SQLiteConnection conn = GetDBConnection();
 
-                string query = $"DELETE FROM Task WHERE ID = '{task.ID.ToString()}'";
+                string query = $"DELETE FROM Task WHERE ID = '{task.ID}'";
                 using SQLiteCommand cmd = new SQLiteCommand(query, conn);
                 int result = cmd.ExecuteNonQuery();
             } catch (Exception ex) {

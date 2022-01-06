@@ -274,14 +274,14 @@ namespace Utilities
         }
 
         [DllImport("user32.dll")]
-        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+        static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
         
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool GetMonitorInfo(IntPtr hMonitor, [In, Out] MONITORINFO lpmi);
+        static extern bool GetMonitorInfo(IntPtr hMonitor, [In, Out] MONITORINFO lpmi);
 
         [DllImport("user32.dll")]
-        public static extern IntPtr MonitorFromRect([In] ref RECT lprc, uint dwFlags);
+        static extern IntPtr MonitorFromRect([In] ref RECT lprc, uint dwFlags);
 
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern int ExtractIconEx(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconSmall, int nIcons);
@@ -461,18 +461,6 @@ namespace Utilities
             return new FileInfo(file);
         }
 
-        static void TEST1() {
-            ShellLink shellLink = new ShellLink();
-            IShellLinkW iShellLink = (IShellLinkW)shellLink;
-            long dwMode = 2;
-            var d1 = (dwMode & 4096) == 4096;
-            var d2 = dwMode & 3;
-
-            (iShellLink as IPersistFile).Load(@"C:\Temp\TEST1.url", dwMode);
-            var t = (iShellLink as IPropertyStore).GetValue(SystemProperties.System.Link.TargetUrl);
-            var d = (iShellLink as IPropertyStore).GetValue(SystemProperties.System.Link.Description);
-        }
-
         // Get Office Binary from different versions of Office and return the latest version found:
         public static FileInfo GetOfficeBinary(string binaryName, string subDir = ".") {
             string[] officeVersions = { "Office19", "Office16", "Office15", "Office14", "Office13" };
@@ -484,10 +472,6 @@ namespace Utilities
                 if (exe32.Exists) { return exe32; }
             }
             return null;
-        }
-
-        public static void Speak(string text) {
-            
         }
 
         public static readonly FileInfo IMAGERES_DLL = new FileInfo(Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "imageres.dll"));
@@ -503,8 +487,8 @@ namespace Utilities
         public const uint FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
         public const uint FILE_ATTRIBUTE_NORMAL = 0x00008000;
 
-        [DllImport("shell32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, out SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, out SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public struct SHFILEINFO
