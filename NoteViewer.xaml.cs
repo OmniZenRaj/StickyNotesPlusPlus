@@ -20,6 +20,13 @@ using System.Globalization;
 using Microsoft.WindowsAPICodePack.Shell;
 using Xceed.Wpf.Toolkit.PropertyGrid;
 
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
+
+using NetOffice.OfficeApi.Tools;
+using NetOffice.OfficeApi.Tools.Utils;
+using Microsoft.WindowsAPICodePack.Taskbar;
+
 #pragma warning disable IDE1006 // Ignore name rule violation for XAML element objects starting with ux
 
 namespace OmniZenNotes
@@ -52,7 +59,8 @@ namespace OmniZenNotes
             InitializeCommands();
 
             LoadSettings();
-
+            InitSignalR();
+            
             if (!placement.IsEmpty && placement.Height != 0 && placement.Width != 0) {
                 Top = placement.Top; Left = placement.Left;
                 Width = placement.Width; Height = placement.Height;
@@ -71,8 +79,14 @@ namespace OmniZenNotes
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
             Icon = AppIcon.Source;
+            /*          RND: Use Tray Utils to show balloontip (cannot get to work due to COMObject required)   
+                        CommonUtils cu = new CommonUtils((new System.Windows.Interop.WindowInteropHelper(this).Handle));
+                        TrayUtils tu = cu.Tray;
+                        tu.ShowBalloonTip(10000, "Tip Title", "Tip Text", System.Windows.Forms.ToolTipIcon.Info);
+             */
         }
 
+    #region Window Initalization
         // Create, configure and bind Application Commands
         void InitializeCommands() {
 
@@ -170,7 +184,9 @@ namespace OmniZenNotes
 
             if (VM.Note != null) { Save(saveAsync: false); }
         }
+    #endregion
 
+    #region Command Processors
         void OnSaveCommand(object sender, RoutedEventArgs e) {
             Save(saveAsync: false);
         }
@@ -252,7 +268,7 @@ namespace OmniZenNotes
         }
 
         // TODO: Add User Option to suppress this message on the dialog box (@see MS Sticky Notes)
-        bool ConfirmUserAction(string title, string msg, MessageBoxButton button = MessageBoxButton.OKCancel, MessageBoxImage image = MessageBoxImage.Question, MessageBoxResult result = MessageBoxResult.Cancel) {
+        static bool ConfirmUserAction(string title, string msg, MessageBoxButton button = MessageBoxButton.OKCancel, MessageBoxImage image = MessageBoxImage.Question, MessageBoxResult result = MessageBoxResult.Cancel) {
             MessageBoxResult mbr;
             mbr = MessageBox.Show($"{msg}", $"{title}", button, image, result);
             return mbr == MessageBoxResult.Yes || mbr == MessageBoxResult.OK;
@@ -340,7 +356,7 @@ namespace OmniZenNotes
             }
         }
 
-        void OnRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
+        void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
             if (Keyboard.Modifiers == ModifierKeys.Control) {
                 // TODO: Make Text Selections work
                 TextRange range = uxRichTextBox.Selection;
@@ -350,6 +366,15 @@ namespace OmniZenNotes
                 } else {
                     double fontSize = Math.Max(e.Delta > 0 ? uxRichTextBox.FontSize + 1 : uxRichTextBox.FontSize - 1, 6);
                     SetFont(uxRichTextBox.FontFamily, fontSize, uxRichTextBox.Foreground, uxRichTextBox.FontStyle);
+                }
+            }
+        }
+        
+        // RND with SignalR Comms
+        void uxRichTextBox_PreviewKeyUp(object sender, KeyEventArgs e) {
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {               
+                if (VM.Note.Task.Reminder.LongNotification == true) {
+                    OnSendSignalR();
                 }
             }
         }
@@ -395,8 +420,10 @@ namespace OmniZenNotes
 
         void OnButton_MouseLeave(object sender, EventArgs e) {
         }
-
-        #region UX Control Event Handlers
+        
+    #endregion
+        
+    #region UX Control Event Handlers
 
         void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
 
@@ -455,7 +482,7 @@ namespace OmniZenNotes
                     uxRichTextBox.FontSize = fontSize;
                     uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
                     uxRichTextBox.FontStyle = fontStyle;
-                    uxRichTextBox.Foreground = fontColor != null ? new SolidColorBrush(fontColor) : uxRichTextBox.Foreground;
+                    uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
                 }
             }
 
@@ -504,7 +531,7 @@ namespace OmniZenNotes
             uxRichTextBox.SelectionBrush = colorScRgb.ScA <= 0.75 ? new SolidColorBrush(Colors.Black) : new SolidColorBrush(colorScRgb);
         }
 
-        Color AdjustColor(Color color) {
+        static Color AdjustColor(Color color) {
             // Tweak the textbox color for a nice background accent color for the toolbar.
             U.Graphics.RgbToHls(color.R, color.G, color.B, out double h, out double l, out double s);
             if (l > 0.75f) l *= 0.70f; else if (l > 0.50f) l *= 0.45f; else if (l > 0.35f) l *= 0.25f; else if (l > 0.25f) l *= 1.50f; else if (l > 0.00f) l *= 1.75f; else l = 0.35f;
@@ -517,7 +544,7 @@ namespace OmniZenNotes
         }
 
         void OpenNewWindow(Note note) {
-            System.Windows.Forms.Screen[] allScreens = System.Windows.Forms.Screen.AllScreens;
+
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
             var area = screen.WorkingArea;
 
@@ -550,9 +577,11 @@ namespace OmniZenNotes
             double newTop = Top + uxToolBar.ActualHeight + padH;
             double newLeft = Left + padW * 2;
 
+            #pragma warning disable CA1806 // Never used - is OK due to weak ref
             new NoteViewer(note, new Rect(newLeft, newTop, Width, Height));
+            #pragma warning restore CA1806            
 
-#pragma warning disable CS8321 // The local function 'f' is declared but never used
+            #pragma warning disable CS8321 // The function declared but never used
             static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
                 foreach (var s in allScreens) {
                     if (screen.WorkingArea.Right <= s.WorkingArea.Left) { return true; }
@@ -591,7 +620,7 @@ namespace OmniZenNotes
         }
 
         void OnNewCommand(object sender, RoutedEventArgs e) {
-            OpenNewWindow(VM.CreateNewNote(copy: VM.Note));
+            OpenNewWindow(NoteViewModel.CreateNewNote(copy: VM.Note));
         }
 
         void OnDelNoteButton_Click(object sender, RoutedEventArgs e) {
@@ -787,9 +816,9 @@ namespace OmniZenNotes
             }
         }
 
-        #endregion
+    #endregion
 
-        #region Settings & Configuration
+    #region Settings & Configuration
 
         // Loaded from App Settings located @ C:\User\{User}\AppData\Local\OmniZenNotes\OmniZenNote.exe_...
         void LoadSettings() {
@@ -912,9 +941,51 @@ namespace OmniZenNotes
             S.Default.Save();
         }
 
-        #endregion
+    #endregion
+        
+    #region SignalR
+        // TODO: Setup proper Collaboration settings
+        void InitSignalR() {
+            if (VM.Note.Task.Reminder.LongNotification == true) {
+                App.CollaborateHubConnection.On<string, string>("broadcastMessage", (user, message) => {
+                    this.Dispatcher.Invoke(() => {
+                        var newMessage = $"{user}: {message}";
+                        FlowDocument doc = uxRichTextBox.Document;
+                        TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
+                        TextPointer tp = uxRichTextBox.CaretPosition;
+                        var para = new Paragraph(new Run(newMessage));
+                        doc.Blocks.Add(para);
+                    });
+                });
+            }
+        }
+        
+        async static void OnSendSignalR() {
+            // RND Trying to get a icon to display message count
+            /* TaskbarManager tm = TaskbarManager.Instance;
+            tm.SetOverlayIcon(U.Shell.GetShellIcon(new FileInfo(@"C:\Chrome.ico")), "Icon Text"); 
+            */
 
-        void OnRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
+            DispatcherTimer dt = new DispatcherTimer();
+            dt.Tick += new EventHandler((sender, e) => {
+                TaskbarManager tm = TaskbarManager.Instance;
+                tm.SetProgressValue(2, 10);
+            });
+            dt.Interval = TimeSpan.FromMilliseconds(100);
+            dt.Start();
+
+            if (App.CollaborateHubConnection.State == HubConnectionState.Connected) {
+                await App.CollaborateHubConnection.InvokeAsync("Send", "NoteViewer", "TEST 123");
+            } else {
+                MessageBox.Show("Cannot Send. No Connection Exists to Server");
+            }
+        }
+
+
+    #endregion
+        
+    #region UX_Handlers
+        void uxRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
         }
 
         void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
@@ -937,6 +1008,13 @@ namespace OmniZenNotes
         }
 
         void uxReminderPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
+            if (e.OriginalSource is PropertyItem item) {
+                switch (item.PropertyName) {
+                    case "LongNotification":
+                        break;
+                    default: break;
+                }
+            }
         }
 
         void uxSettingsPropertyGrid_PropertyValueChanged(object sender, PropertyValueChangedEventArgs e) {
@@ -976,12 +1054,12 @@ namespace OmniZenNotes
             }
         }
 
-        void OnRichTextBox_PreviewDragOver(object sender, DragEventArgs args) {
+        void uxRichTextBox_PreviewDragOver(object sender, DragEventArgs args) {
             args.Effects = args.KeyStates == (DragDropKeyStates.LeftMouseButton | DragDropKeyStates.ControlKey) ? DragDropEffects.Copy : DragDropEffects.Link;
             args.Handled = true;
         }
 
-        void OnRichTextBox_PreviewDrop(object sender, DragEventArgs args) {
+        void uxRichTextBox_PreviewDrop(object sender, DragEventArgs args) {
             args.Handled = true;
             // Check for files in the hovering data object.
             if (args.Data.GetDataPresent(DataFormats.FileDrop, true)) {
@@ -993,8 +1071,6 @@ namespace OmniZenNotes
             }
 
             if (args.Data.GetDataPresent(DataFormats.Text, true)) {
-                FlowDocument doc = uxRichTextBox.Document;
-                TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
                 TextPointer tp = uxRichTextBox.CaretPosition;
                 try {
                     string uri = args.Data.GetData(DataFormats.Text, true) as string;
@@ -1105,7 +1181,7 @@ namespace OmniZenNotes
             return image;
         }
 
-        void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addText = false) {
+        static void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addText = false) {
             
             var uri = hyperlink.NavigateUri;
             var name = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.PathAndQuery) : new FileInfo(uri.LocalPath).Name;
@@ -1221,7 +1297,9 @@ namespace OmniZenNotes
             }
         }
     }
-
+    #endregion
+    
+    #region Converters
     // Convert from Image ToolTip string file path to a Thumbnail BitmapSource (@see Style TargetType="{x:Type Image} Source XAML")
     public class FilePathToThumbNailConverter : IValueConverter
     {
@@ -1276,7 +1354,7 @@ namespace OmniZenNotes
 
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) {
             if (o is Visibility visibility) {
-                return visibility == Visibility.Visible ? true : false;
+                if (visibility == Visibility.Visible) return true; else return false;
             }
             return true;
         }
@@ -1292,5 +1370,6 @@ namespace OmniZenNotes
         object IValueConverter.ConvertBack(object o, Type type, object parameter, CultureInfo culture) => null;
 
     }
+#endregion
 }
 

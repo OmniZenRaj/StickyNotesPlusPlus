@@ -2,7 +2,29 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:OmniZenNotes">
+
+    <JumpList.JumpList>
+        <JumpList>
+            <JumpTask Title="Calculator"
+                        Description="Open the Windows Calculator."
+                        ApplicationPath="%WINDIR%\system32\calc.exe"
+                        IconResourcePath="%WINDIR%\system32\calc.exe"/>
+            <JumpTask Title="Notepad"
+                        Description="Open Notepad."
+                        ApplicationPath="%WINDIR%\system32\notepad.exe"
+                        IconResourcePath="%WINDIR%\system32\notepad.exe"
+                        WorkingDirectory="%HOMEDRIVE%%HOMEPATH%"/>
+            <JumpTask/>
+            <JumpTask Title="IntraNet"
+                        Description="Start Chrome for IntraNET Site."
+                        ApplicationPath="%PROGRAMFILES(x86)%\Google\Chrome\Application\chrome.exe"
+                        IconResourcePath="%PROGRAMFILES(x86)%\Google\Chrome\Application\chrome.exe"
+                        WorkingDirectory="%HOMEDRIVE%%HOMEPATH%"
+                        IconResourceIndex="1" Arguments="-extoff"/>
+        </JumpList>
+    </JumpList.JumpList>            
 <Application.Resources>
+
     <local:FilePathToThumbNailConverter x:Key="FilePathToThumbNailConverter"/>
     <local:TagToLayoutTransformConverter x:Key="TagToLayoutTransformConverter"/>
     <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>

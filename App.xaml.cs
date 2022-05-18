@@ -8,6 +8,9 @@ using System.Reflection;
 using System.Windows.Threading;
 using System.Diagnostics;
 
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
+
 namespace OmniZenNotes
 {
     using OmniZenNotes.Models;
@@ -20,26 +23,21 @@ namespace OmniZenNotes
         static readonly List<Process> PlugIns = new List<Process>();
 
         DispatcherTimer PlugInTimer = new DispatcherTimer();
+        public static HubConnection CollaborateHubConnection;
 
         protected override void OnStartup(StartupEventArgs e) {
+
             try {
                 LoadSettings();
-
-                if (S.Default.PlugInRunInterval is int plugInDirRunInterval && plugInDirRunInterval > 0) {
-                    PlugInTimer = new DispatcherTimer();
-                    PlugInTimer.Tick += new EventHandler((sender, e) => RunPlugIns());
-                    PlugInTimer.Interval = TimeSpan.FromSeconds(plugInDirRunInterval);
-                    PlugInTimer.Start();
-#if DEBUG
-                    RunPlugIns();
-#endif
-                }
-
+                //InitSignalR();
+                //InitPlugIns();
                 Repository.LoadModel();
 
                 foreach (Notebook notebook in Repository.NoteBooks) {
                     foreach (Note note in notebook.Notes) {
+                        #pragma warning disable CA1806 // Never used - is OK due to weak ref
                         new NoteViewer(note);
+                        #pragma warning restore CA1806
                     }
                 }
 
@@ -49,7 +47,35 @@ namespace OmniZenNotes
 
         }
 
-        private void RunPlugIns() {
+        public static async void InitSignalR() {
+            try {
+                CollaborateHubConnection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5000/collaborate")
+                .ConfigureLogging(logging => {logging.SetMinimumLevel(LogLevel.Trace);})
+                .Build();
+
+                try {
+                   await CollaborateHubConnection.StartAsync();
+                } catch (Exception ex1) {
+                    Console.WriteLine(ex1);
+                }
+            } catch (Exception ex) {
+                U.Exceptions.LogException(ex);
+            }
+        }
+        
+        private void InitPlugIns() {
+            if (S.Default.PlugInRunInterval is int plugInDirRunInterval && plugInDirRunInterval > 0) {
+                PlugInTimer = new DispatcherTimer();
+                PlugInTimer.Tick += new EventHandler((sender, e) => RunPlugIns());
+                PlugInTimer.Interval = TimeSpan.FromSeconds(plugInDirRunInterval);
+                PlugInTimer.Start();
+#if DEBUG
+                RunPlugIns();
+#endif
+            }
+        }
+        private static void RunPlugIns() {
             if (S.Default.PlugInDir is string plugInDirConfig) {
                 DirectoryInfo plugInDir = new DirectoryInfo(plugInDirConfig);
                 Directory.CreateDirectory(plugInDir.FullName);  // Create base if Required
@@ -133,7 +159,7 @@ namespace OmniZenNotes
             SaveAppSettings();
         }
 
-        void LoadSettings() {
+        static void LoadSettings() {
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var roamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var assemblyName = Assembly.GetEntryAssembly().GetName().Name;
@@ -165,7 +191,7 @@ namespace OmniZenNotes
             }
         }
 
-        void SaveAppSettings() {
+        static void SaveAppSettings() {
             S.Default.NoteBooks.Clear();
             foreach (Notebook nb in Repository.NoteBooks) {
                 S.Default.NoteBooks.Add(nb.DbPathUri);

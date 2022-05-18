@@ -8,6 +8,13 @@ xmlns:local="clr-namespace:OmniZenNotes"
 xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" 
 WindowStyle="None" Topmost="True" AllowsTransparency="True" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1"
 Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" Deactivated="OnDeactivated" Closed="OnClosed" Closing="OnClosing" >
+<!--     <Window.TaskbarItemInfo>
+        <TaskbarItemInfo 
+            Description="Custom tooltip" 
+            ProgressState="Indeterminate"
+            Overlay="assets/images/overlay.png"/>
+    </Window.TaskbarItemInfo> -->
+    
     <Window.Resources>
         <Image x:Key="AppIcon" Source="App.ico" x:Shared="False" />
         <Image x:Key="Add_Note_Image" Source="assets/images/ic_add.png" x:Shared="False" />
@@ -245,7 +252,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
             </StackPanel>
 
             <StackPanel >
-                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="OnRichTextBox_PreviewDragOver" PreviewDrop="OnRichTextBox_PreviewDrop" TextChanged="OnRichTextBox_TextChanged" MouseWheel="OnRichTextBox_MouseWheel" Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
+                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="uxRichTextBox_TextChanged" PreviewKeyUp= "uxRichTextBox_PreviewKeyUp" MouseWheel="uxRichTextBox_MouseWheel" Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
                     <xctk:RichTextBoxFormatBarManager.FormatBar >
                         <xctk:RichTextBoxFormatBar x:Name="RTBFB"/>
                     </xctk:RichTextBoxFormatBarManager.FormatBar>
