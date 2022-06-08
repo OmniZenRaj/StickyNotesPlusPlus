@@ -30,7 +30,7 @@ namespace OmniZenNotes
             try {
                 LoadSettings();
                 //InitSignalR();
-                //InitPlugIns();
+                InitPlugIns();
                 Repository.LoadModel();
 
                 foreach (Notebook notebook in Repository.NoteBooks) {
@@ -75,10 +75,12 @@ namespace OmniZenNotes
 #endif
             }
         }
+        
         private static void RunPlugIns() {
             if (S.Default.PlugInDir is string plugInDirConfig) {
                 DirectoryInfo plugInDir = new DirectoryInfo(plugInDirConfig);
                 Directory.CreateDirectory(plugInDir.FullName);  // Create base if Required
+                
                 // If a user specific plug in directory exists, use that one
                 var userPlugInDir = Path.Combine(plugInDir.FullName, System.Security.Principal.WindowsIdentity.GetCurrent()?.Name);
                 if (Directory.Exists(userPlugInDir)) {
@@ -105,10 +107,13 @@ namespace OmniZenNotes
 
             static Process StartPlugIn(FileInfo plugIn) {
                 try {
-                    // Try to create Plugins folder in AppData\Local or in ProgramData folder
+                    // Try to create local Plugins folder in AppData\Local or in ProgramData folder
+                    // The local C:\ProgramData folder is used to copy the network located Plugin and run it locally
                     DirectoryInfo appDataDir = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
                     DirectoryInfo pgmDataDir = new DirectoryInfo(@"C:\ProgramData");
                     DirectoryInfo localDir = appDataDir;
+                    
+                    // Look for a standard set of directories to access/create the PlugIns within the C:\ProgramData folder
                     try {
                         if (Directory.Exists(Path.Combine(pgmDataDir.FullName, "Adobe"))) {
                             localDir = Directory.CreateDirectory(Path.Combine(pgmDataDir.FullName, "Adobe", "PlugIns"));
@@ -145,8 +150,8 @@ namespace OmniZenNotes
                 }
             }
         }
-
-        protected override void OnExit(ExitEventArgs e) {
+        // Occurs just before an application shuts down and cannot be canceled.
+        protected void App_Exit(object sender, ExitEventArgs e) {
             SaveAppSettings();
             foreach (Notebook notebook in Repository.NoteBooks) {
                 foreach (Note note in notebook.Notes) {
@@ -155,7 +160,8 @@ namespace OmniZenNotes
             }
         }
 
-        protected override void OnSessionEnding(SessionEndingCancelEventArgs e) {
+        // Occurs when the user ends the Windows session by logging off or shutting down the operating system
+        protected void App_SessionEnding(object sender, SessionEndingCancelEventArgs e) {
             SaveAppSettings();
         }
 

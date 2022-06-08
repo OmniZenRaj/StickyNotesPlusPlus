@@ -42,7 +42,7 @@
       <Value Profile="(Default)">300</Value>
     </Setting>
     <Setting Name="PlugInDir" Type="System.String" Scope="User">
-      <Value Profile="(Default)">S:\\Furniture Shop\\Access\\PlugIns</Value>
+      <Value Profile="(Default)">S:\\Metal Products</Value>
     </Setting>
   </Settings>
 </SettingsFile>

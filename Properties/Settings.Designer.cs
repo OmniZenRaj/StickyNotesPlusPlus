@@ -172,7 +172,7 @@ namespace OmniZenNotes.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("S:\\Furniture Shop\\Access\\PlugIns")]
+        [global::System.Configuration.DefaultSettingValueAttribute("S:\\Metal Products")]
         public string PlugInDir {
             get {
                 return ((string)(this["PlugInDir"]));

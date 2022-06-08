@@ -26,7 +26,7 @@ rem Setup GIT in the PATH
 set PATH=X:\OPT\GIT\BIN;%PATH%
 
 rem Workaround for OmniSharp bug ! NEEDED to work with OmniSharp and DOTNET 3.1
-set MSBuildSDKsPath=X:\OPT\dotnet3.1\sdk\3.1.100\Sdks
+set MSBuildSDKsPath=X:\OPT\dotnet6.0\sdk\6.0.101\Sdks
 echo MSBuildSDKsPath workaround for OmniSharp SDKs set
 
 dotnet --info
