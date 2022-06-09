@@ -219,10 +219,23 @@ namespace Utilities
             return fontName;
         }
 
-        public static int GetMonitorNumber(System.Windows.Window window) {
+        // Get the Screen associated with the JSON monitor information
+        public static Screen GetScreen(string monitorInfo) {
+            var monitor = Json.GetObjectFromJson<dynamic>(monitorInfo);
             var allScreens = new ArrayList(Screen.AllScreens);
+            foreach (Screen screen in allScreens) {
+                string deviceName = monitor.DeviceName.Value;
+                if (deviceName.EqualsIC(screen.DeviceName)) {
+                    return screen;
+                }
+            }
+            return null;
+        }
+        
+        // Get the JSON monitor information for given Window 
+        public static string GetMonitorInfo(System.Windows.Window window) {
             var screen = Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(window).Handle);
-            return allScreens.IndexOf(screen) + 1;
+            return Json.GetJsonFromObject(screen);
         }
 
         public static Rectangle GetWorkingArea(System.Windows.Window window) {

@@ -876,15 +876,34 @@ namespace OmniZenNotes
             uxToolBar.LayoutTransform = new ScaleTransform(VM.Note.UXSettings.ToolBarScale, VM.Note.UXSettings.ToolBarScale);
             Visibility = VM.Note.UXSettings.Visibility;
 
-            if (VM.Note.UXSettings.RestoreBounds is Rect rb && double.IsFinite(rb.Left) && double.IsFinite(rb.Top)
-                && U.Graphics.MonitorExists(VM.Note.UXSettings.MonitorNumber)) {
+            if (VM.Note.UXSettings.RestoreBounds is Rect rb && double.IsFinite(rb.Left) && double.IsFinite(rb.Top)) {
                 Width = rb.Width; Height = rb.Height;
                 if (rb.Top != 0 && rb.Left != 0) {
                     Top = rb.Top; Left = rb.Left; 
                 } else
                     WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
-    }
+            
+            // Use current and saved monitor information to compare Screen bounds for changes
+            // If screen no longer exists, (ie multi monitor configuration changed), place at CenterScreen
+            if (U.Graphics.GetScreen(VM.Note.UXSettings.MonitorInfo) is System.Windows.Forms.Screen curScreen) {
+                try {
+                    var savedScreen = Json.GetObjectFromJson<dynamic>(VM.Note.UXSettings.MonitorInfo);
+                    // If screen size bounds has changed, try to account for the new layout
+                    // Bounds is a rectangle stored as X, Y, Width, Height string values
+                    string boundsString = savedScreen.Bounds.Value as string;
+                    System.Drawing.Rectangle savedBounds = (System.Drawing.Rectangle)new System.Drawing.RectangleConverter().ConvertFromString(boundsString);
+                    if (curScreen.Bounds != savedBounds) {
+                        Top += curScreen.Bounds.Top - savedBounds.Top;
+                        Left += curScreen.Bounds.Left - savedBounds.Left;
+                    }
+                } catch {
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                }
+            } else {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+        }
 
         void SaveUXSettings() {
             // Save the Note specific settings (which override the App level settings)
@@ -909,7 +928,7 @@ namespace OmniZenNotes
                 }
                 VM.Note.UXSettings.Visibility = Visibility;
                 VM.Note.UXSettings.ZOrder = 1;
-                VM.Note.UXSettings.MonitorNumber = U.Graphics.GetMonitorNumber(this);
+                VM.Note.UXSettings.MonitorInfo = U.Graphics.GetMonitorInfo(this);
             }
         }
 

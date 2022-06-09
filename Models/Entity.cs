@@ -138,7 +138,7 @@ namespace OmniZenNotes.Models
         public Visibility Visibility { get; set; } = Visibility.Visible;
         public int ZOrder { get; set; } = 1;
         public double ToolBarScale { get; set; } = 1.0;
-        public int MonitorNumber { get; set; }
+        public string MonitorInfo { get; set; }
         public string CSS { get; set; }
 
         public string FontName => G.GetFamilyFontName(FontFamily);
@@ -168,7 +168,7 @@ namespace OmniZenNotes.Models
             Visibility = copy.Visibility;
             ZOrder = copy.ZOrder;
             ToolBarScale = copy.ToolBarScale;
-            MonitorNumber = copy.MonitorNumber;
+            MonitorInfo = copy.MonitorInfo;
             CSS = copy.CSS;
         }
     }
