@@ -21,10 +21,6 @@ using Microsoft.WindowsAPICodePack.Shell;
 using Xceed.Wpf.Toolkit.PropertyGrid;
 
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.Logging;
-
-using NetOffice.OfficeApi.Tools;
-using NetOffice.OfficeApi.Tools.Utils;
 using Microsoft.WindowsAPICodePack.Taskbar;
 
 #pragma warning disable IDE1006 // Ignore name rule violation for XAML element objects starting with ux
@@ -292,13 +288,15 @@ namespace OmniZenNotes
         }
 
         void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
-            string title = Assembly.GetExecutingAssembly().GetName().Name;
+            string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description;
 
-            string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
+/*             string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
                          $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
                          $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
                          $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
-                         $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n";
+                         $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n"; 
+*/
+            string msg = $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n";
 
             MessageBox.Show(msg, title, MessageBoxButton.OK);
         }

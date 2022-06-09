@@ -25,7 +25,7 @@
       IDE0090,  <!-- WARNING: 'new' expression can be simplified -->      
     </NoWarn> 
   </PropertyGroup>
-
+  
   <ItemGroup>
     <!--Required for Wpf Toolkit Controls and Features-->  
     <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />  
@@ -42,7 +42,7 @@
     <PackageReference Include="WindowsAPICodePack-ShellExtensions" Version="1.1.1" />
   </ItemGroup>
 
-<!--SQLite3 Starter Database: -->
+<!--Embedded SQLite3 Template Database as Resource -->
   <ItemGroup>
     <Resource Include="DB/OmniZenNotes.sqlite3" />
   </ItemGroup>
@@ -66,5 +66,31 @@
   <ItemGroup>
     <Folder Include="Resources\" />
   </ItemGroup>
+
+  <!-- Post Publish Steps for Release of Published App -->
+  <Target Condition="'$(Configuration)'=='Release' And Exists('$(OutputPath)\publish')" Name="PostPublish" AfterTargets="Publish">
+
+    <!-- Copy Required Runtime Support Files into Publish Folder -->
+    <Message Importance="High" Text="Copying Required Runtime Support Files into $(OutputPath)\publish\"/>
+    <ItemGroup>
+      <DotNetHostFiles    Include="X:\OPT\dotnet6.0\host\**\*.*"/>
+      <DotNetSharedFiles  Include="X:\OPT\dotnet6.0\shared\**\*.*"/>
+      <SQLiteDB Include="DB/**\*.*"/>
+    </ItemGroup>
+
+    <!-- Copy Required DotNet Runtime Files into Publish Folder -->
+    <Copy SourceFiles="@(DotNetHostFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\host\%(RecursiveDir)%(Filename)%(Extension)"/>
+    <Copy SourceFiles="@(DotNetSharedFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\shared\%(RecursiveDir)%(Filename)%(Extension)"/>
+    <Copy SourceFiles=".scripts/StickyNotes.cmd" DestinationFolder="$(OutputPath)\publish"/> 
+  
+    <!-- Remove Extraneous Directories and Files for Published App -->
+    <Message Importance="High" Text="Removing Extraneous Directories and Files from $(OutputPath)\publish\"/>
+    <!-- Extra Extended.Wpf.Toolkit Language Resource DLLs (TODO: Eliminate from Build)-->
+    <RemoveDir Directories="$(OutputPath)\publish\cs-CZ;$(OutputPath)\publish\cs-de;$(OutputPath)\publish\de;$(OutputPath)\publish\es;$(OutputPath)\publish\fr;$(OutputPath)\publish\hu;$(OutputPath)\publish\it;$(OutputPath)\publish\pt-BR;$(OutputPath)\publish\ro;$(OutputPath)\publish\ru;$(OutputPath)\publish\sv;$(OutputPath)\publish\zh-Hans;" />
+    <!-- Extra Sqlite Runtimes (TODO: Eliminate from Build) -->
+    <RemoveDir Directories="$(OutputPath)\publish\runtimes\win-x86;$(OutputPath)\publish\runtimes\linux-x64;$(OutputPath)\publish\runtimes\osx-x64" />
+    <Delete Files="$(OutputPath)\publish\OmniZenNotes.pdb" />
+
+  </Target>
 
 </Project>
