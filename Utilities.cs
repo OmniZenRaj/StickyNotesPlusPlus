@@ -221,14 +221,17 @@ namespace Utilities
 
         // Get the Screen associated with the JSON monitor information
         public static Screen GetScreen(string monitorInfo) {
-            var monitor = Json.GetObjectFromJson<dynamic>(monitorInfo);
-            var allScreens = new ArrayList(Screen.AllScreens);
-            foreach (Screen screen in allScreens) {
-                string deviceName = monitor.DeviceName.Value;
-                if (deviceName.EqualsIC(screen.DeviceName)) {
-                    return screen;
+            try {
+                var monitor = Json.GetObjectFromJson<dynamic>(monitorInfo);
+                if (monitor != null) {
+                    var allScreens = new ArrayList(Screen.AllScreens);
+                    foreach (Screen screen in allScreens) {
+                        if (screen.DeviceName?.Equals(monitor.DeviceName?.Value, StringComparison.OrdinalIgnoreCase)) {
+                            return screen;
+                        }
+                    }
                 }
-            }
+            } catch {}
             return null;
         }
         

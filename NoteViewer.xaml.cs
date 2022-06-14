@@ -35,14 +35,9 @@ namespace OmniZenNotes
     public partial class NoteViewer : Window
     {
         NoteViewModel VM { get; set; }
-        public static List<FontFamily> FontFamilies1 { get => FontFamilies; set => FontFamilies = value; }
-        public static List<PropertyInfo> BackgroundColors1 { get => BackgroundColors; set => BackgroundColors = value; }
-        public static bool IsExiting1 { get => IsExiting; set => IsExiting = value; }
-        public DispatcherTimer Timer1 { get => Timer; set => Timer = value; }
 
         static List<FontFamily> FontFamilies;
         static List<PropertyInfo> BackgroundColors;
-
         static bool IsExiting = false;
         DispatcherTimer Timer = new DispatcherTimer();
 
@@ -1179,13 +1174,12 @@ namespace OmniZenNotes
         }
 
         // Create an Image Element for use in Document
-        Image CreateImage(FileInfo uriPath) {
+        Image CreateImage(FileInfo fi) {
             var image = new Image();
             try {
-                var uri = new Uri(uriPath.FullName);
-                var uri2 = new Uri(Path.GetTempFileName());
-                File.Copy(uri.AbsolutePath, uri2.AbsolutePath, true);
-                var bitmap = new BitmapImage(uri2);
+                var temp = Path.GetTempFileName();
+                File.Copy(fi.FullName, temp, true);
+                var bitmap = new BitmapImage(new Uri(temp));
                 image.Source = bitmap;
                 image.Width = Math.Min(bitmap.PixelWidth, Width);
                 image.Height = Math.Min(bitmap.PixelHeight, Height);
@@ -1193,8 +1187,8 @@ namespace OmniZenNotes
                     image.SetBinding(WidthProperty, "{Binding ActualWidth,  Mode=OneWay, ElementName=uxRichTextBox}");
                     image.SetBinding(HeightProperty, "{Binding ActualHeight, Mode=OneWay, ElementName=uxRichTextBox}");
                 }
-                image.ToolTip = uri.AbsolutePath; image.Tag = uri;
-            } catch { }
+                image.ToolTip = fi.FullName; image.Tag = fi;
+            } catch(Exception ex) { U.Exceptions.LogException(ex); }
             return image;
         }
 
