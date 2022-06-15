@@ -358,13 +358,15 @@ namespace Utilities
 
                 var res = SHGetFileInfo(fsi.FullName, FILE_ATTRIBUTE_NORMAL, out shfi, (uint)Marshal.SizeOf(shfi), flags);
                 if (res == IntPtr.Zero) {
-                    throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error());
+                    return null;
+                    // TODO: If we cannot get a Shell Icon (missing Net Drive or Authorization etc), provide a default one:
+                    //throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error());
                 }
 
                 Icon.FromHandle(shfi.hIcon); // Load the icon from an HICON handle
                 // Clone icon, so that it can be successfully stored by WPF
                 icon = (Icon)Icon.FromHandle(shfi.hIcon).Clone();   // Copy it
-                Graphics.DestroyIcon(shfi.hIcon);                          // Clean it up
+                Graphics.DestroyIcon(shfi.hIcon);                   // Clean it up
                 IconCache.Add($"{key}:{size}", icon);               // Add Cloned one to cache
                 return icon;
 
