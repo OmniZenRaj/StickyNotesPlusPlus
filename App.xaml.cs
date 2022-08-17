@@ -1,20 +1,22 @@
-﻿using System;
-using System.IO;
+﻿global using System;
+global using System.IO;
+global using OmniZenNotes.Models;
+global using G = Utilities.Graphics;
+global using SH = Utilities.Shell;
+global using S = OmniZenNotes.Properties.Settings;
+global using EX = Utilities.Exceptions;
+global using U = Utilities;
+
 using System.Windows;
 using System.Windows.Resources;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Threading;
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
 namespace OmniZenNotes
 {
-    using OmniZenNotes.Models;
-    using S = Properties.Settings;
-    using U = Utilities;
-
     public partial class App : Application
     {
         public static List<NoteViewer> NoteViewers = new ();
@@ -37,7 +39,7 @@ namespace OmniZenNotes
                 }
 
             } catch (Exception ex) {
-                U.Exceptions.LogException(ex, "App START Error");
+                EX.LogException(ex, "App START Error");
             }
 
         }
@@ -55,7 +57,7 @@ namespace OmniZenNotes
                     Console.WriteLine(ex1);
                 }
             } catch (Exception ex) {
-                U.Exceptions.LogException(ex);
+                EX.LogException(ex);
             }
         }
         

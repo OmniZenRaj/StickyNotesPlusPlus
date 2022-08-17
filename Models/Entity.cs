@@ -1,8 +1,6 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 using System.Data.SQLite;
-using System.IO;
 using System.Security.Principal;
 
 namespace OmniZenNotes.Models

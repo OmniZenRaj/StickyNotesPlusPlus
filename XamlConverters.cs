@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Data;
@@ -8,9 +6,6 @@ using System.Globalization;
 
 namespace OmniZenNotes
 {
-    using U = Utilities;
-    using Utilities;
-
     // Convert from Image ToolTip string file path to a Thumbnail BitmapSource (@see Style TargetType="{x:Type Image} Source XAML")
     public class FilePathToThumbNailConverter : IValueConverter
     {
@@ -29,7 +24,7 @@ namespace OmniZenNotes
                     }
                 } else {
                     // TODO: Get the favicon for the given url site OR just a system one for now
-                    return Graphics.GetBitmapImage(Shell.SHELL32_DLL, 13);
+                    return U.Graphics.GetBitmapImage(U.Shell.SHELL32_DLL, 13);
                 }
             }
 

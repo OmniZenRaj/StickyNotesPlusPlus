@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -13,9 +11,6 @@ using Microsoft.WindowsAPICodePack.Shell;
 
 namespace OmniZenNotes
 {
-    using U = Utilities;
-    using Utilities;
-
     public partial class NoteViewer : Window
     {
         void uxRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
@@ -118,7 +113,7 @@ namespace OmniZenNotes
                     image.SetBinding(HeightProperty, "{Binding ActualHeight, Mode=OneWay, ElementName=uxRichTextBox}");
                 }
                 image.ToolTip = fi.FullName; image.Tag = fi;
-            } catch (Exception ex) { U.Exceptions.LogException(ex); }
+            } catch (Exception ex) { EX.LogException(ex); }
             return image;
         }
 
@@ -164,7 +159,7 @@ namespace OmniZenNotes
                     var error = $"{STR("strMediaFailedMsg")} {me.Source} : ";
                     var iuic = me.Parent as InlineUIContainer;
                     iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
-                    //U.Exceptions.LogException(e.ErrorException, error);
+                    //EX.LogException(e.ErrorException, error);
                 }
             }
         }
@@ -194,7 +189,7 @@ namespace OmniZenNotes
             if (sender is Hyperlink hyperlink) {
                 var uriPath = Uri.UnescapeDataString(hyperlink.NavigateUri.IsFile ?
                     hyperlink.NavigateUri.AbsolutePath : hyperlink.NavigateUri.AbsoluteUri);
-                Shell.ShellOpen(uriPath);
+                U.Shell.ShellOpen(uriPath);
                 e.Handled = true;
             }
         }

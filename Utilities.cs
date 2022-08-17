@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -94,7 +92,7 @@ namespace Utilities
                 }
                 return Icon.FromHandle(iconSize == IconSize.Large ? iconLarge : iconSmall);
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Extract {iconSize} Icon {iconIndex} from {fi.FullName}");
+                EX.LogException(ex, $"Unable to Extract {iconSize} Icon {iconIndex} from {fi.FullName}");
             }
             return null;
         }
@@ -335,7 +333,7 @@ namespace Utilities
                     _ => DocumentType.Other,
                 };
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Get Document Type of {fi.FullName}");
+                EX.LogException(ex, $"Unable to Get Document Type of {fi.FullName}");
             }
             return DocumentType.Other;
         }
@@ -371,7 +369,7 @@ namespace Utilities
                 return icon;
 
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Get Shell Icon for {fsi.FullName}");
+                EX.LogException(ex, $"Unable to Get Shell Icon for {fsi.FullName}");
             }
             return null;
         }
@@ -384,7 +382,7 @@ namespace Utilities
                 if (res == IntPtr.Zero) { throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()); }
                 return shfi.szTypeName;
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Get Shell Type of {fi.FullName}");
+                EX.LogException(ex, $"Unable to Get Shell Type of {fi.FullName}");
             }
             return "*Unknown";
         }
@@ -439,7 +437,7 @@ namespace Utilities
 
                 Process.Start(psi);
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Shell Open {uriPath}");
+                EX.LogException(ex, $"Unable to Shell Open {uriPath}");
             }
         }
 
@@ -453,7 +451,7 @@ namespace Utilities
 
                 Process.Start(psi);
             } catch (Exception ex) {
-                Exceptions.LogException(ex, $"Unable to Shell Open {fileInfoOrDirectoryInfo.FullName}");
+                EX.LogException(ex, $"Unable to Shell Open {fileInfoOrDirectoryInfo.FullName}");
             }
         }
 

@@ -1,8 +1,4 @@
-﻿using System;
-using OmniZenNotes.Models;
-using Utilities;
-
-namespace OmniZenNotes
+﻿namespace OmniZenNotes
 {
     public class NoteViewModel
     {
@@ -10,7 +6,7 @@ namespace OmniZenNotes
         public Note Note { get; set; }
         public string ToolTip => $@"{Note.Security.CreatedBy}";
 
-        public SystemIconResources Icons { get; set; } = new ();
+        public U.SystemIconResources Icons { get; set; } = new ();
 
         public NoteViewModel(NoteViewer noteViewer, Note note) {
             NoteViewer = noteViewer;  // Wire up the View to this ViewModel

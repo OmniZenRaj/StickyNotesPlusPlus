@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -11,9 +10,6 @@ using System.Windows.Interop;
 
 namespace OmniZenNotes
 {
-    using OmniZenNotes.Models;
-    using U = Utilities;
-
     public partial class NoteViewer : Window
     {
         NoteViewModel VM { get; set; }
