@@ -12,21 +12,21 @@ namespace OmniZenNotes
     // Application Level Commands // NLS: 
     public static class AppCommands
     {
-        public static RoutedUICommand RefreshCommand = new RoutedUICommand("Refresh", "Refresh", typeof(AppCommands));
-        public static RoutedUICommand SpellCheckCommand = new RoutedUICommand("Spell Check", "SpellCheck", typeof(AppCommands));
-        public static RoutedUICommand FormatBarCommand = new RoutedUICommand("Format Bar", "FormatBar", typeof(AppCommands));
-        public static RoutedUICommand SelectFontCommand = new RoutedUICommand("Font...", "SelectNoteFont", typeof(AppCommands));
-        public static RoutedUICommand ViewNoteReminderCommand = new RoutedUICommand("Reminder...", "ViewNoteReminder", typeof(AppCommands));
-        public static RoutedUICommand ViewNoteSettingsCommand = new RoutedUICommand("Properties...", "ViewNoteSettings", typeof(AppCommands));
-        public static RoutedUICommand TogglePinCommand = new RoutedUICommand("Toggle Pin On Off", "TogglePin", typeof(AppCommands));
-        public static RoutedUICommand HideCommand = new RoutedUICommand("Hide Note", "HideNote", typeof(AppCommands));
-        public static RoutedUICommand CloseCommand = new RoutedUICommand("Close", "Close", typeof(AppCommands));
-        public static RoutedUICommand DeleteCommand = new RoutedUICommand("Delete Note", "DeleteNote", typeof(AppCommands));
-        public static RoutedUICommand ShowAllNotesCommand = new RoutedUICommand("Show All", "ShowAllNotes", typeof(AppCommands));
-        public static RoutedUICommand ShowPrivateNotesCommand = new RoutedUICommand("Show Private", "ShowPrivateNote", typeof(AppCommands));
-        public static RoutedUICommand ShowPublicNotesCommand = new RoutedUICommand("Show Public", "ShowPublicNotes", typeof(AppCommands));
-        public static RoutedUICommand ApplicationPrefsCommand = new RoutedUICommand("Preferences", "ApplicationPrefs", typeof(AppCommands));
-        public static RoutedUICommand ExitApplicationCommand = new RoutedUICommand("Exit App", "ExitApplication", typeof(AppCommands));
+        public static RoutedUICommand RefreshCommand = new ("Refresh", "Refresh", typeof(AppCommands));
+        public static RoutedUICommand SpellCheckCommand = new ("Spell Check", "SpellCheck", typeof(AppCommands));
+        public static RoutedUICommand FormatBarCommand = new ("Format Bar", "FormatBar", typeof(AppCommands));
+        public static RoutedUICommand SelectFontCommand = new ("Font...", "SelectNoteFont", typeof(AppCommands));
+        public static RoutedUICommand ViewNoteReminderCommand = new ("Reminder...", "ViewNoteReminder", typeof(AppCommands));
+        public static RoutedUICommand ViewNoteSettingsCommand = new ("Properties...", "ViewNoteSettings", typeof(AppCommands));
+        public static RoutedUICommand TogglePinCommand = new ("Toggle Pin On Off", "TogglePin", typeof(AppCommands));
+        public static RoutedUICommand HideCommand = new ("Hide Note", "HideNote", typeof(AppCommands));
+        public static RoutedUICommand CloseCommand = new ("Close", "Close", typeof(AppCommands));
+        public static RoutedUICommand DeleteCommand = new ("Delete Note", "DeleteNote", typeof(AppCommands));
+        public static RoutedUICommand ShowAllNotesCommand = new ("Show All", "ShowAllNotes", typeof(AppCommands));
+        public static RoutedUICommand ShowPrivateNotesCommand = new ("Show Private", "ShowPrivateNote", typeof(AppCommands));
+        public static RoutedUICommand ShowPublicNotesCommand = new ("Show Public", "ShowPublicNotes", typeof(AppCommands));
+        public static RoutedUICommand ApplicationPrefsCommand = new ("Preferences", "ApplicationPrefs", typeof(AppCommands));
+        public static RoutedUICommand ExitApplicationCommand = new ("Exit App", "ExitApplication", typeof(AppCommands));
     }
     
     public partial class NoteViewer : Window
@@ -36,31 +36,31 @@ namespace OmniZenNotes
 
             // Show Notes Commands
             AddCommandBinding(AppCommands.ShowAllNotesCommand, OnShowAllNotesCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ShowAllNotesCommand, new KeyGesture(Key.X, ModifierKeys.Alt, "Alt-X")));
+            InputBindings.Add(new (AppCommands.ShowAllNotesCommand, new KeyGesture(Key.X, ModifierKeys.Alt, "Alt-X")));
             AddCommandBinding(AppCommands.ShowPrivateNotesCommand, OnShowPrivateNotesCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ShowPrivateNotesCommand, new KeyGesture(Key.Y, ModifierKeys.Alt, "Alt-Y")));
+            InputBindings.Add(new (AppCommands.ShowPrivateNotesCommand, new KeyGesture(Key.Y, ModifierKeys.Alt, "Alt-Y")));
             AddCommandBinding(AppCommands.ShowPublicNotesCommand, OnShowPublicNotesCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ShowPublicNotesCommand, new KeyGesture(Key.Z, ModifierKeys.Alt, "Alt-X")));
+            InputBindings.Add(new (AppCommands.ShowPublicNotesCommand, new KeyGesture(Key.Z, ModifierKeys.Alt, "Alt-X")));
 
             // Set Note Font Command
             AddCommandBinding(AppCommands.SelectFontCommand, OnSelectFontCommand);
 
             // Format Bar Command
             AddCommandBinding(AppCommands.FormatBarCommand, OnToggleFormatBarCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.FormatBarCommand, new KeyGesture(Key.F4, ModifierKeys.None, "F4")));
+            InputBindings.Add(new (AppCommands.FormatBarCommand, new KeyGesture(Key.F4, ModifierKeys.None, "F4")));
             // Spellcheck Command
             AddCommandBinding(AppCommands.SpellCheckCommand, OnToggleSpellCheckCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
+            InputBindings.Add(new (AppCommands.SpellCheckCommand, new KeyGesture(Key.F7, ModifierKeys.None, "F7")));
 
             // View Note Reminder Command
             AddCommandBinding(AppCommands.ViewNoteReminderCommand, OnViewNoteReminderCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.R, ModifierKeys.Alt, "Alt-R")));
+            InputBindings.Add(new (AppCommands.ViewNoteReminderCommand, new KeyGesture(Key.R, ModifierKeys.Alt, "Alt-R")));
             // View Note Settings Command
             AddCommandBinding(AppCommands.ViewNoteSettingsCommand, OnViewNoteSettingsCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ViewNoteSettingsCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
+            InputBindings.Add(new (AppCommands.ViewNoteSettingsCommand, new KeyGesture(Key.S, ModifierKeys.Alt, "Alt-S")));
             // Toggle Pin On/Off Command
             AddCommandBinding(AppCommands.TogglePinCommand, OnTogglePinCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.TogglePinCommand, new KeyGesture(Key.P, ModifierKeys.Alt, "Alt-P")));
+            InputBindings.Add(new (AppCommands.TogglePinCommand, new KeyGesture(Key.P, ModifierKeys.Alt, "Alt-P")));
 
             // New Command
             AddCommandBinding(ApplicationCommands.New, OnNewCommand);
@@ -70,16 +70,16 @@ namespace OmniZenNotes
             AddCommandBinding(ApplicationCommands.Save, OnSaveCommand);
             // Hide Command
             AddCommandBinding(AppCommands.HideCommand, OnHideCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.HideCommand, new KeyGesture(Key.H, ModifierKeys.Alt, "Alt-H")));
+            InputBindings.Add(new (AppCommands.HideCommand, new KeyGesture(Key.H, ModifierKeys.Alt, "Alt-H")));
             // Close Command
             AddCommandBinding(AppCommands.CloseCommand, OnCloseCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.CloseCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
+            InputBindings.Add(new (AppCommands.CloseCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
             // Delete Command
             AddCommandBinding(AppCommands.DeleteCommand, OnDeleteCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.DeleteCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
+            InputBindings.Add(new (AppCommands.DeleteCommand, new KeyGesture(Key.D, ModifierKeys.Alt, "Alt-D")));
             // Full Screen Toggle
             AddCommandBinding(NavigationCommands.Zoom, OnZoomCommand);
-            InputBindings.Add(new KeyBinding(NavigationCommands.Zoom, new KeyGesture(Key.F11, ModifierKeys.None, "F11")));
+            InputBindings.Add(new (NavigationCommands.Zoom, new KeyGesture(Key.F11, ModifierKeys.None, "F11")));
 
             // Print / Print Preview Note TODO: Not working - might need to conver to FixedDocument to print
             // AddCommandBinding(ApplicationCommands.Print, OnPrintCommand);
@@ -87,17 +87,17 @@ namespace OmniZenNotes
 
             // Config Application Command
             AddCommandBinding(AppCommands.ApplicationPrefsCommand, OnApplicationPrefsCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ApplicationPrefsCommand, new KeyGesture(Key.F1, ModifierKeys.Alt, "Alt-F1")));
+            InputBindings.Add(new (AppCommands.ApplicationPrefsCommand, new KeyGesture(Key.F1, ModifierKeys.Alt, "Alt-F1")));
 
             // Exit Application Command
             AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
-            InputBindings.Add(new KeyBinding(AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
+            InputBindings.Add(new (AppCommands.ExitApplicationCommand, new KeyGesture(Key.F4, ModifierKeys.Alt, "Alt-F4")));
 
             // Local Function to Simplify Default Command Binding
             void AddCommandBinding(ICommand command, ExecutedRoutedEventHandler handler, CanExecuteRoutedEventHandler enabler = null) {
-                CommandBinding cb = new CommandBinding(command);
-                cb.Executed += new ExecutedRoutedEventHandler(handler);
-                cb.CanExecute += new CanExecuteRoutedEventHandler(enabler ??= (sender, e) => e.CanExecute = true);
+                CommandBinding cb = new (command);
+                cb.Executed += new (handler);
+                cb.CanExecute += new (enabler ??= (sender, e) => e.CanExecute = true);
                 CommandBindings.Add(cb);
             }
 
@@ -180,7 +180,7 @@ namespace OmniZenNotes
             IsExiting = true;
             SaveSettings();
 
-            var nvs = new ArrayList(App.NoteViewers); // Clone to safely iterate
+            ArrayList nvs = new (App.NoteViewers); // Clone to safely iterate
             foreach( NoteViewer nv in nvs) {
                 nv.Close();
             }
@@ -189,24 +189,25 @@ namespace OmniZenNotes
         void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
 
             /*          RND: Use Tray Utils to show balloontip (cannot get to work due to COMObject required)   
-                        CommonUtils cu = new CommonUtils((new System.Windows.Interop.WindowInteropHelper(this).Handle));
+                        CommonUtils cu = new ((new System.Windows.Interop.WindowInteropHelper(this).Handle));
                         TrayUtils tu = cu.Tray;
                         tu.ShowBalloonTip(10000, "Tip Title", "Tip Text", System.Windows.Forms.ToolTipIcon.Info);
              */
             bool rc = Utilities.Shell.AddTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 1");
-            rc = Utilities.Shell.ModifyTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 2");
-            rc = Utilities.Shell.GetTaskBarIconLocation(this, 1);
-            
+            if (rc == true) {
+                Utilities.Shell.ModifyTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 2");
+                Utilities.Shell.GetTaskBarIconLocation(this, 1);
+                System.Console.WriteLine($"rc = {rc}");
+            }
+
+            /*             string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
+                                     $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
+                                     $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
+                                     $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
+                                     $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n"; 
+            */
             string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description;
-
-/*             string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
-                         $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
-                         $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
-                         $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
-                         $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n"; 
-*/
             string msg = $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n";
-
             MessageBox.Show(msg, title, MessageBoxButton.OK);
         }
 
@@ -271,7 +272,7 @@ namespace OmniZenNotes
 
         // TODO: Print & PrintPreview NOT working (may only work with FixedDocument (not FlowDocument))
         void OnPrintCommand(object sender, RoutedEventArgs e) {
-            var printDialog = new PrintDialog(); // Create a PrintDialog.
+            PrintDialog printDialog = new (); // Create a PrintDialog.
 
             // Show the dialog and print the document if successful
             if (printDialog.ShowDialog() == true) {

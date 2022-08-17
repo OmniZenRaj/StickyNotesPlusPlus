@@ -17,9 +17,9 @@ namespace OmniZenNotes
                     nv.Dispatcher.Invoke(() => {
                         var newMessage = $"{user}: {message}";
                         FlowDocument doc = nv.uxRichTextBox.Document;
-                        TextRange tr = new TextRange(doc.ContentStart, doc.ContentEnd);
+                        TextRange tr = new (doc.ContentStart, doc.ContentEnd);
                         TextPointer tp = nv.uxRichTextBox.CaretPosition;
-                        var para = new Paragraph(new Run(newMessage));
+                        Paragraph para = new (new Run(newMessage));
                         doc.Blocks.Add(para);
                     });
                 });
@@ -29,11 +29,11 @@ namespace OmniZenNotes
         async internal static void OnSendSignalR() {
             // RND Trying to get a icon to display message count
             /* TaskbarManager tm = TaskbarManager.Instance;
-            tm.SetOverlayIcon(U.Shell.GetShellIcon(new FileInfo(@"C:\Chrome.ico")), "Icon Text"); 
+            tm.SetOverlayIcon(U.Shell.GetShellIcon(new (@"C:\Chrome.ico")), "Icon Text"); 
             */
 
             DispatcherTimer dt = new DispatcherTimer();
-            dt.Tick += new EventHandler((sender, e) => {
+            dt.Tick += new ((sender, e) => {
                 TaskbarManager tm = TaskbarManager.Instance;
                 tm.SetProgressValue(2, 10);
             });

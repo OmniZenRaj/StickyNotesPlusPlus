@@ -17,8 +17,8 @@ namespace OmniZenNotes
 
     public partial class App : Application
     {
-        public static List<NoteViewer> NoteViewers = new List<NoteViewer>();
-        static readonly List<Process> PlugIns = new List<Process>();
+        public static List<NoteViewer> NoteViewers = new ();
+        static readonly List<Process> PlugIns = new ();
 
         public static HubConnection CollaborateHubConnection;
 
@@ -94,7 +94,7 @@ namespace OmniZenNotes
                     Directory.CreateDirectory(Path.GetDirectoryName(nbDBFilePath));
 
                     // Copy SQLite3 DB from Resource to new user SQLite3DB file
-                    Uri resourcePath = new Uri("DB/OmniZenNotes.sqlite3", UriKind.Relative);
+                    Uri resourcePath = new ("DB/OmniZenNotes.sqlite3", UriKind.Relative);
                     StreamResourceInfo sri = GetResourceStream(resourcePath);
                     using FileStream fs = File.Create(nbDBFilePath);
                     sri.Stream.CopyTo(fs);
@@ -102,7 +102,7 @@ namespace OmniZenNotes
                     fs.Close();
                 }
 
-                Repository.NoteBooks.Add(new Notebook(nbDBFilePath));
+                Repository.NoteBooks.Add(new (nbDBFilePath));
             }
         }
 

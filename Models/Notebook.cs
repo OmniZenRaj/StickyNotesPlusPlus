@@ -4,7 +4,7 @@ namespace OmniZenNotes.Models
 {
     class Notebook : Entity
     {
-        public List<Note> Notes { get; set; } = new List<Note>();
+        public List<Note> Notes { get; set; } = new ();
 
         public string DbPathUri { get; set; }
 

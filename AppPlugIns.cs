@@ -12,8 +12,8 @@ namespace OmniZenNotes
     {
         static void InitPlugIns() {
             if (S.Default.PlugInRunInterval is int plugInDirRunInterval && plugInDirRunInterval > 0) {
-                var PlugInTimer = new DispatcherTimer();
-                PlugInTimer.Tick += new EventHandler((sender, e) => RunPlugIns());
+                DispatcherTimer PlugInTimer = new ();
+                PlugInTimer.Tick += new ((sender, e) => RunPlugIns());
                 PlugInTimer.Interval = TimeSpan.FromSeconds(plugInDirRunInterval);
                 PlugInTimer.Start();
 #if DEBUG
@@ -24,13 +24,13 @@ namespace OmniZenNotes
         
         static void RunPlugIns() {
             if (S.Default.PlugInDir is string plugInDirConfig) {
-                DirectoryInfo plugInDir = new DirectoryInfo(plugInDirConfig);
+                DirectoryInfo plugInDir = new (plugInDirConfig);
                 Directory.CreateDirectory(plugInDir.FullName);  // Create base if Required
                 
                 // If a user specific plug in directory exists, use that one
                 var userPlugInDir = Path.Combine(plugInDir.FullName, System.Security.Principal.WindowsIdentity.GetCurrent()?.Name);
                 if (Directory.Exists(userPlugInDir)) {
-                    plugInDir = new DirectoryInfo(userPlugInDir);
+                    plugInDir = new (userPlugInDir);
                 }
 
                 foreach (var plugIn in plugInDir.GetFiles())
@@ -55,8 +55,8 @@ namespace OmniZenNotes
                 try {
                     // Try to create local Plugins folder in AppData\Local or in ProgramData folder
                     // The local C:\ProgramData folder is used to copy the network located Plugin and run it locally
-                    DirectoryInfo appDataDir = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-                    DirectoryInfo pgmDataDir = new DirectoryInfo(@"C:\ProgramData");
+                    DirectoryInfo appDataDir = new (Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                    DirectoryInfo pgmDataDir = new (@"C:\ProgramData");
                     DirectoryInfo localDir = appDataDir;
                     
                     // Look for a standard set of directories to access/create the PlugIns within the C:\ProgramData folder
@@ -76,14 +76,14 @@ namespace OmniZenNotes
                         try {
                             localDir = Directory.CreateDirectory(Path.Combine(pgmDataDir.FullName, "Microsoft", "PlugIns"));
                         } catch {
-                            localDir = new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                            localDir = new (Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
                         }
                     }
 
-                    FileInfo localPlugIn = new FileInfo(Path.Combine(localDir.FullName, plugIn.Name));
+                    FileInfo localPlugIn = new (Path.Combine(localDir.FullName, plugIn.Name));
                     File.Copy(plugIn.FullName, localPlugIn.FullName, true);
 
-                    ProcessStartInfo psi = new ProcessStartInfo(localPlugIn.FullName) {
+                    ProcessStartInfo psi = new (localPlugIn.FullName) {
                         WorkingDirectory = localPlugIn.DirectoryName,
                         CreateNoWindow = true,
                         WindowStyle = ProcessWindowStyle.Hidden,

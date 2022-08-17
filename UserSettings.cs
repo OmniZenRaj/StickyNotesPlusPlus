@@ -41,8 +41,8 @@ namespace OmniZenNotes
 
                 // Auto Save Settings
                 if (S.Default.AutoSave is int seconds && seconds > 0) {
-                    AutoSaveTimer = new DispatcherTimer();
-                    AutoSaveTimer.Tick += new EventHandler((sender, e) => Save(saveAsync: true));
+                    AutoSaveTimer = new ();
+                    AutoSaveTimer.Tick += new ((sender, e) => Save(saveAsync: true));
                     AutoSaveTimer.Interval = TimeSpan.FromSeconds(seconds);
                     AutoSaveTimer.Start();
                 }
@@ -108,7 +108,7 @@ namespace OmniZenNotes
         void SaveUXSettings() {
             // Save the Note specific settings (which override the App level settings)
             if (VM.Note != null) {
-                VM.Note.UXSettings ??= new UXSettings();
+                VM.Note.UXSettings ??= new ();
                 VM.Note.UXSettings.RestoreBounds = RestoreBounds;
                 VM.Note.UXSettings.WindowState = WindowState;
                 VM.Note.UXSettings.FontFamily = uxRichTextBox.FontFamily;

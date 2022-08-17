@@ -25,7 +25,7 @@ namespace OmniZenNotes
         public void CreateMediaElement(FileInfo fi) {
             TextPointer tp = uxRichTextBox.CaretPosition;
 
-            var me = new MediaElement { Source = new Uri(fi.FullName), ToolTip = fi.FullName };
+            MediaElement me = new () { Source = new Uri(fi.FullName), ToolTip = fi.FullName };
             #pragma warning disable CA1806 // Never used - is OK due to weak ref
             new InlineUIContainer(me, tp);
             #pragma warning restore CA1806
@@ -37,7 +37,7 @@ namespace OmniZenNotes
             // Try to insert it into the Note as Text:
             // Detect byte order marks at the beginning of the file to see if we have text
             TextPointer tp = uxRichTextBox.CaretPosition;
-            using StreamReader sr = new StreamReader(fi.FullName, true);
+            using StreamReader sr = new (fi.FullName, true);
             if (sr.CurrentEncoding.EncodingName.Contains("utf", StringComparison.InvariantCultureIgnoreCase)) {
                 // TODO: Determine MAX size text file supported
                 tp.InsertTextInRun(sr.ReadToEnd());
@@ -50,8 +50,8 @@ namespace OmniZenNotes
         // Set the Document background to the given file
         // RND: Make a MediaElement the Background
         public void SetDocumentBackground(FileInfo fi) {
-            var image = CreateImage(fi);
-            var imageBrush = new ImageBrush(image.Source);
+            Image image = CreateImage(fi);
+            ImageBrush imageBrush = new (image.Source);
             if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
                 imageBrush.Opacity = scb.Color.A / 255.0f;
             }
@@ -62,17 +62,17 @@ namespace OmniZenNotes
         public void CreateHyperLink(FileInfo fi) {
             TextPointer tp = uxRichTextBox.CaretPosition;
             try {
-                CreateHyperLink(tp, tp, new Uri(fi.FullName));
+                CreateHyperLink(tp, tp, new (fi.FullName));
             } catch (Exception ex) {
                 if (ex.HResult == -2146233079) {
                     // Add the new Hyperlink to the end of the current Hyperlink
                     tp = tp.GetNextInsertionPosition(LogicalDirection.Forward);
                     try {
-                        CreateHyperLink(tp, tp, new Uri(fi.FullName));
+                        CreateHyperLink(tp, tp, new (fi.FullName));
                     } catch {
                         tp = tp.Paragraph != null ? tp.Paragraph.ElementEnd : tp.DocumentEnd;
                         tp.InsertLineBreak();
-                        CreateHyperLink(tp, tp, new Uri(fi.FullName));
+                        CreateHyperLink(tp, tp, new (fi.FullName));
                     }
                 }
             }
@@ -84,7 +84,7 @@ namespace OmniZenNotes
                 TextRange range = uxRichTextBox.Selection;
                 TextPointer tpStart = range.IsEmpty ? tp : range.Start;
                 TextPointer tpEnd = range.IsEmpty ? tp : range.End;
-                CreateHyperLink(tpStart, tpEnd, new Uri(uri));
+                CreateHyperLink(tpStart, tpEnd, new (uri));
             } catch { }
 
 
@@ -93,7 +93,7 @@ namespace OmniZenNotes
         // Create Hyperlink at given TextPointer position for given URI
         static Hyperlink CreateHyperLink(TextPointer tpStart, TextPointer tpEnd, Uri uri) {
             // Create a Hyperlink to the given file/folder
-            Hyperlink hyperlink = new Hyperlink(tpStart, tpEnd) { NavigateUri = uri, };
+            Hyperlink hyperlink = new (tpStart, tpEnd) { NavigateUri = uri, };
             if (tpStart.CompareTo(tpEnd) == 0) {
                 // Add an Image and Display Name text inside the Hyperlink
                 double height = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Medium.Height : DefaultIconSize.Large.Height;
@@ -105,11 +105,11 @@ namespace OmniZenNotes
         
         // Create an Image Element for use in Document
         Image CreateImage(FileInfo fi) {
-            var image = new Image();
+            Image image = new ();
             try {
                 var temp = Path.GetTempFileName();
                 File.Copy(fi.FullName, temp, true);
-                var bitmap = new BitmapImage(new Uri(temp));
+                BitmapImage bitmap = new (new (temp));
                 image.Source = bitmap;
                 image.Width = Math.Min(bitmap.PixelWidth, Width);
                 image.Height = Math.Min(bitmap.PixelHeight, Height);
@@ -124,11 +124,11 @@ namespace OmniZenNotes
 
         static void AddImageToHyperLink(Hyperlink hyperlink, double height, double width, bool addText = false) {
 
-            var uri = hyperlink.NavigateUri;
-            var name = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.PathAndQuery) : new FileInfo(uri.LocalPath).Name;
+            Uri uri = hyperlink.NavigateUri;
+            string name = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.PathAndQuery) : new FileInfo(uri.LocalPath).Name;
 
             // Create a new image with given height and width
-            var image = new Image {
+            Image image = new () {
                 // ToolTip object is used for xaml Image Style for FilePathToThumbNailConverter to display image as thumbnail
                 ToolTip = !uri.IsFile ? System.Net.WebUtility.UrlDecode(uri.OriginalString) : uri.LocalPath,
                 // Tag object is used to scale factor for LayoutTransform of the thumbnail image @See NoteViewer.xaml
@@ -139,7 +139,7 @@ namespace OmniZenNotes
 
             // Add an image and name text for the Hyperlink
             if (addText) { hyperlink.Inlines.Add($"{ name} "); }
-            InlineUIContainer iluic = new InlineUIContainer(image);
+            InlineUIContainer iluic = new (image);
             hyperlink.Inlines.InsertBefore(hyperlink.Inlines.FirstInline, iluic);
             if (addText) { iluic.ElementEnd.InsertLineBreak(); }
             hyperlink.Tag = image;
@@ -176,12 +176,12 @@ namespace OmniZenNotes
                 // If the temp file is no longer available, try recreating with original uri
                 if (im.Source == null && im.Tag is Uri uri) {
                     if (File.Exists(uri.AbsolutePath)) {
-                        var i = CreateImage(new FileInfo(uri.AbsolutePath));
+                        Image i = CreateImage(new (uri.AbsolutePath));
                         im.Source = i.Source;
                     } else {
                         // Inform the user that the image file no longer found
-                        var error = $"{STR("strImageFailedMsg")} {uri.AbsolutePath}";
-                        var iuic = im.Parent as InlineUIContainer;
+                        string error = $"{STR("strImageFailedMsg")} {uri.AbsolutePath}";
+                        InlineUIContainer iuic = im.Parent as InlineUIContainer;
                         if (iuic.ContentStart.Paragraph.Inlines.Count < 2) {
                             iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error}"));
                         }
@@ -202,7 +202,7 @@ namespace OmniZenNotes
         public void OnHyperlink_MouseDown(object sender, MouseButtonEventArgs e) {
             Debug.WriteLine($"OnHyperlink_MouseDown for {e.Source}");
             if (sender is Hyperlink hyperlink && e.MouseDevice.LeftButton == MouseButtonState.Pressed) {
-                OnHyperlink_RequestNavigate(sender, new RequestNavigateEventArgs(hyperlink.NavigateUri, hyperlink.Name));
+                OnHyperlink_RequestNavigate(sender, new (hyperlink.NavigateUri, hyperlink.Name));
             }
         }
 
@@ -223,7 +223,7 @@ namespace OmniZenNotes
 
                 // Recreate image in order to trigger update of image when new size is wanted
                 if (thumbnail.Width > image.Width || thumbnail.Width < image.Width) {
-                    var inlines = new ArrayList(hyperlink.Inlines); // Clone to safely iterate
+                    ArrayList inlines = new (hyperlink.Inlines); // Clone to safely iterate
                     foreach (var inline in inlines) {
                         if (inline is InlineUIContainer uiContainer) {
                             hyperlink.Inlines.Remove(uiContainer);

@@ -23,11 +23,11 @@ namespace OmniZenNotes.Models
 
         // UX Fields:
         [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
-        public UXSettings UXSettings { get; set; } = new UXSettings();
+        public UXSettings UXSettings { get; set; } = new ();
 
         // Audit Security Fields:
         [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
-        public Security Security { get; set; } = new Security();
+        public Security Security { get; set; } = new ();
 
         public Entity(Guid guid, string name, string description) : this(guid) {
             ID = guid;
@@ -93,7 +93,7 @@ namespace OmniZenNotes.Models
 
         protected static DateTime GetDateTime(SQLiteDataReader reader, string colName) {
             int colIndex = reader.GetOrdinal(colName);
-            return reader.IsDBNull(colIndex) ? new DateTime() : reader.GetDateTime(colIndex);
+            return reader.IsDBNull(colIndex) ? new () : reader.GetDateTime(colIndex);
         }
 
         protected static decimal GetDecimal(SQLiteDataReader reader, string colName) {

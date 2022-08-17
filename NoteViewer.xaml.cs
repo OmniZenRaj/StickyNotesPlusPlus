@@ -22,9 +22,9 @@ namespace OmniZenNotes
         static List<PropertyInfo> BackgroundColors;
         static bool IsExiting = false;
         
-        private NoteViewer(Note note, Rect placement = new Rect()) {
+        private NoteViewer(Note note, Rect placement = new ()) {
             InitializeComponent();
-            VM = new NoteViewModel(this, note);
+            VM = new (this, note);
 
             InitializeControls();
             InitializeCommands();
@@ -52,8 +52,8 @@ namespace OmniZenNotes
             Icon = AppIcon.Source;
         }
         
-        public static void Create(Note note, Rect placement = new Rect()) {
-            App.NoteViewers.Add(new NoteViewer(note, placement));
+        public static void Create(Note note, Rect placement = new ()) {
+            App.NoteViewers.Add(new (note, placement));
         }
 
         #region Window Initalization
@@ -158,7 +158,7 @@ namespace OmniZenNotes
         void OnTextFormatButton_Click(object sender, RoutedEventArgs e) {
 
             using var fd = new System.Windows.Forms.FontDialog {
-                Font = new System.Drawing.Font(U.Graphics.GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
+                Font = new (U.Graphics.GetFamilyFontName(uxRichTextBox.FontFamily), (float)uxRichTextBox.FontSize)
             };
 
             if (uxRichTextBox.Foreground is SolidColorBrush scb) {
@@ -168,11 +168,11 @@ namespace OmniZenNotes
 
             var dr = fd.ShowDialog();
             if (dr == System.Windows.Forms.DialogResult.OK) {
-                var fontFamily = new FontFamily(fd.Font.FontFamily.ToString());
-                var fontColor = Color.FromArgb(fd.Color.A, fd.Color.R, fd.Color.G, fd.Color.B);
-                var fontSize = fd.Font.Size;
-                //var fsConverter = new FontStyleConverter();
+                FontFamily fontFamily = new (fd.Font.FontFamily.ToString());
+                Color fontColor = Color.FromArgb(fd.Color.A, fd.Color.R, fd.Color.G, fd.Color.B);
+                float fontSize = fd.Font.Size;
 
+                //FontStyleConverter fsConverter = new ();
                 //var fontStyle = (FontStyle)fsConverter.ConvertFrom(fd.Font.Style.ToString());
 
                 SetFont(fontFamily, fontSize, fontColor, FontStyle);
@@ -194,7 +194,7 @@ namespace OmniZenNotes
                 // Create a TextRange for the Selected Text or the entire document.
                 TextRange range = uxRichTextBox.Selection;
                 if (string.IsNullOrEmpty(uxRichTextBox.Selection.Text)) {
-                    range = new TextRange(doc.ContentStart, doc.ContentEnd);
+                    range = new (doc.ContentStart, doc.ContentEnd);
                     range.Select(range.Start, range.End);
                 }
 
@@ -226,7 +226,7 @@ namespace OmniZenNotes
 
         void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
 
-            using var cd = new System.Windows.Forms.ColorDialog();
+            using System.Windows.Forms.ColorDialog cd = new ();
             if (uxRichTextBox.Background is SolidColorBrush scb) {
                 cd.Color = System.Drawing.Color.FromArgb(scb.Color.A, scb.Color.R, scb.Color.G, scb.Color.B);
             }
@@ -307,7 +307,7 @@ namespace OmniZenNotes
             double newTop = Top + uxToolBar.ActualHeight + padH;
             double newLeft = Left + padW * 2;
 
-            Create(note, new Rect(newLeft, newTop, Width, Height));
+            Create(note, new (newLeft, newTop, Width, Height));
 
 #pragma warning disable CS8321 // The function declared but never used
             static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {
@@ -379,7 +379,7 @@ namespace OmniZenNotes
                         image.Source = icon.Source; */
 
             image.RenderTransform = new RotateTransform(Topmost ? 0 : 90);
-            image.RenderTransformOrigin = new Point(0.5, 0.5);
+            image.RenderTransformOrigin = new (0.5, 0.5);
             uxTogglePinMenuItem.IsChecked = Topmost;
         }
 
@@ -389,18 +389,18 @@ namespace OmniZenNotes
 
             // Load the Colors if not already loaded
             if (BackgroundColors == null || BackgroundColors.Count == 0) {
-                BackgroundColors = new List<PropertyInfo>(typeof(Colors).GetProperties());
+                BackgroundColors = new (typeof(Colors).GetProperties());
             }
 
             // Add a Colors... Menu Item to bring up Colors Dialog box
             // TODO: Try to use the newer Wpf Toolkit ColorPicker
-            MenuItem item = new MenuItem { Header = "Colors...", ToolTip = $"{STR("strSetBackgroundFromColorDialogTip")}" };
+            MenuItem item = new () { Header = "Colors...", ToolTip = $"{STR("strSetBackgroundFromColorDialogTip")}" };
             item.Click += (object sender, RoutedEventArgs e) => {
                 if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
             };
             uxSelectBackgroundMenuItem.Items.Add(item);
 
-            item = new MenuItem { Header = "Insert Image...", ToolTip = $"{STR("strSetBackgroundFromImageTip")}" };
+            item = new () { Header = "Insert Image...", ToolTip = $"{STR("strSetBackgroundFromImageTip")}" };
             item.Click += (object sender, RoutedEventArgs e) => {
                 // TODO: Add Open File Dialog to Select an Image to Insert
             };
@@ -433,7 +433,7 @@ namespace OmniZenNotes
 
             // Load the Font Families if not already loaded
             if (FontFamilies == null || FontFamilies.Count == 0) {
-                FontFamilies = new List<FontFamily>(Fonts.SystemFontFamilies);
+                FontFamilies = new (Fonts.SystemFontFamilies);
                 FontFamilies.Sort((FontFamily x, FontFamily y) => { return x.Source.CompareTo(y.Source); });
             }
 

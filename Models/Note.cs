@@ -25,8 +25,8 @@ namespace OmniZenNotes.Models
         }
 
         public Note(Guid guid) : base(guid) {
-            Document = new FlowDocument();
-            Task = new Task();
+            Document = new ();
+            Task = new ();
         }
 
         public async void Save(bool saveAsync = true) {
@@ -71,16 +71,16 @@ namespace OmniZenNotes.Models
 
 #pragma warning disable IDE0051
         private void LoadDocumentBlob(SQLiteDataReader reader) {
-            using var ms = new MemoryStream();
+            using MemoryStream ms = new ();
             GetBlob(reader, reader.GetOrdinal("Document"), ms);
-            TextRange range = new TextRange(Document.ContentStart, Document.ContentEnd);
+            TextRange range = new (Document.ContentStart, Document.ContentEnd);
             range.Load(ms, System.Windows.DataFormats.XamlPackage);
             ms.Close();
         }
 
         private void SaveDocumentBlob(SQLiteCommand cmd) {
-            using var ms = new MemoryStream();
-            var range = new TextRange(Document.ContentStart, Document.ContentEnd);
+            using MemoryStream ms = new ();
+            TextRange range = new (Document.ContentStart, Document.ContentEnd);
             range.Save(ms, System.Windows.DataFormats.XamlPackage, true);
             cmd.Parameters.Add("@Document", DbType.Binary).Value = ms.ToArray();
             ms.Close();

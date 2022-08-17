@@ -16,9 +16,9 @@ namespace OmniZenNotes
     {
         object IValueConverter.Convert(object o, Type type, object parameter, CultureInfo culture) {
             if (o is Image image && image.ToolTip is string tooltip && image.Tag is double scale) {
-                Uri uri = new Uri(tooltip);
+                Uri uri = new (tooltip);
                 if (uri.IsFile) {
-                    FileInfo fileInfo = new FileInfo(tooltip);
+                    FileInfo fileInfo = new (tooltip);
                     try {
                         return U.Shell.GetShellThumbnail(fileInfo.FullName, image.Width * scale);
                     } catch {

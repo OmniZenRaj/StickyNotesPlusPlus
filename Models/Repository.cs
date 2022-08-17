@@ -12,9 +12,9 @@ namespace OmniZenNotes.Models
     internal class Repository
     {
         private static SQLiteConnection _Connection;
-        public static List<Notebook> NoteBooks { get; set; } = new List<Notebook>();
-        public static List<Note> Notes { get; set; } = new List<Note>();
-        public static List<Task> Tasks { get; set; } = new List<Task>();
+        public static List<Notebook> NoteBooks { get; set; } = new ();
+        public static List<Note> Notes { get; set; } = new ();
+        public static List<Task> Tasks { get; set; } = new ();
 
         public static Notebook DefaultNotebook { get; set; }
 
@@ -32,11 +32,11 @@ namespace OmniZenNotes.Models
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $@"SELECT * FROM Note";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
 
                 while (reader.Read()) {
-                    var note = new Note();
+                    Note note = new ();
                     note.LoadFromSQL(reader);
                     notebook.Notes.Add(note);   // Notes belonging to notebook
                     Notes.Add(note);            // App wide Notes collection
@@ -67,7 +67,7 @@ namespace OmniZenNotes.Models
                         CreatedBy=excluded.CreatedBy,
                         UpdatedBy=excluded.UpdatedBy";
 
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 note.LoadToSQL(cmd);
                 return await cmd.ExecuteNonQueryAsync();
             } catch (Exception ex) {
@@ -79,13 +79,13 @@ namespace OmniZenNotes.Models
 
         public static Note GetNote(Guid GUID) {
 
-            var note = new Note(GUID);
+            Note note = new (GUID);
 
             try {
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $@"SELECT * FROM Note WHERE ID = '{GUID}'";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
 
                 if (reader.Read()) {
@@ -105,7 +105,7 @@ namespace OmniZenNotes.Models
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $"DELETE FROM Note WHERE ID == '{note.ID}'";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 int result = cmd.ExecuteNonQuery();
 
             } catch (Exception ex) {
@@ -120,7 +120,7 @@ namespace OmniZenNotes.Models
 
             notebook ??= DefaultNotebook;
 
-            var note = new Note() { Title = $"New Note {Notes.Count + 1}", };
+            Note note = new () { Title = $"New Note {Notes.Count + 1}", };
 
             if (copy != null) {
                 note.UXSettings.CloneFrom(copy.UXSettings);
@@ -141,7 +141,7 @@ namespace OmniZenNotes.Models
             try {
                 // Verify the Uri db Path location is valid and reachable:
                 notebook ??= DefaultNotebook;
-                FileInfo dbPath = new FileInfo(notebook.DbPathUri);
+                FileInfo dbPath = new (notebook.DbPathUri);
                 if (!Directory.Exists(dbPath.DirectoryName)) {
                     throw new DirectoryNotFoundException(dbPath.FullName);
                 }
@@ -150,7 +150,7 @@ namespace OmniZenNotes.Models
                     DataSource = dbPath.FullName
                 };
 
-                _Connection = new SQLiteConnection(connectString.ToString());
+                _Connection = new (connectString.ToString());
                 _Connection.Open();
                 return _Connection;
 
@@ -168,11 +168,11 @@ namespace OmniZenNotes.Models
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $@"SELECT * FROM Task";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
 
                 while (reader.Read()) {
-                    var task = new Task();
+                    Task task = new ();
                     task.LoadFromSQL(reader);
                     Tasks.Add(task);            // App wide Notes collection
                 }
@@ -208,7 +208,7 @@ namespace OmniZenNotes.Models
                         CreatedBy=excluded.CreatedBy,
                         UpdatedBy=excluded.UpdatedBy";
 
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 task.LoadToSQL(cmd);
                 return await cmd.ExecuteNonQueryAsync();
             } catch (Exception ex) {
@@ -219,11 +219,11 @@ namespace OmniZenNotes.Models
         }
 
         public static Task GetTask(Guid GUID) {
-            var task = new Task(GUID);
+            Task task = new (GUID);
             try {
                 SQLiteConnection conn = GetDBConnection();
                 string query = $@"SELECT * FROM Task WHERE ID = '{GUID}'";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 if (reader.Read()) {
                     task.LoadFromSQL(reader);
@@ -239,7 +239,7 @@ namespace OmniZenNotes.Models
                 SQLiteConnection conn = GetDBConnection();
 
                 string query = $"DELETE FROM Task WHERE ID = '{task.ID}'";
-                using SQLiteCommand cmd = new SQLiteCommand(query, conn);
+                using SQLiteCommand cmd = new (query, conn);
                 int result = cmd.ExecuteNonQuery();
             } catch (Exception ex) {
                 EX.LogException(ex, $"SQLITE ERROR: ");

@@ -22,17 +22,17 @@ namespace Utilities
     public class Json
     {
         public static T GetObjectFromJson<T>(string json) {
-            var textReader = new StringReader(string.IsNullOrEmpty(json) ? "{}" : json);
+            StringReader textReader = new (string.IsNullOrEmpty(json) ? "{}" : json);
             var jsonSerializer = Newtonsoft.Json.JsonSerializer.Create();
-            var jsonReader = new Newtonsoft.Json.JsonTextReader(textReader);
+            Newtonsoft.Json.JsonTextReader jsonReader = new (textReader);
             return jsonSerializer.Deserialize<T>(jsonReader);
         }
 
         public static string GetJsonFromObject(object T) {
             if (T is null) return String.Empty;
-            var textWriter = new StringWriter();
+            StringWriter textWriter = new ();
             var json = Newtonsoft.Json.JsonSerializer.Create();
-            var jsonWriter = new Newtonsoft.Json.JsonTextWriter(textWriter);
+            Newtonsoft.Json.JsonTextWriter jsonWriter = new (textWriter);
             json.Serialize(jsonWriter, T);
             return textWriter.ToString();
         }
@@ -48,12 +48,12 @@ namespace Utilities
     public class SystemIconResources
     {
         // Windows ICONs from imageres.dll or shell32.dll (can change look with different OS versions)
-        public ImageResIcons ImageRes_S { get; } = new ImageResIcons(G.IconSize.Small);
-        public ImageResIcons ImageRes { get; } = new ImageResIcons(G.IconSize.Large);
-        public Shell32Icons Shell32_S { get; } = new Shell32Icons(G.IconSize.Small);
-        public Shell32Icons Shell32 { get; } = new Shell32Icons(G.IconSize.Large);
-        public AccessIcons Access_S { get; } = new AccessIcons(G.IconSize.Large);
-        public AccessIcons Access { get; } = new AccessIcons(G.IconSize.Large);
+        public ImageResIcons ImageRes_S { get; } = new (G.IconSize.Small);
+        public ImageResIcons ImageRes { get; } = new (G.IconSize.Large);
+        public Shell32Icons Shell32_S { get; } = new (G.IconSize.Small);
+        public Shell32Icons Shell32 { get; } = new (G.IconSize.Large);
+        public AccessIcons Access_S { get; } = new (G.IconSize.Large);
+        public AccessIcons Access { get; } = new (G.IconSize.Large);
 
         // Property Indexers to allow simplifed XAML Binding and Path access to System Icons
         // To use in XAML use Binding as follows: Source="{Binding Path=Icons.ImageRes[176]}"
@@ -84,7 +84,7 @@ namespace Utilities
         public enum FolderType { Closed, Open }
         public enum IconSize { Large, Small }
 
-        static readonly IDictionary<string, BitmapImage> BitmapImageCache = new Dictionary<string, BitmapImage>();
+        static readonly Dictionary<string, BitmapImage> BitmapImageCache = new ();
 
         public static Icon ExtractIcon(FileInfo fi, int iconIndex, IconSize iconSize = IconSize.Large) {
             try {
@@ -104,17 +104,17 @@ namespace Utilities
             string key = $"{fi.FullName}:{iconSize}:{resourceIndex}";
             if (!BitmapImageCache.TryGetValue(key, out BitmapImage bmi)) {
                 var icon = ExtractIcon(fi, resourceIndex, iconSize);
-                bmi = icon != null ? GetBitmapImage(icon) : new BitmapImage();
+                bmi = icon != null ? GetBitmapImage(icon) : new ();
                 BitmapImageCache.Add(key, bmi);
             }
             return bmi;
         }
 
         public static BitmapImage GetBitmapImage(Icon icon) {
-            var bitmapImage = new BitmapImage();
+            BitmapImage bitmapImage = new ();
             try {
                 Bitmap bitmap = icon.ToBitmap();
-                MemoryStream stream = new MemoryStream();
+                MemoryStream stream = new ();
                 bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                 bitmapImage.BeginInit();
                 stream.Seek(0, SeekOrigin.Begin);
@@ -224,7 +224,7 @@ namespace Utilities
             try {
                 var monitor = Json.GetObjectFromJson<dynamic>(monitorInfo);
                 if (monitor != null) {
-                    var allScreens = new ArrayList(Screen.AllScreens);
+                    ArrayList allScreens = new (Screen.AllScreens);
                     foreach (Screen screen in allScreens) {
                         if (screen.DeviceName?.Equals(monitor.DeviceName?.Value, StringComparison.OrdinalIgnoreCase)) {
                             return screen;
@@ -243,7 +243,7 @@ namespace Utilities
 
         public static Rectangle GetWorkingArea(System.Windows.Window window) {
 
-            RECT lprc = new RECT() {
+            RECT lprc = new () {
                 Left = (int)window.Left,
                 Top = (int)window.Top,
                 Bottom = (int)(window.Top + window.Height),
@@ -254,18 +254,18 @@ namespace Utilities
             // if (!(MonitorFromRect(ref lprc, dwFlags2) == IntPtr.Zero)) return new Rectangle();
 
             IntPtr hMonitor = MonitorFromRect(ref lprc, dwFlags1);
-            if (hMonitor == IntPtr.Zero) return new Rectangle();
+            if (hMonitor == IntPtr.Zero) return new ();
 
-            MONITORINFO lpmi = new MONITORINFO();
+            MONITORINFO lpmi = new ();
             lpmi.cbSize = Marshal.SizeOf((object)lpmi);
 
             bool rc = GetMonitorInfo(hMonitor, lpmi);
             if (rc) {
                 RECT wa = lpmi.rcWork;
-                return new Rectangle(wa.Left, wa.Top, wa.Right, wa.Bottom);
+                return new (wa.Left, wa.Top, wa.Right, wa.Bottom);
             }
             
-            return new Rectangle();
+            return new ();
         }
 
         public static bool MonitorExists(int monitorNumber) {
@@ -311,8 +311,8 @@ namespace Utilities
     #region  Windows Shell Utilities
     public static class Shell
     {
-        static readonly IDictionary<string, string> DocTypeCache = new Dictionary<string, string>();
-        static readonly IDictionary<string, Icon> IconCache = new Dictionary<string, Icon>();
+        static readonly Dictionary<string, string> DocTypeCache = new ();
+        static readonly Dictionary<string, Icon> IconCache = new ();
         public enum DocumentType { All, Access, Acrobat, Excel, PowerPoint, Publisher, Word, Other }
 
         public static DocumentType GetDocumentType(FileInfo fi) {
@@ -344,7 +344,7 @@ namespace Utilities
         // RND: Determine how to use newer FolderBrowser that is used by .NET Core 3.1
         public static DirectoryInfo ChooseFolder(string title) {
             using var fbd = new FolderBrowserDialog { Description = title };
-            return fbd.ShowDialog() == DialogResult.OK && Directory.Exists(fbd.SelectedPath) ? new DirectoryInfo(fbd.SelectedPath) : null;
+            return fbd.ShowDialog() == DialogResult.OK && Directory.Exists(fbd.SelectedPath) ? new (fbd.SelectedPath) : null;
         }
 
         public static Icon GetShellIcon(FileSystemInfo fsi, Graphics.IconSize size = Graphics.IconSize.Large) {
@@ -354,7 +354,7 @@ namespace Utilities
                 if (IconCache.TryGetValue($"{key}:{size}", out Icon icon)) { return icon; }
 
                 uint flags = size == Graphics.IconSize.Small ? SHGFI_ICON + SHGFI_SMALLICON : SHGFI_ICON + SHGFI_LARGEICON;
-                var shfi = new SHFILEINFO();
+                SHFILEINFO shfi = new ();
 
                 var res = SHGetFileInfo(fsi.FullName, FILE_ATTRIBUTE_NORMAL, out shfi, (uint)Marshal.SizeOf(shfi), flags);
                 if (res == IntPtr.Zero) {
@@ -379,7 +379,7 @@ namespace Utilities
         public static string GetShellTypeName(FileInfo fi) {
             try {
                 uint flags = SHGFI_TYPENAME;
-                var shfi = new SHFILEINFO();
+                SHFILEINFO shfi = new ();
                 var res = SHGetFileInfo(fi.FullName, FILE_ATTRIBUTE_NORMAL, out shfi, (uint)Marshal.SizeOf(shfi), flags);
                 if (res == IntPtr.Zero) { throw Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()); }
                 return shfi.szTypeName;
@@ -431,7 +431,7 @@ namespace Utilities
 
         public static void ShellOpen(string uriPath) {
             try {
-                ProcessStartInfo psi = new ProcessStartInfo() {
+                ProcessStartInfo psi = new () {
                     FileName = uriPath,
                     UseShellExecute = true,
                     Verb = "Open"
@@ -445,7 +445,7 @@ namespace Utilities
 
         public static void ShellOpen(FileSystemInfo fileInfoOrDirectoryInfo) {
             try {
-                ProcessStartInfo psi = new ProcessStartInfo() {
+                ProcessStartInfo psi = new () {
                     FileName = fileInfoOrDirectoryInfo.FullName,
                     UseShellExecute = true,
                     Verb = "Open"
@@ -459,24 +459,24 @@ namespace Utilities
 
         public static FileInfo CreateURLShortcut( Uri uri) {
 
-            ShellLink shellLink = new ShellLink();
+            ShellLink shellLink = new ();
             IShellLinkW iShellLink = (IShellLinkW)shellLink;
             iShellLink.SetPath(uri.AbsoluteUri);
 
             // TODO: Set the Shortcut / Link Properties (not working yet)
-            using PropVariant target = new PropVariant(uri.AbsoluteUri);
-            using PropVariant comment = new PropVariant("COMMENT COOL");
+            using PropVariant target = new (uri.AbsoluteUri);
+            using PropVariant comment = new ("COMMENT COOL");
             (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.TargetParsingPath, target);
             (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.Comment, comment);
             (iShellLink as IPropertyStore).SetValue(SystemProperties.System.Link.Description, target);
             (iShellLink as IPropertyStore).Commit();
 
-            FileInfo fi = new FileInfo(Path.GetTempFileName());
+            FileInfo fi = new (Path.GetTempFileName());
             string file = Path.ChangeExtension(fi.FullName, "lnk");
             (iShellLink as IPersistFile).Save(file, true); // Save the shortcut
 
             fi.Delete();    // delete the original temp file
-            return new FileInfo(file);
+            return new (file);
         }
 
         // Get Office Binary from different versions of Office and return the latest version found:
@@ -484,16 +484,16 @@ namespace Utilities
             string[] officeVersions = { "Office19", "Office16", "Office15", "Office14", "Office13" };
 
             foreach (var officeVersion in officeVersions) {
-                var exe64 = new FileInfo(Path.Combine($@"C:\Program Files\Microsoft Office\{officeVersion}", subDir, binaryName));
+                FileInfo exe64 = new (Path.Combine($@"C:\Program Files\Microsoft Office\{officeVersion}", subDir, binaryName));
                 if (exe64.Exists) { return exe64; }
-                var exe32 = new FileInfo(Path.Combine($@"C:\Program Files (x86)\Microsoft Office\{officeVersion}", subDir, binaryName));
+                FileInfo exe32 = new (Path.Combine($@"C:\Program Files (x86)\Microsoft Office\{officeVersion}", subDir, binaryName));
                 if (exe32.Exists) { return exe32; }
             }
             return null;
         }
 
-        public static readonly FileInfo IMAGERES_DLL = new FileInfo(Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "imageres.dll"));
-        public static readonly FileInfo SHELL32_DLL = new FileInfo(Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "shell32.dll"));
+        public static readonly FileInfo IMAGERES_DLL = new (Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "imageres.dll"));
+        public static readonly FileInfo SHELL32_DLL = new (Path.Combine(System.Environment.GetEnvironmentVariable("SYSTEMROOT"), "SYSTEM32", "shell32.dll"));
         public static readonly FileInfo ACCICONS_EXE = GetOfficeBinary("ACCICONS.EXE");
 
         public const uint SHGFI_ICON = 0x000000100;
@@ -539,7 +539,9 @@ namespace Utilities
             toolTip.CopyTo(0, nid.szTip, 0, toolTip.Length);
 
             bool rc = Shell_NotifyIcon(NIM.NIM_ADD, nid);
-            rc =Shell_NotifyIcon(NIM.NIM_SETVERSION, nid);
+            if (rc == true) {
+                rc = Shell_NotifyIcon(NIM.NIM_SETVERSION, nid);
+            }
             return rc;
         }
         
@@ -573,7 +575,7 @@ namespace Utilities
             
             return Shell_NotifyIcon(NIM.NIM_DELETE, nid);
         }
-        
+
         public static bool GetTaskBarIconLocation(System.Windows.Window window, int uID) {
 
             NOTIFYICONIDENTIFIER nci = new NOTIFYICONIDENTIFIER {
@@ -582,9 +584,9 @@ namespace Utilities
             };
             nci.cbSize = Marshal.SizeOf((object)nci);
 
-            RECT rect = new RECT();
+            RECT rect = new ();
 
-            bool rc = Shell_NotifyIconGetRect(nci, rect);
+        bool rc = Shell_NotifyIconGetRect(nci, rect);
             return rc;
         }
 
@@ -600,11 +602,12 @@ namespace Utilities
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
         {
-            long left;
-            long top;
-            long right;
-            long bottom;
+            public long left;
+            public long top;
+            public long right;
+            public long bottom;
         }
+        
         // @see https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyicongetrect
         [DllImport("shell32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -640,7 +643,6 @@ namespace Utilities
             NIS_SHAREDICON  = 0x00000002        // The icon resource is shared between multiple icons.
         }
 
-        const uint NOTIFYICON_VERSION_4 = 4;
         [StructLayout(LayoutKind.Sequential)]
             public struct NOTIFYICONDATA
             {
@@ -769,7 +771,7 @@ namespace Utilities
         // Run an Action delegate on all the Selected Items of the ListBox
         public static void RunAction<T>(this System.Windows.Controls.ListBox self, Action<T> action) {
             if (self.DataContext is ICollection<T>) {
-                var clonedList = new ArrayList(self.SelectedItems); // Clone to safely iterate
+                ArrayList clonedList = new (self.SelectedItems); // Clone to safely iterate
                 foreach (T item in clonedList) {
                     try {
                         action(item);
@@ -802,8 +804,8 @@ namespace Utilities
         // Exception Handling Extension Methods:
         // Pretty format an Exception including the inner exception(s)
         public static string FormatException(this Exception self, string errorMessage, int indent = 0) {
-            string indentStr = new string('\t', indent);
-            StringBuilder msg = new StringBuilder(errorMessage + "\n\n");
+            string indentStr = new ('\t', indent);
+            StringBuilder msg = new (errorMessage + "\n\n");
             string[] exMessageLines = self.ToString().Split('\n');
             foreach (string line in exMessageLines) {
                 msg.Append(indentStr);

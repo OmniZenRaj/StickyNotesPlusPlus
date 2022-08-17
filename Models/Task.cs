@@ -13,9 +13,9 @@ namespace OmniZenNotes.Models
     public class Task : Entity
     {
         [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
-        public TaskTodo Todo { get; set; } = new TaskTodo();
+        public TaskTodo Todo { get; set; } = new ();
         [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
-        public TaskReminder Reminder { get; set; } = new TaskReminder();
+        public TaskReminder Reminder { get; set; } = new ();
 
         public Task(Guid guid) : base(guid) {
             Todo.StartDTS = DateTime.Now;

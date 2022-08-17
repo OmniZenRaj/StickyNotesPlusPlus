@@ -16,7 +16,7 @@ namespace OmniZenNotes
             if (args.Data.GetDataPresent(DataFormats.FileDrop, true)) {
                 foreach (var file in args.Data.GetData(DataFormats.FileDrop, true) as string[]) {
                     try {
-                        DropFile(new FileInfo(file), args);
+                        DropFile(new (file), args);
                     } catch { }
                 }
             }
