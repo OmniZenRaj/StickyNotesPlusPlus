@@ -51,11 +51,6 @@ namespace OmniZenNotes
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
             Icon = AppIcon.Source;
-            /*          RND: Use Tray Utils to show balloontip (cannot get to work due to COMObject required)   
-                        CommonUtils cu = new CommonUtils((new System.Windows.Interop.WindowInteropHelper(this).Handle));
-                        TrayUtils tu = cu.Tray;
-                        tu.ShowBalloonTip(10000, "Tip Title", "Tip Text", System.Windows.Forms.ToolTipIcon.Info);
-             */
         }
 
         #region Window Initalization

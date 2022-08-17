@@ -519,6 +519,150 @@ namespace Utilities
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
             public string szTypeName;
         };
+
+        // Adds an Icon to the TaskBar Notification Area.
+        // hwnd - handle to the window to receive callback messages 
+        // uID - identifier of the icon 
+        // hicon - handle to the icon to add 
+        // lpszTip - tooltip text
+        // Returns TRUE if successful, or FALSE otherwise. 
+        public static bool AddTaskBarIcon(System.Windows.Window window, int uID, Icon icon, string toolTip) {
+
+            NOTIFYICONDATA nid = new NOTIFYICONDATA {
+                hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+                uID = uID,
+                uFlags = NIF.NIF_ICON | NIF.NIF_TIP | NIF.NIF_SHOWTIP,
+                dwState = NIS.NIS_SHAREDICON,
+                hIcon = icon.Handle,
+        };
+            nid.cbSize = Marshal.SizeOf((object)nid);
+            toolTip.CopyTo(0, nid.szTip, 0, toolTip.Length);
+
+            bool rc = Shell_NotifyIcon(NIM.NIM_ADD, nid);
+            rc =Shell_NotifyIcon(NIM.NIM_SETVERSION, nid);
+            return rc;
+        }
+        
+        public static bool ModifyTaskBarIcon(System.Windows.Window window, int uID, Icon icon, string toolTip) {
+
+            NOTIFYICONDATA nid = new NOTIFYICONDATA {
+                hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+                uID = uID,
+                uFlags = NIF.NIF_INFO,
+                hIcon = icon.Handle,
+            };
+            nid.cbSize = Marshal.SizeOf((object)nid);
+            toolTip.CopyTo(0, nid.szTip, 0, toolTip.Length);
+            "The Notification Info Message   ".CopyTo(0, nid.szInfo, 0, 32);
+            "The Notification Info Title     ".CopyTo(0, nid.szInfoTitle, 0, 32);
+
+            bool rc = Shell_NotifyIcon(NIM.NIM_MODIFY, nid);
+            return rc;
+        }
+        // Deletes an Icon from the Task Bar Notification Area.
+        // hwnd - handle to the window that added the icon. 
+        // uID - identifier of the icon to delete.
+        // Returns TRUE if successful, or FALSE otherwise.
+        public static bool DeleteTaskBarIcon(System.Windows.Window window, int uID) {
+            
+            NOTIFYICONDATA nid = new NOTIFYICONDATA {
+                hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+                uID = uID
+            };
+            nid.cbSize = Marshal.SizeOf((object)nid);
+            
+            return Shell_NotifyIcon(NIM.NIM_DELETE, nid);
+        }
+        
+        public static bool GetTaskBarIconLocation(System.Windows.Window window, int uID) {
+
+            NOTIFYICONIDENTIFIER nci = new NOTIFYICONIDENTIFIER {
+                hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+                uID = uID
+            };
+            nci.cbSize = Marshal.SizeOf((object)nci);
+
+            RECT rect = new RECT();
+
+            bool rc = Shell_NotifyIconGetRect(nci, rect);
+            return rc;
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NOTIFYICONIDENTIFIER
+        {
+            public int cbSize;
+            public IntPtr hWnd;
+            public int uID;
+            public Guid guidItem;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            long left;
+            long top;
+            long right;
+            long bottom;
+        }
+        // @see https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyicongetrect
+        [DllImport("shell32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Shell_NotifyIconGetRect([In] NOTIFYICONIDENTIFIER identifier, [Out] RECT iconLocation);
+
+        // @see https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa
+        [DllImport("shell32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Shell_NotifyIcon(NIM dwMessage, [In] NOTIFYICONDATA lpdata);
+
+        public enum NIM : uint {
+            NIM_ADD         = 0x00000000,   // Adds an icon to the status area.The icon is given an identifier in the NOTIFYICONDATA structure pointed to by lpdata—either through its uID or guidItem member.This id is used in subsequent calls to Shell_NotifyIcon to perform later actions on the icon.
+            NIM_MODIFY      = 0x00000001,   // Modifies an icon in the status area.NOTIFYICONDATA structure pointed to by lpdata uses the ID originally assigned to the icon when it was added to the notification area(NIM_ADD) to identify the icon to be modified.
+            NIM_DELETE      = 0x00000002,   // Deletes an icon from the status area.NOTIFYICONDATA structure pointed to by lpdata uses the ID originally assigned to the icon when it was added to the notification area(NIM_ADD) to identify the icon to be deleted.
+            NIM_SETFOCUS    = 0x00000003,   // Shell32.dll version 5.0 and later only.Returns focus to the taskbar notification area.Notification area icons should use this message when they have completed their UI operation. For example, if the icon displays a shortcut menu, but the user presses ESC to cancel it, use NIM_SETFOCUS to return focus to the notification area.
+            NIM_SETVERSION  = 0x00000004,   // Shell32.dll version 5.0 and later only. Instructs the notification area to behave according to the version number specified in the uVersion member of the structure pointed to by lpdata. The version number specifies which members are recognized.NIM_SETVERSION must be called every time a notification area icon is added (NIM_ADD). It does not need to be called with NIM_MODIFY.The version setting is not persisted once a user logs off.
+        }
+        
+        public enum NIF : uint {
+            NIF_MESSAGE     = 0x00000001,       // The uCallbackMessage member is valid.
+            NIF_ICON        = 0x00000002,       // The hIcon member is valid.
+            NIF_TIP         = 0x00000004,       // The szTip member is valid.
+            NIF_STATE       = 0x00000008,       // The dwState and dwStateMask members are valid.
+            NIF_INFO        = 0x00000010,       // Display a balloon notification.The szInfo, szInfoTitle, dwInfoFlags, and uTimeout members are valid.
+            /* Note that uTimeout is valid only in Windows 2000 and Windows XP. To display the balloon notification, specify NIF_INFO and provide text in szInfo. To remove a balloon notification, specify NIF_INFO and provide an empty string through szInfo. To add a notification area icon without displaying a notification, do not set the NIF_INFO flag. */
+            NIF_GUID        = 0x00000020,       // Windows 7 and later: The guidItem is valid. Windows Vista and earlier: Reserved.
+            NIF_REALTIME    = 0x00000040,       // Windows Vista and later.If the balloon notification cannot be displayed immediately, discard it. Use this flag for notifications that represent real-time information which would be meaningless or misleading if displayed at a later time.For example, a message that states "Your telephone is ringing." NIF_REALTIME is meaningful only when combined with the NIF_INFO flag.
+            NIF_SHOWTIP     = 0x00000080        // Windows Vista and later. Use the standard tooltip. Normally, when uVersion is set to NOTIFYICON_VERSION_4, the standard tooltip is suppressed and can be replaced by the application-drawn, pop-up UI. If the application wants to show the standard tooltip with NOTIFYICON_VERSION_4, it can specify NIF_SHOWTIP to indicate the standard tooltip should still be shown.
+        }
+        
+        public enum NIS : uint {
+            NIS_HIDDEN      = 0x00000001,       // The icon is hidden.
+            NIS_SHAREDICON  = 0x00000002        // The icon resource is shared between multiple icons.
+        }
+
+        const uint NOTIFYICON_VERSION_4 = 4;
+        [StructLayout(LayoutKind.Sequential)]
+            public struct NOTIFYICONDATA
+            {
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+                public char[] szTip = new char[128];
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
+                public char[] szInfo = new char[256];
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+                public char[] szInfoTitle = new char[64];
+                public int cbSize;
+                public IntPtr hWnd;
+                public int uID;
+                public NIF uFlags;
+                public int uCallbackMessage;
+                public IntPtr hIcon;
+                public NIS dwState;
+                public uint dwStateMask;
+                public uint uVersion;
+                public uint dwInfoFlags;
+                public Guid guidItem;
+                public IntPtr hBalloonIcon;
+            }
     }
     
     [ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]

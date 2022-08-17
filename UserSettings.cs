@@ -26,6 +26,7 @@ namespace OmniZenNotes
                 // Use App Defaults for Note if not UX Settings exist
                 if (VM.Note.UXSettings is null) {
                     // Restore Window position and size from user settings save of last session
+                    // RND: Use of CalculatePopupWindowPosition function (winuser.h) to keep window on screen
                     if (S.Default?.RestoreBounds is Rect restoreBounds) {
                         Left = restoreBounds.Left; Top = restoreBounds.Top;
                         Width = restoreBounds.Width; Height = restoreBounds.Height;

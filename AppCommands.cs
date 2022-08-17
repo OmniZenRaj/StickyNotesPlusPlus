@@ -187,6 +187,16 @@ namespace OmniZenNotes
         }
 
         void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
+
+            /*          RND: Use Tray Utils to show balloontip (cannot get to work due to COMObject required)   
+                        CommonUtils cu = new CommonUtils((new System.Windows.Interop.WindowInteropHelper(this).Handle));
+                        TrayUtils tu = cu.Tray;
+                        tu.ShowBalloonTip(10000, "Tip Title", "Tip Text", System.Windows.Forms.ToolTipIcon.Info);
+             */
+            bool rc = Utilities.Shell.AddTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 1");
+            rc = Utilities.Shell.ModifyTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 2");
+            rc = Utilities.Shell.GetTaskBarIconLocation(this, 1);
+            
             string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description;
 
 /*             string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
