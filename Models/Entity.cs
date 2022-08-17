@@ -5,9 +5,6 @@ using System.Security.Principal;
 
 namespace OmniZenNotes.Models
 {
-    using G = Utilities.Graphics;
-    using EX = Utilities.Exceptions;
-
     public class Entity
     {
         // Identity Fields:

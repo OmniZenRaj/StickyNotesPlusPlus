@@ -7,8 +7,6 @@ using System.Windows.Markup;
 
 namespace OmniZenNotes.Models
 {
-    using EX = Utilities.Exceptions;
-
     public class Note : Entity
     {
         public string Title { get; set; }

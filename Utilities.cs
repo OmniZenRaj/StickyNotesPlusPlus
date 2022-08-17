@@ -13,9 +13,6 @@ using MS.WindowsAPICodePack.Internal;
 
 namespace Utilities
 {
-    using G = Graphics;
-    using SH = Shell;
-
     #region Json System Utilities
     public class Json
     {

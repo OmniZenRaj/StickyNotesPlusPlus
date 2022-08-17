@@ -7,8 +7,6 @@ using System.Reflection;
 
 namespace OmniZenNotes
 {
-    using OmniZenNotes.Models;
-    
     // Application Level Commands // NLS: 
     public static class AppCommands
     {

@@ -4,8 +4,6 @@
 
 namespace OmniZenNotes.Models
 {
-    using EX = Utilities.Exceptions;
-
     public enum TaskStatus { New, InProgress, Completed, Waiting, Deferred };
     public enum TaskPriority { Low, Normal, High, Urgent, Immediate };
 

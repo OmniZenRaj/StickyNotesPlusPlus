@@ -5,8 +5,6 @@ using System.Data.SQLite;
 
 namespace OmniZenNotes.Models
 {
-    using EX = Utilities.Exceptions;
-
     internal class Repository
     {
         private static SQLiteConnection _Connection;

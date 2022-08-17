@@ -1,11 +1,12 @@
 ﻿global using System;
 global using System.IO;
+
 global using OmniZenNotes.Models;
+global using U = Utilities;
+global using S = OmniZenNotes.Properties.Settings;
 global using G = Utilities.Graphics;
 global using SH = Utilities.Shell;
-global using S = OmniZenNotes.Properties.Settings;
 global using EX = Utilities.Exceptions;
-global using U = Utilities;
 
 using System.Windows;
 using System.Windows.Resources;

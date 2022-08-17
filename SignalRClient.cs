@@ -6,8 +6,6 @@ using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace OmniZenNotes
 {
-    using OmniZenNotes.Models;
-    
     internal class SignalRClient {
         // TODO: Setup proper Collaboration settings
         internal static void Init(NoteViewer nv, Note note) {
