@@ -22,10 +22,9 @@ namespace OmniZenNotes
         static List<PropertyInfo> BackgroundColors;
         static bool IsExiting = false;
         
-        public NoteViewer(Note note, Rect placement = new Rect()) {
+        private NoteViewer(Note note, Rect placement = new Rect()) {
             InitializeComponent();
             VM = new NoteViewModel(this, note);
-            App.NoteViewers.Add(this);
 
             InitializeControls();
             InitializeCommands();
@@ -51,6 +50,10 @@ namespace OmniZenNotes
             Title = VM.Note.Title;
             Image AppIcon = (Image)FindResource("AppIcon");
             Icon = AppIcon.Source;
+        }
+        
+        public static void Create(Note note, Rect placement = new Rect()) {
+            App.NoteViewers.Add(new NoteViewer(note, placement));
         }
 
         #region Window Initalization
@@ -304,9 +307,7 @@ namespace OmniZenNotes
             double newTop = Top + uxToolBar.ActualHeight + padH;
             double newLeft = Left + padW * 2;
 
-#pragma warning disable CA1806 // Never used - is OK due to weak ref
-            new NoteViewer(note, new Rect(newLeft, newTop, Width, Height));
-#pragma warning restore CA1806
+            Create(note, new Rect(newLeft, newTop, Width, Height));
 
 #pragma warning disable CS8321 // The function declared but never used
             static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen, System.Windows.Forms.Screen[] allScreens) {

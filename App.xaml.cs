@@ -32,9 +32,7 @@ namespace OmniZenNotes
 
                 foreach (Notebook notebook in Repository.NoteBooks) {
                     foreach (Note note in notebook.Notes) {
-                        #pragma warning disable CA1806 // Never used - is OK due to weak ref
-                        new NoteViewer(note);
-                        #pragma warning restore CA1806
+                        NoteViewer.Create(note);
                     }
                 }
 
