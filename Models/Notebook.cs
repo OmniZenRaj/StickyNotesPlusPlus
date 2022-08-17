@@ -1,15 +1,14 @@
 ﻿using System.Collections.Generic;
 
-namespace OmniZenNotes.Models
+namespace OmniZenNotes.Models;
+
+class Notebook : Entity
 {
-    class Notebook : Entity
-    {
-        public List<Note> Notes { get; set; } = new ();
+    public List<Note> Notes { get; set; } = new();
 
-        public string DbPathUri { get; set; }
+    public string DbPathUri { get; set; }
 
-        public Notebook(string dbPathUri) {
-            DbPathUri = dbPathUri;
-        }
+    public Notebook(string dbPathUri) {
+        DbPathUri = dbPathUri;
     }
 }
