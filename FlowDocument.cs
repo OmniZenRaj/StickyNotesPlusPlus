@@ -98,7 +98,7 @@ public partial class NoteViewer : Window
         return hyperlink;
     }
 
-    // Create an Image Element for use in Document
+    // Create an Image Element for use in a FlowDocument (creates a temp copy to avoid locking the original)
     Image CreateImage(FileInfo fi) {
         Image image = new();
         try {
@@ -107,7 +107,7 @@ public partial class NoteViewer : Window
             BitmapImage bitmap = new(new(temp));
             image.Source = bitmap;
             image.Width = Math.Min(bitmap.PixelWidth, Width);
-            image.Height = Math.Min(bitmap.PixelHeight, Height);
+            image.Height = Math.Min(bitmap.PixelHeight, Height - uxToolBar.ActualHeight);
             if (bitmap.PixelWidth > Width || bitmap.PixelHeight > Height) {
                 image.SetBinding(WidthProperty, "{Binding ActualWidth,  Mode=OneWay, ElementName=uxRichTextBox}");
                 image.SetBinding(HeightProperty, "{Binding ActualHeight, Mode=OneWay, ElementName=uxRichTextBox}");

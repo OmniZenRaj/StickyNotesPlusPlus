@@ -50,9 +50,9 @@ public partial class NoteViewer : Window
                         CreateMediaElement(fi);
                         break;
                     default: {
-                            // Try to insert it into the Note as Text:
-                            InsertTextFromFile(fi);
-                            break;
+                        // Try to insert it into the Note as Text:
+                        InsertTextFromFile(fi);
+                        break;
                         }
                 }
             } else if (args.KeyStates == DragDropKeyStates.AltKey) {

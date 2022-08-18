@@ -267,7 +267,7 @@ public partial class NoteViewer : Window
 
         return colorScRgb;
     }
-
+    
     void OpenNewWindow(Note note) {
 
         var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle);
@@ -483,7 +483,9 @@ public partial class NoteViewer : Window
             item.Background ??= noteViewer.uxRichTextBox?.Background?.Clone();
             item.Background ??= noteViewer?.Background?.Clone();
             if (item.Background is SolidColorBrush scb) {
-                item.Foreground = new SolidColorBrush(AdjustColor(scb.Color));
+                if( noteViewer.uxRichTextBox.Foreground is SolidColorBrush fscb) {
+                    item.Foreground = new SolidColorBrush(fscb.Color);
+                }
             }
 
             item.Click += uxShowNotesMenuItem_Clicked;
