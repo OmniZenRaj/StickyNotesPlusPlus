@@ -87,6 +87,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         <Run x:Key="strFormatBarTip" Text="Toggle Font FormatBar"/>
         <Run x:Key="strSpellCheckTip" Text="Toggle Spell Checking"/>
         <Run x:Key="strAppPrefsTip" Text="Manage Application Preferences"/>
+        <Run x:Key="strAppAboutTip" Text="Application About Information"/>
         <Run x:Key="strExitAppTip" Text="Close All Notes and Exit Application"/>
         <!-- NLS: UX and Dialog Strings -->
         <Run x:Key="strExitAppTitle" Text="EXIT Application"/>
@@ -144,6 +145,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                     <Separator/>
                 </MenuItem>
                 <MenuItem Header="Preferences..." Command="local:AppCommands.ApplicationPrefsCommand" InputGestureText="Alt-F1" ToolTip="{StaticResource strAppPrefsTip}"/>
+                <MenuItem Header="About..." Command="local:AppCommands.ApplicationAboutCommand" ToolTip="{StaticResource strAppAboutTip}"/>
                 <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="F3" ToolTip="{StaticResource strExitAppTip}"/>
             </ContextMenu>
         </Grid.ContextMenu>

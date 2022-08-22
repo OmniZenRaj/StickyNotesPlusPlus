@@ -23,6 +23,7 @@ public static class AppCommands // Application Level Commands // NLS:
     public static RoutedUICommand ShowPrivateNotesCommand = new("Show Private", "ShowPrivateNote", typeof(AppCommands));
     public static RoutedUICommand ShowPublicNotesCommand = new("Show Public", "ShowPublicNotes", typeof(AppCommands));
     public static RoutedUICommand ApplicationPrefsCommand = new("Preferences", "ApplicationPrefs", typeof(AppCommands));
+    public static RoutedUICommand ApplicationAboutCommand = new("About", "ApplicationAbout", typeof(AppCommands));    
     public static RoutedUICommand ExitApplicationCommand = new("Exit App", "ExitApplication", typeof(AppCommands));
 }
 
@@ -85,6 +86,9 @@ public partial class NoteViewer : Window
         // Config Application Command
         AddCommandBinding(AppCommands.ApplicationPrefsCommand, OnApplicationPrefsCommand);
         InputBindings.Add(new(AppCommands.ApplicationPrefsCommand, new KeyGesture(Key.F1, ModifierKeys.Alt, "Alt-F1")));
+
+        // About Application Command
+        AddCommandBinding(AppCommands.ApplicationAboutCommand, OnApplicationAboutCommand);
 
         // Exit Application Command
         AddCommandBinding(AppCommands.ExitApplicationCommand, OnExitApplicationCommand);
@@ -196,18 +200,19 @@ public partial class NoteViewer : Window
             Utilities.Shell.GetTaskBarIconLocation(this, 1);
             System.Console.WriteLine($"rc = {rc}");
         }
+    }
+    void OnApplicationAboutCommand(object sender, RoutedEventArgs e) {
+        string msg = $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n\n" +
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n\n" +
+            $"Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n" +
+            $"Commit: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion} \n";
 
-        /*             string msg = $" Company: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
-                                 $" Product: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n" +
-                                 $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
-                                 $" {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n" +
-                                 $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n"; 
-        */
-        string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description;
-        string msg = $" Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n";
+        string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>()?.Title;
         MessageBox.Show(msg, title, MessageBoxButton.OK);
     }
-
+    
     void OnSelectFontCommand(object sender, RoutedEventArgs e) {
         OnTextFormatButton_Click(sender, e);
     }

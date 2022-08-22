@@ -1,14 +1,12 @@
 ﻿using System.Reflection;
-using System.Resources;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyDescription("Sticky Notes ++")]
-[assembly: AssemblyCopyright("Copyright © 2021 OmniZen Technology")]
+[assembly: AssemblyDescription("An Advanced Sticky Notes App")]
+[assembly: AssemblyCopyright("Copyright © 2021-2022 OmniZen Technology")]
 [assembly: AssemblyTrademark("OmniZen Technology")]
 [assembly: AssemblyCulture("")]
 

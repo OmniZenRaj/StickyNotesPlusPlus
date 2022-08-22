@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+    <Title>Sticky Notes ++</Title>
+    <Product>OmniZen Productivity Suite</Product>
     <Version>1.8.0</Version>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <ApplicationIcon>App.ico</ApplicationIcon>
-
     <!--Use the latest language features of C# that are compatible with TargetFramework version -->
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
@@ -68,6 +69,18 @@
     <Folder Include="Resources\" />
   </ItemGroup>
 
+  <!--Set the InformationalVersion to last commit hash & date for About box -->
+  <Target Name="GitLogCommit" BeforeTargets="PrepareForBuild">
+    <!--Run Git log to get last abbreviated commit hash & date for input into Assembly information -->
+    <Exec Command="git log --max-count=1 --pretty=format:%%h-@-%%cI" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="GitCommitID" />
+    </Exec>
+  </Target>
+
+  <PropertyGroup>
+    <InformationalVersion>@(GitCommitID)</InformationalVersion>
+  </PropertyGroup>
+  
   <!-- Post Publish Steps for Release of Published App -->
   <Target Condition="'$(Configuration)'=='Release' And Exists('$(OutputPath)\publish')" Name="PostPublish" AfterTargets="Publish">
 
