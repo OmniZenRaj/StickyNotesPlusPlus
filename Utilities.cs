@@ -10,9 +10,10 @@ using System.Windows.Media.Imaging;
 using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using MS.WindowsAPICodePack.Internal;
+using Vanara.PInvoke;
+using VPS = Vanara.PInvoke.Shell32;
 
 namespace Utilities;
-
 #region Json System Utilities
 public class Json
 {
@@ -295,7 +296,7 @@ public static class Graphics
     static extern IntPtr MonitorFromRect([In] ref RECT lprc, uint dwFlags);
 
     [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-    internal static extern int ExtractIconEx(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconSmall, int nIcons);
+    static extern int ExtractIconEx(string lpszFile, int nIconIndex, out IntPtr phiconLarge, out IntPtr phiconSmall, int nIcons);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -513,153 +514,81 @@ public static class Shell
         public string szTypeName;
     };
 
-    // Adds an Icon to the TaskBar Notification Area.
-    // hwnd - handle to the window to receive callback messages 
-    // uID - identifier of the icon 
-    // hicon - handle to the icon to add 
-    // lpszTip - tooltip text
-    // Returns TRUE if successful, or FALSE otherwise. 
-    public static bool AddTaskBarIcon(System.Windows.Window window, int uID, Icon icon, string toolTip) {
+    // DOC: Each GUID works for one EXE from one specific path. If you use same GUID from a different EXE path location, API ignores it
+    // DOC: User has to go into Taskbar settings/Select which icons appear on the taskbar and turn ON the OmniZenNotes App to use Notify fully
+    // DOC: During Development, a lot of app icons based on different EXE paths, RND: How to remove these from System
+    // TODO: Issue User message to have them take turn ON action & let them know what they are missing out on
+    // RND: Find out how to get Callback NIF_MESSAGE processing in Wpf (trying to use Dispatcher right now) 
+    
+    public static bool AddNotifyIcon(System.Windows.Window window, Guid guid, Icon icon, string toolTip) {
 
-        NOTIFYICONDATA nid = new NOTIFYICONDATA {
-            hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
-            uID = uID,
-            uFlags = NIF.NIF_ICON | NIF.NIF_TIP | NIF.NIF_SHOWTIP,
-            dwState = NIS.NIS_SHAREDICON,
+        VPS.NOTIFYICONDATA nid = new() {
+            guidItem = guid,
+            uTimeoutOrVersion = 4,
+            hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+            uFlags = VPS.NIF.NIF_MESSAGE | VPS.NIF.NIF_ICON | VPS.NIF.NIF_TIP | VPS.NIF.NIF_GUID,
+            dwInfoFlags = VPS.NIIF.NIIF_USER | VPS.NIIF.NIIF_LARGE_ICON,
+            uCallbackMessage = 0X0205, // RND: How to get Event Notifications back to our App
+            dwState = VPS.NIS.NIS_SHAREDICON,
             hIcon = icon.Handle,
+            hBalloonIcon = icon.Handle,
+            szTip = toolTip,
+            cbSize = (uint)Marshal.SizeOf<VPS.NOTIFYICONDATA>()
         };
-        nid.cbSize = Marshal.SizeOf((object)nid);
-        toolTip.CopyTo(0, nid.szTip, 0, toolTip.Length);
 
-        bool rc = Shell_NotifyIcon(NIM.NIM_ADD, nid);
+        bool rc = VPS.Shell_NotifyIcon(VPS.NIM.NIM_ADD, nid);
         if (rc == true) {
-            rc = Shell_NotifyIcon(NIM.NIM_SETVERSION, nid);
+            rc = VPS.Shell_NotifyIcon(VPS.NIM.NIM_SETVERSION, nid);
         }
         return rc;
     }
 
-    public static bool ModifyTaskBarIcon(System.Windows.Window window, int uID, Icon icon, string toolTip) {
+    public static bool ModifyNotifyIcon(System.Windows.Window window, Guid guid, Icon icon, Icon balloonIcon, string infoTitle = "", string toolTip = "") {
 
-        NOTIFYICONDATA nid = new NOTIFYICONDATA {
-            hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
-            uID = uID,
-            uFlags = NIF.NIF_INFO,
+        VPS.NOTIFYICONDATA nid = new () {
+            guidItem = guid,
+            hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+            uFlags = VPS.NIF.NIF_MESSAGE | VPS.NIF.NIF_INFO | VPS.NIF.NIF_TIP | VPS.NIF.NIF_GUID,
+            dwInfoFlags = VPS.NIIF.NIIF_USER | VPS.NIIF.NIIF_LARGE_ICON,
+            uCallbackMessage = 0X0205,
             hIcon = icon.Handle,
+            hBalloonIcon = balloonIcon.Handle,
+            szTip = toolTip,
+            szInfo = toolTip,
+            szInfoTitle = infoTitle,
+            cbSize = (uint)Marshal.SizeOf<VPS.NOTIFYICONDATA>()
         };
-        nid.cbSize = Marshal.SizeOf((object)nid);
-        toolTip.CopyTo(0, nid.szTip, 0, toolTip.Length);
-        "The Notification Info Message   ".CopyTo(0, nid.szInfo, 0, 32);
-        "The Notification Info Title     ".CopyTo(0, nid.szInfoTitle, 0, 32);
+        
+//        if (infoTitle == "" && toolTip == "") { nid.uFlags = VPS.NIF.NIF_MESSAGE | VPS.NIF.NIF_GUID; }
 
-        bool rc = Shell_NotifyIcon(NIM.NIM_MODIFY, nid);
-        return rc;
+        return VPS.Shell_NotifyIcon(VPS.NIM.NIM_MODIFY, nid);
     }
     // Deletes an Icon from the Task Bar Notification Area.
     // hwnd - handle to the window that added the icon. 
     // uID - identifier of the icon to delete.
     // Returns TRUE if successful, or FALSE otherwise.
-    public static bool DeleteTaskBarIcon(System.Windows.Window window, int uID) {
+    public static bool DeleteNotifyIcon(System.Windows.Window window, Guid guid) {
 
-        NOTIFYICONDATA nid = new NOTIFYICONDATA {
+        VPS.NOTIFYICONDATA nid = new () {
+            guidItem = guid,
+            hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
+            cbSize = (uint)Marshal.SizeOf<VPS.NOTIFYICONDATA>()
+    };
+
+        return VPS.Shell_NotifyIcon(VPS.NIM.NIM_DELETE, nid);
+    }
+
+    public static RECT GetNotifyIconLocation(System.Windows.Window window, Guid guid) {
+
+        VPS.NOTIFYICONIDENTIFIER nci = new () {
+            guidItem = guid,
             hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
-            uID = uID
         };
-        nid.cbSize = Marshal.SizeOf((object)nid);
+        nci.cbSize = (uint)Marshal.SizeOf<VPS.NOTIFYICONIDENTIFIER>();
 
-        return Shell_NotifyIcon(NIM.NIM_DELETE, nid);
-    }
-
-    public static bool GetTaskBarIconLocation(System.Windows.Window window, int uID) {
-
-        NOTIFYICONIDENTIFIER nci = new NOTIFYICONIDENTIFIER {
-            hWnd = new System.Windows.Interop.WindowInteropHelper(window).Handle,
-            uID = uID
-        };
-        nci.cbSize = Marshal.SizeOf((object)nci);
-
-        RECT rect = new();
-
-        bool rc = Shell_NotifyIconGetRect(nci, rect);
-        return rc;
-    }
-
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct NOTIFYICONIDENTIFIER
-    {
-        public int cbSize;
-        public IntPtr hWnd;
-        public int uID;
-        public Guid guidItem;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT
-    {
-        public long left;
-        public long top;
-        public long right;
-        public long bottom;
-    }
-
-    // @see https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyicongetrect
-    [DllImport("shell32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool Shell_NotifyIconGetRect([In] NOTIFYICONIDENTIFIER identifier, [Out] RECT iconLocation);
-
-    // @see https://docs.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataa
-    [DllImport("shell32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    static extern bool Shell_NotifyIcon(NIM dwMessage, [In] NOTIFYICONDATA lpdata);
-
-    public enum NIM : uint
-    {
-        NIM_ADD = 0x00000000,   // Adds an icon to the status area.The icon is given an identifier in the NOTIFYICONDATA structure pointed to by lpdata—either through its uID or guidItem member.This id is used in subsequent calls to Shell_NotifyIcon to perform later actions on the icon.
-        NIM_MODIFY = 0x00000001,   // Modifies an icon in the status area.NOTIFYICONDATA structure pointed to by lpdata uses the ID originally assigned to the icon when it was added to the notification area(NIM_ADD) to identify the icon to be modified.
-        NIM_DELETE = 0x00000002,   // Deletes an icon from the status area.NOTIFYICONDATA structure pointed to by lpdata uses the ID originally assigned to the icon when it was added to the notification area(NIM_ADD) to identify the icon to be deleted.
-        NIM_SETFOCUS = 0x00000003,   // Shell32.dll version 5.0 and later only.Returns focus to the taskbar notification area.Notification area icons should use this message when they have completed their UI operation. For example, if the icon displays a shortcut menu, but the user presses ESC to cancel it, use NIM_SETFOCUS to return focus to the notification area.
-        NIM_SETVERSION = 0x00000004,   // Shell32.dll version 5.0 and later only. Instructs the notification area to behave according to the version number specified in the uVersion member of the structure pointed to by lpdata. The version number specifies which members are recognized.NIM_SETVERSION must be called every time a notification area icon is added (NIM_ADD). It does not need to be called with NIM_MODIFY.The version setting is not persisted once a user logs off.
-    }
-
-    public enum NIF : uint
-    {
-        NIF_MESSAGE = 0x00000001,       // The uCallbackMessage member is valid.
-        NIF_ICON = 0x00000002,       // The hIcon member is valid.
-        NIF_TIP = 0x00000004,       // The szTip member is valid.
-        NIF_STATE = 0x00000008,       // The dwState and dwStateMask members are valid.
-        NIF_INFO = 0x00000010,       // Display a balloon notification.The szInfo, szInfoTitle, dwInfoFlags, and uTimeout members are valid.
-        /* Note that uTimeout is valid only in Windows 2000 and Windows XP. To display the balloon notification, specify NIF_INFO and provide text in szInfo. To remove a balloon notification, specify NIF_INFO and provide an empty string through szInfo. To add a notification area icon without displaying a notification, do not set the NIF_INFO flag. */
-        NIF_GUID = 0x00000020,       // Windows 7 and later: The guidItem is valid. Windows Vista and earlier: Reserved.
-        NIF_REALTIME = 0x00000040,       // Windows Vista and later.If the balloon notification cannot be displayed immediately, discard it. Use this flag for notifications that represent real-time information which would be meaningless or misleading if displayed at a later time.For example, a message that states "Your telephone is ringing." NIF_REALTIME is meaningful only when combined with the NIF_INFO flag.
-        NIF_SHOWTIP = 0x00000080        // Windows Vista and later. Use the standard tooltip. Normally, when uVersion is set to NOTIFYICON_VERSION_4, the standard tooltip is suppressed and can be replaced by the application-drawn, pop-up UI. If the application wants to show the standard tooltip with NOTIFYICON_VERSION_4, it can specify NIF_SHOWTIP to indicate the standard tooltip should still be shown.
-    }
-
-    public enum NIS : uint
-    {
-        NIS_HIDDEN = 0x00000001,       // The icon is hidden.
-        NIS_SHAREDICON = 0x00000002        // The icon resource is shared between multiple icons.
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct NOTIFYICONDATA
-    {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-        public char[] szTip = new char[128];
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-        public char[] szInfo = new char[256];
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-        public char[] szInfoTitle = new char[64];
-        public int cbSize;
-        public IntPtr hWnd;
-        public int uID;
-        public NIF uFlags;
-        public int uCallbackMessage;
-        public IntPtr hIcon;
-        public NIS dwState;
-        public uint dwStateMask;
-        public uint uVersion;
-        public uint dwInfoFlags;
-        public Guid guidItem;
-        public IntPtr hBalloonIcon;
+        HRESULT hr = VPS.Shell_NotifyIconGetRect(nci, out RECT rect);
+        Debug.Print($"GetTaskBarIconLocation.VPS.Shell_NotifyIconGetRect hr= {hr} out rect= {rect}");
+        return rect;
     }
 }
 
@@ -849,5 +778,5 @@ public static class Extensions
         return ignoreCase ? self.FullName.ContainsIC(other) : self.FullName.Contains(other);
     }
 
-    #endregion
+#endregion
 }

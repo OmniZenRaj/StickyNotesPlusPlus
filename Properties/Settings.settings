@@ -44,5 +44,8 @@
     <Setting Name="PlugInDir" Type="System.String" Scope="User">
       <Value Profile="(Default)">S:\\Metal Products</Value>
     </Setting>
+    <Setting Name="GUID" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
+    </Setting>
   </Settings>
 </SettingsFile>

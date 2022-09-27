@@ -3,7 +3,7 @@
     <PropertyGroup>
     <Title>Sticky Notes ++</Title>
     <Product>OmniZen Productivity Suite</Product>
-    <Version>1.8.0</Version>
+    <Version>1.9.0</Version>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <ApplicationIcon>App.ico</ApplicationIcon>
@@ -22,8 +22,9 @@
   <!--Ignore Nuget package WARNINGS: -->
     <NoWarn>
       NU1701,   <!-- WARNING: This package may not be fully compatible with your project -->
+      NU1603,   <!-- WARNING: Depends on X (>= 1.2.3) but X 1.2.3 was not found. An approximate best match of X 1.2.4 was resolved -->
       CA2211,   <!-- WARNING: Non-constant fields should not be visible -->
-      IDE0090,  <!-- WARNING: 'new' expression can be simplified -->      
+      IDE0090,  <!-- WARNING: 'new' expression can be simplified -->
       IDE1006   <!-- WARNING: Ignore name rule violation for XAML element objects starting with ux -->
     </NoWarn> 
   </PropertyGroup>
@@ -38,6 +39,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <!--Required for SQLite access to read SQLite Databases -->
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.111.0" />
+    <PackageReference Include="Vanara.PInvoke.Shell32" Version="3.1.5" />
     <!--Required for Shell API access to read Video Meta Data and Shell properties --> 
     <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
@@ -49,30 +51,16 @@
     <Resource Include="DB/OmniZenNotes.sqlite3" />
   </ItemGroup>
 
-<!--Graphic Images and Icon Resources: -->
+<!--Include All Graphic Images, Sounds and Icon Resources: -->
   <ItemGroup>
     <Resource Include="App.ico" />
-    <Resource Include="assets/images/ic_add.png" />
-    <Resource Include="assets/images/trash-24x.png" />
-    <Resource Include="assets/images/ic_delete_forever_36pt.png" />    
-    <Resource Include="assets/images/textformat-24x.png" />
-    <Resource Include="assets/images/ic_format_color_fill_black_18dp.png" />
-    <Resource Include="assets/images/task-24x.png" />
-    <Resource Include="assets/images/settings-24x.png" />
-    <Resource Include="assets/images/pin-blue_small-24x.png" />
-    <Resource Include="assets/images/ic_save_black_18dp.png" />
-    <Resourcec Include="assets/images/pin-green_small-24x.png" />
-    <Resource Include="assets/images/ic_close.png" />
-    <Resource Include="assets/images/overlay.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
+    <Resource Include="Assets/**/*" />
   </ItemGroup>
 
   <!--Set the InformationalVersion to last commit hash & date for About box -->
   <Target Name="GitLogCommit" BeforeTargets="PrepareForBuild">
     <!--Run Git log to get last abbreviated commit hash & date for input into Assembly information -->
-    <Exec Command="git log --max-count=1 --pretty=format:%%h-@-%%cI" ConsoleToMsBuild="true">
+    <Exec Command="git log --max-count=1 --pretty=format:%%h%%x20by%%x20%%an%%x20@%%x20%%ci" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" ItemName="GitCommitID" />
     </Exec>
   </Target>
@@ -85,20 +73,20 @@
   <Target Condition="'$(Configuration)'=='Release' And Exists('$(OutputPath)\publish')" Name="PostPublish" AfterTargets="Publish">
 
     <!-- Copy Required Runtime Support Files into Publish Folder -->
-    <Message Importance="High" Text="Copying Required Runtime Support Files into $(OutputPath)\publish\"/>
+    <Message Importance="High" Text="Copying Required Runtime Support Files into $(OutputPath)\publish\" />
     <ItemGroup>
-      <DotNetHostFiles    Include="X:\OPT\dotnet6.0\host\**\*.*"/>
-      <DotNetSharedFiles  Include="X:\OPT\dotnet6.0\shared\**\*.*"/>
-      <SQLiteDB Include="DB/**\*.*"/>
+      <DotNetHostFiles Include="X:\OPT\dotnet6.0\host\**\*.*" />
+      <DotNetSharedFiles Include="X:\OPT\dotnet6.0\shared\**\*.*" />
+      <SQLiteDB Include="DB/**\*.*" />
     </ItemGroup>
 
     <!-- Copy Required DotNet Runtime Files into Publish Folder -->
-    <Copy SourceFiles="@(DotNetHostFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\host\%(RecursiveDir)%(Filename)%(Extension)"/>
-    <Copy SourceFiles="@(DotNetSharedFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\shared\%(RecursiveDir)%(Filename)%(Extension)"/>
-    <Copy SourceFiles=".scripts/StickyNotes.cmd" DestinationFolder="$(OutputPath)\publish"/> 
+    <Copy SourceFiles="@(DotNetHostFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\host\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Copy SourceFiles="@(DotNetSharedFiles)" DestinationFiles="$(OutputPath)\publish\runtimes\shared\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Copy SourceFiles=".scripts/StickyNotes.cmd" DestinationFolder="$(OutputPath)\publish" /> 
   
     <!-- Remove Extraneous Directories and Files for Published App -->
-    <Message Importance="High" Text="Removing Extraneous Directories and Files from $(OutputPath)\publish\"/>
+    <Message Importance="High" Text="Removing Extraneous Directories and Files from $(OutputPath)\publish\" />
     <!-- Extra Extended.Wpf.Toolkit Language Resource DLLs (TODO: Eliminate from Build)-->
     <RemoveDir Directories="$(OutputPath)\publish\cs-CZ;$(OutputPath)\publish\cs-de;$(OutputPath)\publish\de;$(OutputPath)\publish\es;$(OutputPath)\publish\fr;$(OutputPath)\publish\hu;$(OutputPath)\publish\it;$(OutputPath)\publish\pt-BR;$(OutputPath)\publish\ro;$(OutputPath)\publish\ru;$(OutputPath)\publish\sv;$(OutputPath)\publish\zh-Hans;" />
     <!-- Extra Sqlite Runtimes (TODO: Eliminate from Build) -->

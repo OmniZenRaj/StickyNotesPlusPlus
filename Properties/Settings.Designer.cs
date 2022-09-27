@@ -181,5 +181,16 @@ namespace OmniZenNotes.Properties {
                 this["PlugInDir"] = value;
             }
         }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GUID {
+            get {
+                return ((string)(this["GUID"]));
+            }
+            set {
+                this["GUID"] = value;
+            }
+        }
     }
 }

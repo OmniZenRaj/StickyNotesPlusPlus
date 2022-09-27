@@ -20,10 +20,11 @@ namespace OmniZenNotes;
 
 public partial class App : Application
 {
-    public static List<NoteViewer> NoteViewers = new();
-    static readonly List<Process> PlugIns = new();
+    internal static readonly List<NoteViewer> NoteViewers = new();
+    internal static readonly List<Process> PlugIns = new();
 
-    public static HubConnection CollaborateHubConnection;
+    internal static Guid GUID;
+    internal static HubConnection CollaborateHubConnection;
 
     protected override void OnStartup(StartupEventArgs e) {
 
@@ -32,19 +33,29 @@ public partial class App : Application
             //InitSignalR();
             InitPlugIns();
             Repository.LoadModel();
-
             foreach (Notebook notebook in Repository.NoteBooks) {
                 foreach (Note note in notebook.Notes) {
                     NoteViewer.Create(note);
                 }
             }
-
+            InitNotifyIconArea();
         } catch (Exception ex) {
             EX.LogException(ex, "App START Error");
         }
 
     }
 
+    public void InitNotifyIconArea() {
+        try {
+            Assembly assembly = Assembly.GetEntryAssembly();
+            System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+            bool rc = SH.AddNotifyIcon(MainWindow, GUID, appIcon, assembly.FullName);
+            if (rc is true) { SH.ModifyNotifyIcon(MainWindow, GUID, appIcon, appIcon);}
+        } catch (Exception ex) {
+            EX.LogException(ex, "App InitNotifyIconArea Error");
+        }
+    }
+    
     public static async void InitSignalR() {
         try {
             CollaborateHubConnection = new HubConnectionBuilder()
@@ -107,6 +118,14 @@ public partial class App : Application
 
             Repository.NoteBooks.Add(new(nbDBFilePath));
         }
+        // The Application GUID is used currently only for Shell NotifyIcon API (@see Utilities.Shell.AddNotifyIcon)
+        // The FileSettingsProvider we use creates a new user.config per Application path location
+        // This works OK since NotifyIcon API requires unique GUID per App path location
+        // We only need to create a new one if the current GUID settings is null,empty or non-parsible
+        if( S.Default.GUID is not string gs || string.IsNullOrEmpty(gs) || ! Guid.TryParse(gs, out GUID)) {
+            GUID = Guid.NewGuid();
+        }
+        S.Default.GUID = GUID.ToString();
     }
 
     static void SaveAppSettings() {

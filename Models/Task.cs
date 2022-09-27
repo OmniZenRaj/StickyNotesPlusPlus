@@ -76,7 +76,7 @@ public class Task : Entity
 
 }
 
-public enum TaskAlarmSound { IM, Mail, Reminder, SMS, LoopingAlarm1, LoopingAlarm2, LoopingCall, LoopingCall2 };
+public enum TaskAlarmSound { Calendar, IM, Mail, Reminder, SMS, LoopingAlarm1, LoopingAlarm2, LoopingCall, LoopingCall2 };
 
 public class TaskReminder
 {

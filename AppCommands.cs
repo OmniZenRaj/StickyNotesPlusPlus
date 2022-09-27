@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Resources;
 using System.Collections;
 using System.Reflection;
 
@@ -189,24 +190,30 @@ public partial class NoteViewer : Window
 
     void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
 
-        /*          RND: Use Tray Utils to show balloontip (cannot get to work due to COMObject required)   
-                    CommonUtils cu = new ((new System.Windows.Interop.WindowInteropHelper(this).Handle));
-                    TrayUtils tu = cu.Tray;
-                    tu.ShowBalloonTip(10000, "Tip Title", "Tip Text", System.Windows.Forms.ToolTipIcon.Info);
-         */
-        bool rc = Utilities.Shell.AddTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 1");
-        if (rc == true) {
-            Utilities.Shell.ModifyTaskBarIcon(this, 1, Utilities.Graphics.ExtractIcon(Utilities.Shell.ACCICONS_EXE, 1, Utilities.Graphics.IconSize.Small), "TEST TIP 2");
-            Utilities.Shell.GetTaskBarIconLocation(this, 1);
-            System.Console.WriteLine($"rc = {rc}");
-        }
+        Assembly assembly = Assembly.GetEntryAssembly();
+        System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+        SH.AddNotifyIcon(this, App.GUID, appIcon, assembly.GetName().Name);
+
+        System.Drawing.Icon balloonIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+        SH.ModifyNotifyIcon(this, App.GUID, appIcon, balloonIcon, $"Alert from {assembly.GetName().Name}", "OnApplicationPrefsCommand: Test Tip from RAJ");
+        Vanara.PInvoke.RECT R = SH.GetNotifyIconLocation(this, App.GUID);
+        Console.WriteLine($"GetTaskBarIconLocation RECT = {R}");
+        SH.DeleteNotifyIcon(this, App.GUID);
+
+        // Copy SQLite3 DB from Resource to new user SQLite3DB file
+        Uri resourcePath = new("assets/sounds/alarm01.wav", UriKind.Relative);
+        StreamResourceInfo sri = App.GetResourceStream(resourcePath);
+        System.Media.SoundPlayer sp = new();
+        sp.Stream = sri.Stream;
+        sp.Play();
     }
     void OnApplicationAboutCommand(object sender, RoutedEventArgs e) {
-        string msg = $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n" +
-            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} \n\n" +
-            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} \n" +
+        string msg =
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} " +
+            $"Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n\n" +
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product} - " +
+            $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTrademarkAttribute>()?.Trademark} \n\n" +
             $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright} \n\n" +
-            $"Version: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version} \n" +
             $"Commit: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion} \n";
 
         string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>()?.Title;

@@ -5,10 +5,9 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyDescription("An Advanced Sticky Notes App")]
+[assembly: AssemblyDescription("Sticky Notes ++")]
 [assembly: AssemblyCopyright("Copyright © 2021-2022 OmniZen Technology")]
-[assembly: AssemblyTrademark("OmniZen Technology")]
-[assembly: AssemblyCulture("")]
+[assembly: AssemblyTrademark("® OmniZen Technology ™")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from

@@ -43,8 +43,7 @@ public partial class NoteViewer : Window
         uxSelectFontMenuItem.SubmenuOpened += OnSelectFont_SubmenuOpened;
 
         Title = VM.Note.Title;
-        Image AppIcon = (Image)FindResource("AppIcon");
-        Icon = AppIcon.Source;
+        if (FindResource("AppIcon") is Image i) { Icon = i.Source; }
     }
 
     public static void Create(Note note, Rect placement = new()) {
