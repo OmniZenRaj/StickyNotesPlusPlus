@@ -311,6 +311,7 @@ public static class Shell
     static readonly Dictionary<string, Icon> IconCache = new();
     public enum DocumentType { All, Access, Acrobat, Excel, PowerPoint, Publisher, Word, Other }
 
+    public static string GetUserName() { return System.Security.Principal.WindowsIdentity.GetCurrent()?.Name; }
     public static DocumentType GetDocumentType(FileInfo fi) {
         try {
             // Check the Cache first and then use the Shell API if required
@@ -778,5 +779,29 @@ public static class Extensions
         return ignoreCase ? self.FullName.ContainsIC(other) : self.FullName.Contains(other);
     }
 
+
+    public static string DateTimeFriendlyText(DateTime dateTime) {
+        return dateTime.FriendlyText();
+    }
+    
+    // Format a DateTime instance to a human friendly text
+    public static string FriendlyText(this DateTime self) {
+        string text;
+        TimeSpan timeSpan = self - DateTime.Now;
+        text = timeSpan.Days switch  {
+            0 => "today",
+            1 => "yesterday",
+            2 => "2 days ago",
+            3 => "3 days ago",
+            4 => "4 days ago",
+            5 => "5 days ago",
+            6 => "6 days ago",
+            7 => "1 week ago",
+            _ => $"on {self.ToShortDateString()}"
+        };
+
+        text += $" @ {self.ToShortTimeString()}";
+        return text;
+    }
 #endregion
 }

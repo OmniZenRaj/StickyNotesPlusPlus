@@ -172,9 +172,9 @@ public class Security
 {
     public string OwnerSID { get; internal set; } = WindowsIdentity.GetCurrent()?.User?.Value;
     public EntityPermissions Permissions { get; set; } = EntityPermissions.Private;
-    public string CreatedBy { get; internal set; } = WindowsIdentity.GetCurrent()?.Name;
+    public string CreatedBy { get; internal set; } = SH.GetUserName();
     public DateTime CreatedDTS { get; internal set; } = DateTime.Now;
-    public string UpdatedBy { get; internal set; } = WindowsIdentity.GetCurrent()?.Name;
+    public string UpdatedBy { get; internal set; } = SH.GetUserName();
     public DateTime UpdatedDTS { get; internal set; } = DateTime.Now;
 
     public override string ToString() => $@"Created by {CreatedBy} on {CreatedDTS}"; // NLS:

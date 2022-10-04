@@ -192,5 +192,28 @@ namespace OmniZenNotes.Properties {
                 this["GUID"] = value;
             }
         }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("http://localhost/Collaborate")]
+        public string HUB_URL {
+            get {
+                return ((string)(this["HUB_URL"]));
+            }
+            set {
+                this["HUB_URL"] = value;
+            }
+        }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("http://localhost:5000/Collaborate")]
+        public string HUB_URL_DEBUG {
+            get {
+                return ((string)(this["HUB_URL_DEBUG"]));
+            }
+            set {
+                this["HUB_URL_DEBUG"] = value;
+            }
+        }
+
     }
 }

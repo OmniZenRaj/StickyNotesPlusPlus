@@ -11,6 +11,9 @@ Developer Notes:
     The errors may reappear once you start editing the project files (this is a known VS Code issue)
     Dont worry about the VS Code IDE error messages too much, just ensure dotnet build completes without errors or warnings
 
+Exception Handling during DEBUG and TESTing can be problematic with Visual Studo Code (1.60.2)
+    If you check the Debug BREAKPOINTS All Exceptions option ON, it will kill the app
+    This seems to be when it happens inside MS code on another thread
 
 To build Project as self contained EXE, add the following entries under <PropertyGroup> in the .csproj file:
 

@@ -6,12 +6,13 @@ using System.Windows.Media;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Interop;
+using System.Windows.Markup;
 
 namespace OmniZenNotes;
 
 public partial class NoteViewer : Window
 {
-    NoteViewModel VM { get; set; }
+    internal NoteViewModel VM { get; set; }
 
     static List<FontFamily> FontFamilies;
     static List<PropertyInfo> BackgroundColors;
@@ -25,7 +26,7 @@ public partial class NoteViewer : Window
         InitializeCommands();
 
         LoadSettings();
-        SignalRClient.Init(this, VM.Note);
+        SignalRClient.Init(this);
 
         if (!placement.IsEmpty && placement.Height != 0 && placement.Width != 0) {
             Top = placement.Top; Left = placement.Left;
@@ -103,9 +104,24 @@ public partial class NoteViewer : Window
     // RND with SignalR Comms
     void uxRichTextBox_PreviewKeyUp(object sender, KeyEventArgs e) {
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {
-            if (VM.Note.Task.Reminder.LongNotification == true) {
-                SignalRClient.OnSendSignalR();
-            }
+            TextPointer tp = uxRichTextBox.CaretPosition;
+            Paragraph p = tp.Paragraph;
+            SetParagraphProperties(uxRichTextBox.Document, p, VM.Note);
+            string xaml = XamlWriter.Save(p);
+            SignalRClient.OnSendSignalR(xaml);
+        }
+        // TODO: Get formatting properties from paragraph being sent (not the doc)
+        static void SetParagraphProperties(FlowDocument doc, Paragraph p, Note note) {
+            p.Background = doc.Background;
+            p.FontFamily = doc.FontFamily;
+            p.FontSize = doc.FontSize;
+            p.FontStyle = doc.FontStyle;
+            p.FontStretch = doc.FontStretch;
+            p.FontWeight = doc.FontWeight;
+            p.Foreground = doc.Foreground;
+            #if DEBUG
+            p.Tag = note.ID;
+            #endif
         }
     }
 

@@ -27,6 +27,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         <Image x:Key="PinTabOn_Image" Source="assets/images/pin-green_small-24x.png" x:Shared="False" />
         <Image x:Key="Close_Note_Image" Source="assets/images/ic_close.png" x:Shared="False" />
         <Image x:Key="Alert_Icon" Source="assets/images/ic_add_alert_3x.ico" x:Shared="False"/>
+        <Image x:Key="Avatar_Icon" Source="assets/images/ic_group_add_2x.png" x:Shared="False"/>        
 
         <Style TargetType="{x:Type Image}">
             <Setter Property="Width" Value="20" />

@@ -189,24 +189,9 @@ public partial class NoteViewer : Window
     }
 
     void OnApplicationPrefsCommand(object sender, RoutedEventArgs e) {
-
-        Assembly assembly = Assembly.GetEntryAssembly();
-        System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
-        SH.AddNotifyIcon(this, App.GUID, appIcon, assembly.GetName().Name);
-
-        System.Drawing.Icon balloonIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
-        SH.ModifyNotifyIcon(this, App.GUID, appIcon, balloonIcon, $"Alert from {assembly.GetName().Name}", "OnApplicationPrefsCommand: Test Tip from RAJ");
-        Vanara.PInvoke.RECT R = SH.GetNotifyIconLocation(this, App.GUID);
-        Console.WriteLine($"GetTaskBarIconLocation RECT = {R}");
-        SH.DeleteNotifyIcon(this, App.GUID);
-
-        // Copy SQLite3 DB from Resource to new user SQLite3DB file
-        Uri resourcePath = new("assets/sounds/alarm01.wav", UriKind.Relative);
-        StreamResourceInfo sri = App.GetResourceStream(resourcePath);
-        System.Media.SoundPlayer sp = new();
-        sp.Stream = sri.Stream;
-        sp.Play();
+        // TODO: Provide a Preferences / Settings UX 
     }
+    
     void OnApplicationAboutCommand(object sender, RoutedEventArgs e) {
         string msg =
             $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} " +
