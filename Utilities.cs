@@ -669,7 +669,7 @@ public static class Exceptions
         string msg = ex.FormatException(errorMessage);
         Debug.WriteLine(msg);
 #if RELEASE
-                if (!showMessage) return;
+        if (!showMessage) return;
 #endif
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
         string title = assembly.GetName().Name;
@@ -786,17 +786,16 @@ public static class Extensions
     
     // Format a DateTime instance to a human friendly text
     public static string FriendlyText(this DateTime self) {
-        string text;
         TimeSpan timeSpan = self - DateTime.Now;
-        text = timeSpan.Days switch  {
-            0 => "today",
-            1 => "yesterday",
-            2 => "2 days ago",
-            3 => "3 days ago",
-            4 => "4 days ago",
-            5 => "5 days ago",
-            6 => "6 days ago",
-            7 => "1 week ago",
+        int m = Math.DivRem(timeSpan.Days, 31, out int r1);
+        int w = Math.DivRem(timeSpan.Days, 7, out int r2);
+        
+        string text = timeSpan.Days switch  {
+            int d when d >= 28 && m >= 1 => $"{m} month(s) ago",
+            int d when d >= 7  && w >= 1 => $"{w} week(s) ago",
+            int d when d == 1 => "yesterday",
+            int d when d == 0 => "today",
+            int d when d >= 2 => $"{d} days ago",
             _ => $"on {self.ToShortDateString()}"
         };
 

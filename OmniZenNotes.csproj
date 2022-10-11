@@ -20,10 +20,13 @@
 -->
 
   <!--Ignore Nuget package WARNINGS: -->
+  <!--Turn the Lint IDE/CA Warnings back ON for major builds to verify everything OK -->  
     <NoWarn>
       NU1701,   <!-- WARNING: This package may not be fully compatible with your project -->
       NU1603,   <!-- WARNING: Depends on X (>= 1.2.3) but X 1.2.3 was not found. An approximate best match of X 1.2.4 was resolved -->
       CA2211,   <!-- WARNING: Non-constant fields should not be visible -->
+      IDE0060,  <!-- WARNING: Remove unused parameter 'x' -->
+      IDE0059,  <!-- WARNING: Unnecessary assignment of a value to 'x' -->      
       IDE0090,  <!-- WARNING: 'new' expression can be simplified -->
       IDE1006   <!-- WARNING: Ignore name rule violation for XAML element objects starting with ux -->
     </NoWarn> 

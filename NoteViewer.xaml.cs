@@ -7,13 +7,16 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Interop;
 using System.Windows.Markup;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace OmniZenNotes;
 
 public partial class NoteViewer : Window
 {
+    const string MS_XAML_SCHEME = @"http://schemas.microsoft.com/winfx/2006/xaml/";
+    internal HubConnection CollaborateHubConnection;
+        
     internal NoteViewModel VM { get; set; }
-
     static List<FontFamily> FontFamilies;
     static List<PropertyInfo> BackgroundColors;
     static bool IsExiting = false;
@@ -108,7 +111,7 @@ public partial class NoteViewer : Window
             Paragraph p = tp.Paragraph;
             SetParagraphProperties(uxRichTextBox.Document, p, VM.Note);
             string xaml = XamlWriter.Save(p);
-            SignalRClient.OnSendSignalR(xaml);
+            SignalRClient.OnSendSignalR(this, xaml);
         }
         // TODO: Get formatting properties from paragraph being sent (not the doc)
         static void SetParagraphProperties(FlowDocument doc, Paragraph p, Note note) {
@@ -119,10 +122,9 @@ public partial class NoteViewer : Window
             p.FontStretch = doc.FontStretch;
             p.FontWeight = doc.FontWeight;
             p.Foreground = doc.Foreground;
-            #if DEBUG
             p.Tag = note.ID;
-            #endif
         }
+        
     }
 
     void OnToolBar_MouseDown(object sender, MouseButtonEventArgs e) {
@@ -134,6 +136,7 @@ public partial class NoteViewer : Window
     void OnActivated(object sender, EventArgs e) {
         ToggleToolBar(Visibility.Visible);
         uxRichTextBox.Focus();
+        SignalRClient.UpdateTaskBar(this, 0); // Cancel any notifications
     }
 
     void OnDeactivated(object sender, EventArgs e) {
@@ -519,8 +522,47 @@ public partial class NoteViewer : Window
     }
 
     #endregion
+    
+    #region SignalR Client Methods
+        
+    public string AddCollaborationMessage(DateTime date, string id, string user, string message) {
+        var paragraph = new Paragraph();
+        // If the message is a MS XAML Scheme (ie from another StickyNotes++ User)
+        var c = XamlReader.GetWpfSchemaContext();
+        if (message.Contains(MS_XAML_SCHEME)) {
+            paragraph = (Paragraph)XamlReader.Parse(message); // XAML content
+        } else {
+            paragraph.Inlines.Add(message); // Simple text
+        }
 
+        var range = new TextRange(paragraph.ContentStart, paragraph.ContentEnd);
+        var text = range.Text;
+        paragraph.BorderThickness = new Thickness(0.5);
+        paragraph.BorderBrush = new SolidColorBrush(Colors.DarkMagenta);
+        // TODO: If user has custom Avatar (from Avatar list request), use that
+        if (TryFindResource("Avatar_Icon") is System.Windows.Controls.Image i) {
+            i.Margin = new Thickness(3.0);
+            i.Height = 32; i.Width = 32;
+            System.Windows.Controls.Border b = new() {
+                BorderBrush = Brushes.BlueViolet,
+                BorderThickness = new Thickness(0.0), // RSS: Leave off for now
+                CornerRadius = new CornerRadius(2.5f),
+                Child = i
+            };
+            InlineUIContainer iuc = new(b) { ToolTip = user };
+            paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, iuc);
+        }
 
+        paragraph.ToolTipOpening += (object sender, ToolTipEventArgs e) => {
+            paragraph.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
+        };
+
+        uxRichTextBox.Document.Blocks.Add(paragraph);
+        return text;
+    }
+    
+    #endregion
+    
     #region Window Dialog Box Utilities
 
     // TODO: Add User Option to suppress this message on the dialog box (@see MS Sticky Notes)

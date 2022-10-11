@@ -8,6 +8,8 @@ using System.Windows.Markup;
 using System.Windows.Media;
 using System.Reflection;
 using System.Windows.Resources;
+using System.Globalization;
+using System.Collections.Generic;
 
 // TODO: Create User Settings for the following Collaboration Settings:
 // Collaboration Note = True/False
@@ -25,129 +27,160 @@ using System.Windows.Resources;
 namespace OmniZenNotes;
 internal class SignalRClient
 {
-    const string MS_XAML_SCHEME = @"http://schemas.microsoft.com/winfx/2006/xaml/";
-    internal static HubConnection CollaborateHubConnection;
+    readonly static DispatcherTimer Timer = new() {};
+    readonly static Dictionary<Window, int> WindowNotifications = new();
+    readonly static System.Media.SoundPlayer SoundPlayer = new();
     const string SEND_HUB_METHOD = "SEND";
     const string BROADCAST_HUB_METHOD = "BROADCAST";
-    static int progressValue = 0;
+    const int MAX_SIGNALR_SEND_RETRIES = 5;
 
-    internal async static void InitSignalR() {
+    internal async static void Init(NoteViewer nv) {
         try {
 #if DEBUG
             string url = S.Default.HUB_URL_DEBUG;
 #else
             string url = S.Default.HUB_URL;
 #endif
-            CollaborateHubConnection = new HubConnectionBuilder()
+            nv.CollaborateHubConnection = new HubConnectionBuilder()
             .WithUrl(url)
+            .WithAutomaticReconnect()
             .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Trace); })
             .Build();
-            await CollaborateHubConnection.StartAsync();
-        } catch (Exception ex) {
+#if DEBUG
+            nv.CollaborateHubConnection.ServerTimeout = new TimeSpan(1, 0, 0); // Time out at 1 Hour
+#endif
+            await nv.CollaborateHubConnection.StartAsync();
+            nv.CollaborateHubConnection.On<DateTime, string, string, string>(BROADCAST_HUB_METHOD, (date, id, user, message)
+                => { OnBroadcast(nv, date, id, user, message); });
+
+        } catch (Exception ex) {            
             EX.LogException(ex);
         }
     }
     
-    internal static void Init(NoteViewer nv) {
-        CollaborateHubConnection.On<string, string>(BROADCAST_HUB_METHOD, (user, message) 
-            => { OnBroadcast(nv, user, message); });
-    }
-
-    internal static void OnBroadcast(NoteViewer nv, string user, string message) {
+    internal static void OnBroadcast(NoteViewer nv, DateTime date, string id, string user, string message) {
         nv.Dispatcher.Invoke(() => {
             try {
-                // Normally we don't display sent messages on Notes from the same user
-                // But, during DEBUG mode, we do want to show it, but only on the other Notes.
-#if DEBUG
-#else           // Don't display messages if it was from this user 
-                if (user.Equals(SH.GetUserName(), StringComparison.OrdinalIgnoreCase)) { return;}
-#endif
-                var paragraph = new Paragraph();
-                // If the message is a MS XAML Scheme (ie from another StickyNotes++ User)
-                if (message.Contains(MS_XAML_SCHEME)) {
-                    paragraph = (Paragraph)XamlReader.Parse(message); // XAML content
-#if DEBUG       // Use the Note.ID in the Tag so that the same Note doesn't display, but others do
-                if (paragraph.Tag.Equals(nv.VM.Note.ID)) { return; } // Don't display for same Note
-#endif
-                } else {
-                    paragraph.Inlines.Add(message); // Simple text
+                string text = nv.AddCollaborationMessage(date, id, user, message);
+
+                if (!nv.IsActive || !nv.IsVisible) {
+                    NotifyUserOfMessage(nv, date, id, user, text);
                 }
-                
-                var range = new TextRange(paragraph.ContentStart, paragraph.ContentEnd);
-                    paragraph.BorderThickness = new Thickness(0.5);
-                    paragraph.BorderBrush = new SolidColorBrush(Colors.DarkMagenta);
-                    // TODO: If user has custom Avatar (from Avatar list request), use that
-                    if (nv.TryFindResource("Avatar_Icon") is System.Windows.Controls.Image i) {
-                        InlineUIContainer iuc = new(i) { ToolTip = user };
-                        i.Margin = new Thickness(3.0);
-                        i.Height = 32; i.Width = 32;
-                        paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, iuc);
-                        paragraph.ToolTip = $@"{user}: {range.Text}     (Sent {U.Extensions.DateTimeFriendlyText(DateTime.Now)})"; ;
-                }
-                nv.uxRichTextBox.Document.Blocks.Add(paragraph);
-                NotifyUserOfMessage(nv, paragraph.ToolTip.ToString());
-                
+
             } catch (Exception ex) {
                 EX.LogException(ex);
             }
         });
     }
-    
-    internal static void OnSendSignalR(string message) {
 
-        if (CollaborateHubConnection.State == HubConnectionState.Connected) {
-            var user = SH.GetUserName();
-            CollaborateHubConnection.InvokeAsync(SEND_HUB_METHOD, user, message);
-        } else {
-            MessageBox.Show($"ERROR: Cannot Send. No Connection Exists to Server {CollaborateHubConnection}", "Server Connection Problem.");
+    internal static void OnSendSignalR(NoteViewer nv, string xaml) {
+        int retries = 0;
+        while (retries++ <= MAX_SIGNALR_SEND_RETRIES){
+            if (nv.CollaborateHubConnection.State == HubConnectionState.Connected) {
+                string user = SH.GetUserName();
+                string guid = Guid.NewGuid().ToString();
+                nv.CollaborateHubConnection.InvokeAsync(SEND_HUB_METHOD, DateTime.UtcNow, guid, user, xaml);
+                retries = MAX_SIGNALR_SEND_RETRIES + 1; // exit while
+            }
+        }
+        if (nv.CollaborateHubConnection.State != HubConnectionState.Connected) {
+            MessageBox.Show($"ERROR: Cannot Send. Connection to Hub Server {S.Default.HUB_URL } could NOT be Established.", "Server Connection Problem.");
         }
     }
 
-    internal static void UpdateTaskBar(Window window, int number) {
- 
-        Uri resourcePath = new("assets/images/overlay.png", UriKind.Relative);
-        StreamResourceInfo sri = App.GetResourceStream(resourcePath);
-        // BUG: Does NOT work (stream is for System.Windows.Controls.Image not ICON)
-        // RND: How to make this work via example from Internet
-        System.Drawing.Icon overlayIcon = new System.Drawing.Icon(sri.Stream);
+    internal static void UpdateTaskBar(Window window, int notifications) {
 
-        IntPtr intPtr = new System.Windows.Interop.WindowInteropHelper(window).Handle;
-        TaskbarManager tm = TaskbarManager.Instance;
-        tm.ApplicationId = App.GUID.ToString();
-        tm.SetApplicationIdForSpecificWindow(intPtr, App.GUID.ToString());
-        tm.SetProgressState(TaskbarProgressBarState.Paused, intPtr);
-        tm.SetOverlayIcon(intPtr, overlayIcon, $"{number}");
-
-        DispatcherTimer dt = new DispatcherTimer();
-        dt.Tick += new((sender, e) => {
-            TaskbarManager tm = TaskbarManager.Instance;
-            if (progressValue >= 100) { progressValue = 0; }
-            tm.SetProgressValue(progressValue += 10, 100);
+        // Clear the Taskbar stuff (remember the count overlay is for all Note Windows)
+        if (notifications == 0) {
+            WindowNotifications.Remove(window);
+            UpdateCountOverlay(window, WindowNotifications.Count);
+            return;     // <-- EXIT Function Early
+        }
+        
+        // Make taskbar Icon Progress Bar cycle up/down for 10 loops to indicate messages pending
+        int progressValue = 0; int progressTotalLoops = 10;  bool direction = false;
+        const int progressMaxValue = 100; const int progressInterval = 10;
+        
+        Timer.Tick += new((sender, e) => {
+            TaskbarManager.Instance.SetProgressState(TaskbarProgressBarState.Paused);
+            if (progressValue >= progressMaxValue || progressValue <= progressInterval) {
+                direction = !direction;
+                progressTotalLoops -= 1;
+                progressValue = progressValue <= progressInterval ? progressInterval : progressMaxValue - progressInterval;
+            }
+            if (progressTotalLoops >= 0) {
+                progressValue = direction ? progressValue += progressInterval : progressValue -= progressInterval;
+                TaskbarManager.Instance.SetProgressValue(progressValue, progressMaxValue);
+            } else {
+                progressValue = 0; progressTotalLoops = 10; direction = false;
+                TaskbarManager.Instance.SetProgressValue(0, 0);
+                Timer.Stop();
+            }
         });
-        dt.Interval = TimeSpan.FromMilliseconds(100);
-        dt.Start();
+        Timer.Interval = TimeSpan.FromMilliseconds(50);
+        Timer.Start();
+
+        UpdateCountOverlay(window, notifications);
     }
 
-    internal static void NotifyUserOfMessage(Window window, string message) {
+    // Remember the overall count if for all Notes windows
+    internal static void UpdateCountOverlay(Window window, int count) {
 
-        // UpdateTaskBar(window, 3);
+        window.TaskbarItemInfo = new();
+
+        if (count == 0) {
+            TaskbarManager.Instance.SetProgressValue(0, 0);
+            Timer.Stop();
+            return;
+        } 
+
+        // DOC: Icon Overlay only works if Taskbar Settings is Small taskbar buttons = Off and Show Badges = On
+        DrawingVisual dv = new();
+        DrawingContext dc = dv.RenderOpen();
+        dc.DrawEllipse(Brushes.Red, null, new Point(0, 0), 25, 25);
+        dc.DrawText(new FormattedText($"{count}", CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Consolas"), 36.0, Brushes.
+        Yellow, (float)VisualTreeHelper.GetDpi(window).PixelsPerDip), new Point(-12.5, -22.5));
+        dc.Close();
+        DrawingImage di = new(dv.Drawing);
+
+        window.TaskbarItemInfo = new();
+        window.TaskbarItemInfo.Overlay = di;
+        window.TaskbarItemInfo.Description = $"You have {count} Unread StickyNote++ Text(s).";
+    }
+    
+    internal static void NotifyUserOfMessage(Window window, DateTime date, string id, string user, string message) {
+
+        if( WindowNotifications.TryGetValue(window, out int notifications)) {
+            notifications++;
+            WindowNotifications.Remove(window);
+        } else {
+            notifications = 1;
+        }
+        WindowNotifications.Add(window, notifications);
+    
+        int totalNotifications = 0;
+        foreach (var n in WindowNotifications.Values) {
+            totalNotifications += n;
+        }
+        UpdateTaskBar(window, totalNotifications);
         
         Assembly assembly = Assembly.GetEntryAssembly();
         System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
         SH.AddNotifyIcon(window, App.GUID, appIcon, assembly.GetName().Name);
 
         System.Drawing.Icon balloonIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
-        string title = $"{Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description} ";
-        SH.ModifyNotifyIcon(window, App.GUID, appIcon, balloonIcon, title, message);
+        SH.ModifyNotifyIcon(window, App.GUID, appIcon, balloonIcon, user, message);
+
         Vanara.PInvoke.RECT R = SH.GetNotifyIconLocation(window, App.GUID);
         Console.WriteLine($"GetTaskBarIconLocation RECT = {R}");
+
         SH.DeleteNotifyIcon(window, App.GUID);
 
         // Get the wav sound asset resource steam from the 
         Uri resourcePath = new("assets/sounds/alarm01.wav", UriKind.Relative);
-        StreamResourceInfo sri = App.GetResourceStream(resourcePath);
-        System.Media.SoundPlayer sp = new();
-        sp.Stream = sri.Stream;
-        sp.Play();
+        StreamResourceInfo sri = Application.GetResourceStream(resourcePath);
+        SoundPlayer.Stop();
+        SoundPlayer.Stream = sri.Stream;
+        SoundPlayer.Play();
     }
 }

@@ -27,7 +27,6 @@ public partial class App : Application
 
         try {
             LoadSettings();
-            SignalRClient.InitSignalR();
             InitPlugIns();
             Repository.LoadModel();
             foreach (Notebook notebook in Repository.NoteBooks) {
