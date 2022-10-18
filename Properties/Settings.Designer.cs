@@ -214,6 +214,17 @@ namespace OmniZenNotes.Properties {
                 this["HUB_URL_DEBUG"] = value;
             }
         }
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("assets/images/avatars/default.png")]
+        public string Avatar_Uri {
+            get {
+                return ((string)(this["Avatar_Uri"]));
+            }
+            set {
+                this["Avatar_Uri"] = value;
+            }
+        }
 
     }
 }

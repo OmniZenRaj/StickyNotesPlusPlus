@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Windows.Resources;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Windows.Media.Imaging;
 
 // TODO: Create User Settings for the following Collaboration Settings:
 // Collaboration Note = True/False
@@ -25,31 +26,34 @@ using System.Collections.Generic;
 // Allow the selction of Users to send for this Note
 
 namespace OmniZenNotes;
+
 internal class SignalRClient
 {
     readonly static DispatcherTimer Timer = new() {};
     readonly static Dictionary<Window, int> WindowNotifications = new();
     readonly static System.Media.SoundPlayer SoundPlayer = new();
+
+    internal static string HubURL = S.Default.HUB_URL;
+    
     const string SEND_HUB_METHOD = "SEND";
     const string BROADCAST_HUB_METHOD = "BROADCAST";
     const int MAX_SIGNALR_SEND_RETRIES = 5;
 
-    internal async static void Init(NoteViewer nv) {
+    internal static void Init(NoteViewer nv) {
         try {
 #if DEBUG
-            string url = S.Default.HUB_URL_DEBUG;
-#else
-            string url = S.Default.HUB_URL;
+            HubURL = S.Default.HUB_URL_DEBUG;
 #endif
             nv.CollaborateHubConnection = new HubConnectionBuilder()
-            .WithUrl(url)
+            .WithUrl(HubURL)
             .WithAutomaticReconnect()
             .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Trace); })
             .Build();
 #if DEBUG
             nv.CollaborateHubConnection.ServerTimeout = new TimeSpan(1, 0, 0); // Time out at 1 Hour
 #endif
-            await nv.CollaborateHubConnection.StartAsync();
+            nv.CollaborateHubConnection.StartAsync();
+
             nv.CollaborateHubConnection.On<DateTime, string, string, string>(BROADCAST_HUB_METHOD, (date, id, user, message)
                 => { OnBroadcast(nv, date, id, user, message); });
 

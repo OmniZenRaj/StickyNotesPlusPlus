@@ -12,7 +12,7 @@ public class NoteViewModel
         NoteViewer = noteViewer;  // Wire up the View to this ViewModel
         Note = note;
     }
-
+    
     public static Note CreateNewNote(Note copy) {
         return Repository.CreateNote(copy);
     }

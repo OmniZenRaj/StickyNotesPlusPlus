@@ -50,6 +50,9 @@
     <Setting Name="HUB_URL" Type="System.String" Scope="User">
       <Value Profile="(Default)">http://localhost/Collaborate</Value>
     </Setting>
+    <Setting Name="Avatar_Uri" Type="System.String" Scope="User">
+      <Value Profile="(Default)">assets/images/avatars/default.png</Value>
+    </Setting>
     
   </Settings>
 </SettingsFile>

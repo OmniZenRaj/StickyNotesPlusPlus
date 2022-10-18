@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Windows.Interop;
 using System.Windows.Markup;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Windows.Media.Imaging;
+using System.Net.Http;
 
 namespace OmniZenNotes;
 
@@ -52,8 +54,7 @@ public partial class NoteViewer : Window
 
     public static void Create(Note note, Rect placement = new()) {
         App.NoteViewers.Add(new(note, placement));
-    }
-
+    }   
     #region Window Initalization
 
     void OnLoaded(object sender, EventArgs e) {
@@ -90,7 +91,7 @@ public partial class NoteViewer : Window
         }
     }
 
-    void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
+/*     void uxRichTextBox_MouseWheel(object sender, MouseWheelEventArgs e) {
         if (Keyboard.Modifiers == ModifierKeys.Control) {
             // TODO: Make Text Selections work
             TextRange range = uxRichTextBox.Selection;
@@ -103,7 +104,7 @@ public partial class NoteViewer : Window
             }
         }
     }
-
+ */
     // RND with SignalR Comms
     void uxRichTextBox_PreviewKeyUp(object sender, KeyEventArgs e) {
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {
@@ -112,6 +113,7 @@ public partial class NoteViewer : Window
             SetParagraphProperties(uxRichTextBox.Document, p, VM.Note);
             string xaml = XamlWriter.Save(p);
             SignalRClient.OnSendSignalR(this, xaml);
+
         }
         // TODO: Get formatting properties from paragraph being sent (not the doc)
         static void SetParagraphProperties(FlowDocument doc, Paragraph p, Note note) {
@@ -187,8 +189,7 @@ public partial class NoteViewer : Window
 
             //FontStyleConverter fsConverter = new ();
             //var fontStyle = (FontStyle)fsConverter.ConvertFrom(fd.Font.Style.ToString());
-
-            SetFont(fontFamily, fontSize, fontColor, FontStyle);
+            SetFont(uxRichTextBox.FontFamily, fontSize, uxRichTextBox.Foreground, uxRichTextBox.FontStyle);
             uxSettingsPropertyGrid.Update();
         }
     }
@@ -200,41 +201,7 @@ public partial class NoteViewer : Window
     }
 
     void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
-        // Keep the Window Font in sync with the RichTextBox Font:
-        if (fontFamily != null) {
-            var doc = uxRichTextBox.Document;
-
-            // Create a TextRange for the Selected Text or the entire document.
-            TextRange range = uxRichTextBox.Selection;
-            if (string.IsNullOrEmpty(uxRichTextBox.Selection.Text)) {
-                range = new(doc.ContentStart, doc.ContentEnd);
-                range.Select(range.Start, range.End);
-            }
-
-            // Set the Font for the Selected Text or the whole RichTextBox:
-            if (!range.IsEmpty) {
-                range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
-                range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
-                range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
-                range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, U.Graphics.GetFamilyFontName(fontFamily));
-            }
-
-            // Set the Font for the whole RichTextBox when no Text was selected
-            if (string.IsNullOrEmpty(uxRichTextBox.Selection?.Text)) {
-                uxRichTextBox.FontFamily = fontFamily;
-                uxRichTextBox.FontSize = fontSize;
-                uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
-                uxRichTextBox.FontStyle = fontStyle;
-                uxRichTextBox.Foreground = new SolidColorBrush(fontColor);
-            }
-        }
-
-        if (updateUXSettings) {
-            VM.Note.UXSettings.FontFamily = uxRichTextBox.FontFamily;
-            VM.Note.UXSettings.FontSize = uxRichTextBox.FontSize;
-            VM.Note.UXSettings.FontColor = (uxRichTextBox.Foreground as SolidColorBrush).Color;
-            VM.Note.UXSettings.FontStyle = uxRichTextBox.FontStyle;
-        }
+        RichTextBox.SetFont(uxRichTextBox, fontFamily, fontSize, fontColor, fontStyle, updateUXSettings);
     }
 
     void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
@@ -253,6 +220,7 @@ public partial class NoteViewer : Window
     }
 
     void SetBackgroundColor(Color color, bool updateUXSettings = true) {
+        
         if (updateUXSettings) {
             VM.Note.UXSettings.BackgroundColor = color;
         };
@@ -526,43 +494,123 @@ public partial class NoteViewer : Window
     #region SignalR Client Methods
         
     public string AddCollaborationMessage(DateTime date, string id, string user, string message) {
-        var paragraph = new Paragraph();
+
+        Paragraph paragraph = new();
         // If the message is a MS XAML Scheme (ie from another StickyNotes++ User)
-        var c = XamlReader.GetWpfSchemaContext();
         if (message.Contains(MS_XAML_SCHEME)) {
             paragraph = (Paragraph)XamlReader.Parse(message); // XAML content
         } else {
-            paragraph.Inlines.Add(message); // Simple text
+            paragraph.Inlines.Add(message); // Simple text (ie from Collaborate web page)
         }
 
+        string text = AddAvatarImage(paragraph, user, date);
+
+        // Wrap the paragraph in a UI TextBlock to keep it non editable and safe
+        TextBlock textBlock = new TextBlock {
+            Background = paragraph.Background ?? uxRichTextBox.Background ?? Background,
+            FontFamily = paragraph.FontFamily,
+            FontSize = paragraph.FontSize,
+            FontStretch = paragraph.FontStretch,
+            FontStyle = paragraph.FontStyle,
+            FontWeight = paragraph.FontWeight,
+            Foreground = paragraph.Foreground,
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.WordEllipsis,
+        };
+
+        System.Collections.ArrayList inlines = new(paragraph.Inlines); // clone to safely manipulate
+        foreach (Inline inline in inlines) {
+            textBlock.Inlines.Add(inline);
+        }
+
+        Border textBlockBorder = new() {
+            BorderBrush = textBlock.Foreground,
+            BorderThickness = new Thickness(1.0f),
+            CornerRadius = new CornerRadius(1.0f),
+            Child = textBlock
+        };
+        
+        BlockUIContainer buc = new (textBlockBorder);
+        uxRichTextBox.Document.Blocks.Add(buc);
+        // AddInputCollaborationParagraph();
+
+        return text;
+    }
+    
+    // Add an Avatar Image for given Paragraph with border, image & tool tip 
+    static string AddAvatarImage(Paragraph paragraph, string user, DateTime date, bool doToolTip = true) {
+
+        // Get the raw text (used for alerts and tool tip etc)
         var range = new TextRange(paragraph.ContentStart, paragraph.ContentEnd);
         var text = range.Text;
+
+        // Build an Avatar Image (with Border around it)
         paragraph.BorderThickness = new Thickness(0.5);
         paragraph.BorderBrush = new SolidColorBrush(Colors.DarkMagenta);
-        // TODO: If user has custom Avatar (from Avatar list request), use that
-        if (TryFindResource("Avatar_Icon") is System.Windows.Controls.Image i) {
+        if (GetAvatarImage(user) is Image i) {
             i.Margin = new Thickness(3.0);
             i.Height = 32; i.Width = 32;
-            System.Windows.Controls.Border b = new() {
+            Border b = new() {
                 BorderBrush = Brushes.BlueViolet,
                 BorderThickness = new Thickness(0.0), // RSS: Leave off for now
                 CornerRadius = new CornerRadius(2.5f),
                 Child = i
             };
-            InlineUIContainer iuc = new(b) { ToolTip = user };
+            if (doToolTip) {
+                b.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
+                b.ToolTipOpening += (object sender, ToolTipEventArgs e) => {
+                    if (sender is Border b) {
+                        b.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
+                    }
+                };
+            }
+
+            InlineUIContainer iuc = new(b);
             paragraph.Inlines.InsertBefore(paragraph.Inlines.FirstInline, iuc);
         }
-
-        paragraph.ToolTipOpening += (object sender, ToolTipEventArgs e) => {
-            paragraph.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
-        };
-
-        uxRichTextBox.Document.Blocks.Add(paragraph);
         return text;
+    }
+
+    internal void AddInputCollaborationParagraph() {
+
+        TextPointer tp = uxRichTextBox.Document.ContentEnd.InsertParagraphBreak();
+        Paragraph paragraph = new Paragraph(new Run("ABC", tp));
+        AddAvatarImage(paragraph, SH.GetUserName(), DateTime.Now, false);
+
+        var doc = uxRichTextBox.Document;
+        paragraph.Background = doc.Background ?? uxRichTextBox.Background ?? Background;
+        paragraph.FontFamily = doc.FontFamily;
+        paragraph.FontSize = doc.FontSize;
+        paragraph.FontStretch = doc.FontStretch;
+        paragraph.FontStyle = doc.FontStyle;
+        paragraph.FontWeight = doc.FontWeight;
+        paragraph.Foreground = doc.Foreground;
+
+        paragraph.Inlines.Add("DEF");
+    }
+
+    // Get the User's Avatar Image from Collaboration Hub or from local Assets resources
+    internal static Image GetAvatarImage(string user) {
+
+        Image image = new();
+        // 1st look for user specific avatar image in Collaborate area
+        string userName = user.Replace('\\', '-'); // Replace invalid URI characters
+        UriBuilder hubUri = new UriBuilder(SignalRClient.HubURL) { Path = $"/Collaborate/AvatarImage/{userName}"};
+        HttpClient hc = new();
+        var hr = hc.Send(new HttpRequestMessage(HttpMethod.Get, hubUri.Uri));
+        if (hr.IsSuccessStatusCode) {
+            image.Source = new BitmapImage(hubUri.Uri);
+        } else {
+            // 2nd look for for the avatar image in the local resources  (if above not found/accessable)
+            Uri assetsUri = new(S.Default.Avatar_Uri, UriKind.Relative);
+            image.Source = new BitmapImage(assetsUri);
+        }
+
+        return image;
     }
     
     #endregion
-    
+
     #region Window Dialog Box Utilities
 
     // TODO: Add User Option to suppress this message on the dialog box (@see MS Sticky Notes)

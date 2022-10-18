@@ -4,17 +4,11 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
 xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" 
-xmlns:local="clr-namespace:OmniZenNotes" 
+xmlns:oz="clr-namespace:OmniZenNotes" 
 xmlns:Models="clr-namespace:OmniZenNotes.Models" x:Class="OmniZenNotes.NoteViewer" mc:Ignorable="d" 
 WindowStyle="None" Topmost="True" AllowsTransparency="True" ResizeMode="CanResizeWithGrip" BorderBrush="Black" BorderThickness="1"
 Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" Deactivated="OnDeactivated" Closed="OnClosed" Closing="OnClosing" >
-<!--     <Window.TaskbarItemInfo>
-        <TaskbarItemInfo 
-            Description="Custom tooltip" 
-            ProgressState="Indeterminate"
-            Overlay="assets/images/overlay.png"/>
-    </Window.TaskbarItemInfo> -->
-    
+   
     <Window.Resources>
         <Image x:Key="AppIcon" Source="App.ico" x:Shared="False" />
         <Image x:Key="Add_Note_Image" Source="assets/images/ic_add.png" x:Shared="False" />
@@ -112,9 +106,9 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
             <ContextMenu>
                 <MenuItem Header="_File">
                     <MenuItem Header="New Note" Command="New" ToolTip="{StaticResource strAddNoteTip}" />
-                    <MenuItem Header="Hide Note" Command="local:AppCommands.HideCommand" InputGestureText="Alt-H" ToolTip="{StaticResource strHideNoteTip}"/>
-                    <MenuItem Header="Close Note" Command="local:AppCommands.CloseCommand" InputGestureText="Alt-F4" ToolTip="{StaticResource strCloseNoteTip}"/>
-                    <MenuItem Header="Delete Note" Command="local:AppCommands.DeleteCommand" InputGestureText="Alt-D" ToolTip="{StaticResource strDeleteNoteTip}"/>
+                    <MenuItem Header="Hide Note" Command="oz:AppCommands.HideCommand" InputGestureText="Alt-H" ToolTip="{StaticResource strHideNoteTip}"/>
+                    <MenuItem Header="Close Note" Command="oz:AppCommands.CloseCommand" InputGestureText="Alt-F4" ToolTip="{StaticResource strCloseNoteTip}"/>
+                    <MenuItem Header="Delete Note" Command="oz:AppCommands.DeleteCommand" InputGestureText="Alt-D" ToolTip="{StaticResource strDeleteNoteTip}"/>
                     <MenuItem Header="Refresh" Command="Refresh" ToolTip="{StaticResource strRefreshNoteTip}"/>
                     <MenuItem Header="Save" Command="Save" ToolTip="{StaticResource strSaveNoteTip}"/>
                 </MenuItem>
@@ -128,8 +122,8 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                 <MenuItem Header="Redo" Command="Redo" ToolTip="{StaticResource strRedoTip}"/>
                 </MenuItem>
 
-                <MenuItem x:Name="uxFormatBarMenuItem" Header="Format Bar" Command="local:AppCommands.FormatBarCommand" InputGestureText="F4" ToolTip="{StaticResource strFormatBarTip}"/>
-                <MenuItem x:Name="uxSpellCheckMenuItem" Header="Spell Check" Command="local:AppCommands.SpellCheckCommand" InputGestureText="F7" ToolTip="{StaticResource strSpellCheckTip}"/>
+                <MenuItem x:Name="uxFormatBarMenuItem" Header="Format Bar" Command="oz:AppCommands.FormatBarCommand" InputGestureText="F4" ToolTip="{StaticResource strFormatBarTip}"/>
+                <MenuItem x:Name="uxSpellCheckMenuItem" Header="Spell Check" Command="oz:AppCommands.SpellCheckCommand" InputGestureText="F7" ToolTip="{StaticResource strSpellCheckTip}"/>
                 <Separator/>
                 <MenuItem x:Name="uxSelectFontMenuItem" Header="Fonts" ToolTip="{StaticResource strFontsTip}">
                     <MenuItem Header="@see code" />
@@ -137,19 +131,19 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                 <MenuItem x:Name="uxSelectBackgroundMenuItem" Header="Backgrounds" ToolTip="{StaticResource strBackgroundsTip}">
                     <MenuItem Header="@see code" />
                 </MenuItem>
-                <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="local:AppCommands.ViewNoteReminderCommand" CommandParameter="MenuItem" InputGestureText="Alt-R" ToolTip="{StaticResource strToggleReminderTip}"/>
-                <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="local:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem" InputGestureText="Alt-S" ToolTip="{StaticResource strToggleSettingsTip}"/>
-                <MenuItem x:Name="uxTogglePinMenuItem" Header="Pin To Top" Command="local:AppCommands.TogglePinCommand" InputGestureText="Alt-P" ToolTip="{StaticResource strTogglePinTip}"/>
+                <MenuItem x:Name="uxViewNoteReminderMenuItem" Header="Reminder..." Command="oz:AppCommands.ViewNoteReminderCommand" CommandParameter="MenuItem" InputGestureText="Alt-R" ToolTip="{StaticResource strToggleReminderTip}"/>
+                <MenuItem x:Name="uxViewNoteSettingsMenuItem" Header="Settings..." Command="oz:AppCommands.ViewNoteSettingsCommand" CommandParameter="MenuItem" InputGestureText="Alt-S" ToolTip="{StaticResource strToggleSettingsTip}"/>
+                <MenuItem x:Name="uxTogglePinMenuItem" Header="Pin To Top" Command="oz:AppCommands.TogglePinCommand" InputGestureText="Alt-P" ToolTip="{StaticResource strTogglePinTip}"/>
                 <Separator/>
                 <MenuItem x:Name="uxShowNotesMenuItem" Header="Show Notes" ToolTip="{StaticResource strShowNotesTip}">
-                    <MenuItem x:Name="uxShowAllNotesMenuItem" Header="Show All" Command="local:AppCommands.ShowAllNotesCommand" InputGestureText="Alt-X" ToolTip="{StaticResource strShowAllNotesTip}"/>
-                    <MenuItem x:Name="uxShowPrivateNotesMenuItem" Header="Show Private" Command="local:AppCommands.ShowPrivateNotesCommand" InputGestureText="Alt-Y" ToolTip="{StaticResource strShowPrivateNotesTip}"/>
-                    <MenuItem x:Name="uxShowPublicNotesMenuItem" Header="Show Public" Command="local:AppCommands.ShowPublicNotesCommand" InputGestureText="Alt-Z" ToolTip="{StaticResource strShowPublicNotesTip}"/>
+                    <MenuItem x:Name="uxShowAllNotesMenuItem" Header="Show All" Command="oz:AppCommands.ShowAllNotesCommand" InputGestureText="Alt-X" ToolTip="{StaticResource strShowAllNotesTip}"/>
+                    <MenuItem x:Name="uxShowPrivateNotesMenuItem" Header="Show Private" Command="oz:AppCommands.ShowPrivateNotesCommand" InputGestureText="Alt-Y" ToolTip="{StaticResource strShowPrivateNotesTip}"/>
+                    <MenuItem x:Name="uxShowPublicNotesMenuItem" Header="Show Public" Command="oz:AppCommands.ShowPublicNotesCommand" InputGestureText="Alt-Z" ToolTip="{StaticResource strShowPublicNotesTip}"/>
                     <Separator/>
                 </MenuItem>
-                <MenuItem Header="Preferences..." Command="local:AppCommands.ApplicationPrefsCommand" InputGestureText="Alt-F1" ToolTip="{StaticResource strAppPrefsTip}"/>
-                <MenuItem Header="About..." Command="local:AppCommands.ApplicationAboutCommand" ToolTip="{StaticResource strAppAboutTip}"/>
-                <MenuItem Header="Exit" Command="local:AppCommands.ExitApplicationCommand" InputGestureText="F3" ToolTip="{StaticResource strExitAppTip}"/>
+                <MenuItem Header="Preferences..." Command="oz:AppCommands.ApplicationPrefsCommand" InputGestureText="Alt-F1" ToolTip="{StaticResource strAppPrefsTip}"/>
+                <MenuItem Header="About..." Command="oz:AppCommands.ApplicationAboutCommand" ToolTip="{StaticResource strAppAboutTip}"/>
+                <MenuItem Header="Exit" Command="oz:AppCommands.ExitApplicationCommand" InputGestureText="F3" ToolTip="{StaticResource strExitAppTip}"/>
             </ContextMenu>
         </Grid.ContextMenu>
 
@@ -160,7 +154,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <DockPanel x:Name="uxToolBar" Grid.Row="0" MouseDown="OnToolBar_MouseDown" >
+        <DockPanel x:Name="uxToolBar" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Grid.Row="0" MouseDown="OnToolBar_MouseDown" >
             <DockPanel.ToolTip>
                 <TextBlock>
                     <Ellipse Fill="Green" Width="4" Height="4" Margin="4"/>
@@ -180,10 +174,10 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                         <Button x:Name="uxTextFormatButton" Click="OnTextFormatButton_Click" Content="{StaticResource TextFormat_Image}" ToolTip="{StaticResource strFontsTip}"/>
                         <xctk:ColorPicker x:Name="uxColorPicker" Width="36" Margin="4,0,0,0" ShowRecentColors="True" AvailableColorsHeader="" AvailableColorsSortingMode="HueSaturationBrightness" SelectedColorChanged="uxColorPicker_SelectedColorChanged"  ToolTip="{StaticResource strBackgroundsTip}"/>
                         <Separator/>
-                        <ToggleButton x:Name="uxReminderButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder_Image}" ToolTip="{StaticResource strToggleReminderTip}"/>
-                        <ToggleButton x:Name="uxSettingsButton" Margin="4,0,0,0" Command="local:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info_Image}" ToolTip="{StaticResource strToggleSettingsTip}"/>
+                        <ToggleButton x:Name="uxReminderButton" Margin="4,0,0,0" Command="oz:AppCommands.ViewNoteReminderCommand" Content="{StaticResource Reminder_Image}" ToolTip="{StaticResource strToggleReminderTip}"/>
+                        <ToggleButton x:Name="uxSettingsButton" Margin="4,0,0,0" Command="oz:AppCommands.ViewNoteSettingsCommand" Content="{StaticResource Info_Image}" ToolTip="{StaticResource strToggleSettingsTip}"/>
                         <Separator/>
-                        <ToggleButton x:Name="uxPinTab" Margin="4,0,0,0" Command="local:AppCommands.TogglePinCommand" Content="{StaticResource PinTabOff_Image}" ToolTip="{StaticResource strTogglePinTip}"/>
+                        <ToggleButton x:Name="uxPinTab" Margin="4,0,0,0" Command="oz:AppCommands.TogglePinCommand" Content="{StaticResource PinTabOff_Image}" ToolTip="{StaticResource strTogglePinTip}"/>
                         <Separator/>
                         <Button x:Name="uxDelNoteButton" Click="OnDelNoteButton_Click" Content="{StaticResource Del_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strDeleteNoteTip}"/>
                     </StackPanel>
@@ -193,7 +187,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                 <Label x:Name="uxNoteTitleLabel" Content="{Binding Title}" FontSize="12" FontWeight="Bold" MouseDoubleClick="OnNoteTitleLabel_MouseDoubleClick"/>
             </StackPanel>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button x:Name="uxCloseNoteButton" Command="local:AppCommands.CloseCommand"  Content="{StaticResource Close_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strCloseNoteTip}"/>
+                <Button x:Name="uxCloseNoteButton" Command="oz:AppCommands.CloseCommand"  Content="{StaticResource Close_Note_Image}"  Margin="4,0,4,0" ToolTip="{StaticResource strCloseNoteTip}"/>
             </StackPanel>
         </DockPanel>
         <StackPanel Grid.Row="1">
@@ -257,11 +251,11 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
             </StackPanel>
 
             <StackPanel >
-                <xctk:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="uxRichTextBox_TextChanged" PreviewKeyUp= "uxRichTextBox_PreviewKeyUp" MouseWheel="uxRichTextBox_MouseWheel" Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
+                <oz:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="uxRichTextBox_TextChanged" PreviewKeyUp= "uxRichTextBox_PreviewKeyUp"  Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
                     <xctk:RichTextBoxFormatBarManager.FormatBar >
                         <xctk:RichTextBoxFormatBar x:Name="RTBFB"/>
                     </xctk:RichTextBoxFormatBarManager.FormatBar>
-                    <xctk:RichTextBox.Resources>
+                    <oz:RichTextBox.Resources>
                         <Style TargetType="{x:Type Paragraph}">
                             <Setter Property="Margin" Value="0" />
                         </Style>
@@ -298,8 +292,8 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                             <EventSetter Event="MediaOpened" Handler="OnMediaElement_MediaOpened" />
                         </Style>
 
-                    </xctk:RichTextBox.Resources>
-                </xctk:RichTextBox>
+                    </oz:RichTextBox.Resources>
+                </oz:RichTextBox>
             </StackPanel>
 
         </StackPanel>
