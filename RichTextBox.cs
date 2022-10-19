@@ -18,9 +18,13 @@ namespace OmniZenNotes;
 public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
 {
     NoteViewer NoteViewer { get { return GetNoteViewer();} }
+    readonly FlowDocument FlowDocument;
 
     public RichTextBox() :base() { }
-    public RichTextBox(FlowDocument document) : base(document) {}    
+    public RichTextBox(FlowDocument document) : base(document) {
+        FlowDocument = document;
+    }    
+    
 
     NoteViewer GetNoteViewer() {
         var parent = Parent;
@@ -33,17 +37,22 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
         return null;
     }
     
+    protected override void OnTextChanged(TextChangedEventArgs e) {
+        if (Document.ContentEnd == Document.ContentStart) {
+            Console.WriteLine(e.ToString());
+        }
+    }
+    
     protected override void OnMouseWheel(MouseWheelEventArgs e) {
         if (Keyboard.Modifiers == ModifierKeys.Control) {
-            // TODO: Make Text Selections work
-            TextRange range = Selection;
-            if (!string.IsNullOrEmpty(range.Text)) {
-                var para = range.Start.Paragraph;
-                para.FontSize = Math.Max(e.Delta > 0 ? para.FontSize + 1 : para.FontSize - 1, 6);
+            if (! Selection.IsEmpty) {
+                double fontSize = (double)Selection.GetPropertyValue(FontSizeProperty);
+                fontSize =  Math.Max(e.Delta > 0 ? fontSize + 1 : fontSize - 1, 6);
+                Selection.ApplyPropertyValue(FontSizeProperty, fontSize);
             } else {
                 double fontSize = Math.Max(e.Delta > 0 ? FontSize + 1 : FontSize - 1, 6);
                 if (Foreground is SolidColorBrush scb) {
-                    SetFont(this, FontFamily, fontSize, scb.Color, FontStyle);
+                    SetFont(FontFamily, fontSize, scb.Color, FontStyle);
                 }
             }
         }
@@ -68,7 +77,7 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
         // Create a Hyperlink to given URL (happens when dragging URL from Chrome)
         if (args.Data.GetDataPresent(DataFormats.Text, true)) {
             string uri = args.Data.GetData(DataFormats.Text, true) as string;
-            GetNoteViewer().CreateHyperLink(uri);
+            NoteViewer.CreateHyperLink(uri, CaretPosition, Selection);
         }
 
         // Handle File based Drag & Drop Operation:
@@ -92,11 +101,11 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
                     case ".avi":
                     case ".mkv":
                         // Create an MediaElement and set the Source to the given file
-                        NoteViewer.CreateMediaElement(fi);
+                        FlowDocument.CreateMediaElement(fi, CaretPosition);
                         break;
                     default: {
                             // Try to insert it into the Note as Text:
-                            NoteViewer.InsertTextFromFile(fi);
+                            FlowDocument.InsertTextFromFile(fi, CaretPosition);
                             break;
                         }
                 }
@@ -110,26 +119,26 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
                     case ".bmp":
                     case ".tiff":
                     case ".ico":
-                        NoteViewer.SetDocumentBackground(fi);
+                        NoteViewer.SetDocumentBackground(fi, Document);
                         break;
                 }
             } else {
                 // Create Hyperlink to dropped file/folder/URL
-                NoteViewer.CreateHyperLink(fi);
+                NoteViewer.CreateHyperLink(fi, CaretPosition);
             }
             // Set the Note Title to the Dropped file's name:
             NoteViewer.SetNoteTitle(fi);
         }
     }    
     
-    static public void SetFont(RichTextBox richTextBox, FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
+    public void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
         // Keep the Window Font in sync with the RichTextBox Font:
         if (fontFamily != null) {
-            var doc = richTextBox.Document;
+            var doc = Document;
 
             // Create a TextRange for the Selected Text or the entire document.
-            TextRange range = richTextBox.Selection;
-            if (string.IsNullOrEmpty(richTextBox.Selection.Text)) {
+            TextRange range = Selection;
+            if (string.IsNullOrEmpty(Selection.Text)) {
                 range = new(doc.ContentStart, doc.ContentEnd);
                 range.Select(range.Start, range.End);
             }
@@ -143,23 +152,43 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
             }
 
             // Set the Font for the whole RichTextBox when no Text was selected
-            if (string.IsNullOrEmpty(richTextBox.Selection?.Text)) {
-                richTextBox.FontFamily = fontFamily;
-                richTextBox.FontSize = fontSize;
-                richTextBox.Foreground = new SolidColorBrush(fontColor);
-                richTextBox.FontStyle = fontStyle;
-                richTextBox.Foreground = new SolidColorBrush(fontColor);
+            if (string.IsNullOrEmpty(Selection?.Text)) {
+                FontFamily = fontFamily;
+                FontSize = fontSize;
+                Foreground = new SolidColorBrush(fontColor);
+                FontStyle = fontStyle;
+                Foreground = new SolidColorBrush(fontColor);
             }
         }
 
-        if (updateUXSettings && richTextBox.DataContext is Note note) {
-            note.UXSettings.FontFamily = richTextBox.FontFamily;
-            note.UXSettings.FontSize = richTextBox.FontSize;
-            note.UXSettings.FontColor = (richTextBox.Foreground as SolidColorBrush).Color;
-            note.UXSettings.FontStyle = richTextBox.FontStyle;
+        if (updateUXSettings && DataContext is Note note) {
+            note.UXSettings.FontFamily = FontFamily;
+            note.UXSettings.FontSize = FontSize;
+            note.UXSettings.FontColor = (Foreground as SolidColorBrush).Color;
+            note.UXSettings.FontStyle = FontStyle;
         }
     }
 
+    protected override void OnPreviewKeyUp(KeyEventArgs e) {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {
+            SetParagraphProperties(Document, CaretPosition.Paragraph);
+            string xaml = XamlWriter.Save(CaretPosition.Paragraph);
+            SignalRClient.OnSendSignalR(GetNoteViewer(), xaml);
+            base.OnPreviewKeyUp(e);
+        }
+
+        void SetParagraphProperties(System.Windows.Documents.FlowDocument doc, Paragraph p) {
+            p.Background = doc.Background;
+            p.FontFamily = doc.FontFamily;
+            p.FontSize = doc.FontSize;
+            p.FontStyle = doc.FontStyle;
+            p.FontStretch = doc.FontStretch;
+            p.FontWeight = doc.FontWeight;
+            p.Foreground = doc.Foreground;
+            if (DataContext is Note note) { p.Tag = note.ID; }
+        }
+    }
+    
     /*     protected override Size MeasureOverride(Size constraint) {
             if (this.Parent is System.Windows.Controls.StackPanel sp) {
                 OzRichTextBox rtb2 = sp.FindName("RichTextBox2") as OzRichTextBox;

@@ -20,20 +20,20 @@ public partial class NoteViewer : Window
             if (VM.Note.UXSettings is null) {
                 // Restore Window position and size from user settings save of last session
                 // RND: Use of CalculatePopupWindowPosition function (winuser.h) to keep window on screen
-                if (S.Default?.RestoreBounds is Rect restoreBounds) {
+                if (Properties.Settings.Default?.RestoreBounds is Rect restoreBounds) {
                     Left = restoreBounds.Left; Top = restoreBounds.Top;
                     Width = restoreBounds.Width; Height = restoreBounds.Height;
                 }
 
-                SetFont(S.Default.Font, S.Default.FontSize, S.Default.FontColor, FontStyle, updateUXSettings: false);
-                uxColorPicker.SelectedColor = S.Default.BackgroundColor;
-                SetBackgroundColor(S.Default.BackgroundColor, updateUXSettings: false);
-                uxOptionsExpander.IsExpanded = S.Default.OptionsExpanded;
-                Topmost = S.Default.Topmost;
+                SetFont(Properties.Settings.Default.Font, Properties.Settings.Default.FontSize, Properties.Settings.Default.FontColor, FontStyle, updateUXSettings: false);
+                uxColorPicker.SelectedColor = Properties.Settings.Default.BackgroundColor;
+                SetBackgroundColor(Properties.Settings.Default.BackgroundColor, updateUXSettings: false);
+                uxOptionsExpander.IsExpanded = Properties.Settings.Default.OptionsExpanded;
+                Topmost = Properties.Settings.Default.Topmost;
             }
 
             // Auto Save Settings
-            if (S.Default.AutoSave is int seconds && seconds > 0) {
+            if (Properties.Settings.Default.AutoSave is int seconds && seconds > 0) {
                 AutoSaveTimer = new();
                 AutoSaveTimer.Tick += new((sender, e) => Save(saveAsync: true));
                 AutoSaveTimer.Interval = TimeSpan.FromSeconds(seconds);
@@ -130,22 +130,22 @@ public partial class NoteViewer : Window
         SaveUXSettings();
 
         // Save the App wide default settings:
-        S.Default.RestoreBounds = RestoreBounds;
-        S.Default.WindowState = WindowState;
-        S.Default.Font = FontFamily;
-        S.Default.FontSize = FontSize;
+        Properties.Settings.Default.RestoreBounds = RestoreBounds;
+        Properties.Settings.Default.WindowState = WindowState;
+        Properties.Settings.Default.Font = FontFamily;
+        Properties.Settings.Default.FontSize = FontSize;
 
         if (uxRichTextBox.Foreground is SolidColorBrush fgscb2) {
-            S.Default.FontColor = fgscb2.Color;
+            Properties.Settings.Default.FontColor = fgscb2.Color;
         }
 
         if (uxRichTextBox.Document.Background is SolidColorBrush scb) {
-            S.Default.BackgroundColor = scb.Color;
+            Properties.Settings.Default.BackgroundColor = scb.Color;
         }
 
-        S.Default.OptionsExpanded = uxOptionsExpander.IsExpanded;
-        S.Default.Topmost = Topmost;
+        Properties.Settings.Default.OptionsExpanded = uxOptionsExpander.IsExpanded;
+        Properties.Settings.Default.Topmost = Topmost;
 
-        S.Default.Save();
+        Properties.Settings.Default.Save();
     }
 }

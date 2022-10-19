@@ -11,51 +11,77 @@ using Microsoft.WindowsAPICodePack.Shell;
 
 namespace OmniZenNotes;
 
-public partial class NoteViewer : Window
-{
-    void uxRichTextBox_TextChanged(object sender, TextChangedEventArgs e) {
-    }
-
+public class FlowDocument : System.Windows.Documents.FlowDocument {    
+    public FlowDocument() : base() { }
+    public FlowDocument(Block block) : base(block) { }    
+   
     // Create an MediaElement and set the Source to the given file
-    public void CreateMediaElement(FileInfo fi) {
-        TextPointer tp = uxRichTextBox.CaretPosition;
+    public void CreateMediaElement(FileInfo fi, TextPointer tp) {
 
         MediaElement me = new() { Source = new Uri(fi.FullName), ToolTip = fi.FullName };
+        me.MediaOpened += (object sender, RoutedEventArgs e) => {
+            if (sender is MediaElement me && me.Position == TimeSpan.FromSeconds(0)) {
+                me.Position = TimeSpan.FromSeconds(0);
+            };
+        };
+
+        me.MediaEnded += (object sender, RoutedEventArgs e) => {
+            if (sender is MediaElement me) {
+                me.Position = TimeSpan.FromSeconds(0);
+            }
+        };
+        
+        me.MediaFailed += (object sender, ExceptionRoutedEventArgs e) => {
+            if (sender is MediaElement me) {
+                // Ignore {System.Runtime.InteropServices.COMException(0xC00D109B): 0xC00D109B}
+                if (e.ErrorException.HResult != -1072885605) {   // Erroneous error before MediaOpen is OK
+                    var error = $"{me.STR("strMediaFailedMsg")} {me.Source} : ";
+                    var iuic = me.Parent as InlineUIContainer;
+                    iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
+                    //EX.LogException(e.ErrorException, error);
+                }
+            }
+        };
+
 #pragma warning disable CA1806 // Never used - is OK due to weak ref
         new InlineUIContainer(me, tp);
 #pragma warning restore CA1806
-
+        Debug.WriteLine($"Inserted MediaElement Blocks.Count = {Blocks.Count}");
     }
-
     // Insert Text from given file as a Text Run
-    public void InsertTextFromFile(FileInfo fi) {
+    public void InsertTextFromFile(FileInfo fi, TextPointer tp) {
         // Try to insert it into the Note as Text:
         // Detect byte order marks at the beginning of the file to see if we have text
-        TextPointer tp = uxRichTextBox.CaretPosition;
         using StreamReader sr = new(fi.FullName, true);
-        if (sr.CurrentEncoding.EncodingName.Contains("utf", StringComparison.InvariantCultureIgnoreCase)) {
-            // TODO: Determine MAX size text file supported
-            tp.InsertTextInRun(sr.ReadToEnd());
-            sr.Close();
-            SetFont(VM.Note.UXSettings.FontFamily, VM.Note.UXSettings.FontSize, VM.Note.UXSettings.FontColor, FontStyle);
+        if (sr.CurrentEncoding.EncodingName.Contains("utf", StringComparison.OrdinalIgnoreCase)) {
+            // TODO: Determine MAX size text file supported (currently 64KB)
+            const long MAX_TEXT = 1024 * 64;
+            if (fi.Length <= MAX_TEXT) {
+                tp.InsertTextInRun(sr.ReadToEnd());
+                sr.Close();
+                Debug.WriteLine($" Inserted Text Blocks.Count = {Blocks.Count}");
+            }
+            EX.LogException(new Exception($"{fi.FullName} Exceed MAX Text Size of {MAX_TEXT}"), "File Size Exceeded MAX", true);
         }
-
     }
+}
 
+public partial class NoteViewer : Window
+{
     // Set the Document background to the given file
     // RND: Make a MediaElement the Background
-    public void SetDocumentBackground(FileInfo fi) {
+    public void SetDocumentBackground(FileInfo fi, System.Windows.Documents.FlowDocument doc) {
         Image image = CreateImage(fi);
         ImageBrush imageBrush = new(image.Source);
-        if (uxRichTextBox.Document.Background is SolidColorBrush scb && scb.Color.A < 255) {
+        if (doc.Background is SolidColorBrush scb && scb.Color.A < 255) {
             imageBrush.Opacity = scb.Color.A / 255.0f;
         }
-        uxRichTextBox.Document.Background = imageBrush;
+        doc.Background = imageBrush;
+        Debug.WriteLine($" SetDocumentBackground Blocks.Count = {doc.Blocks.Count}");
     }
-
+    
     // Create Hyperlink for given file/folder/URL
-    public void CreateHyperLink(FileInfo fi) {
-        TextPointer tp = uxRichTextBox.CaretPosition;
+    public static void CreateHyperLink(FileInfo fi, TextPointer tp) {
         try {
             CreateHyperLink(tp, tp, new(fi.FullName));
         } catch (Exception ex) {
@@ -73,10 +99,8 @@ public partial class NoteViewer : Window
         }
     }
     // Create HyperLink to given URL 
-    public void CreateHyperLink(string uri) {
-        TextPointer tp = uxRichTextBox.CaretPosition;
+    public static void CreateHyperLink(string uri, TextPointer tp, TextRange range) {
         try {
-            TextRange range = uxRichTextBox.Selection;
             TextPointer tpStart = range.IsEmpty ? tp : range.Start;
             TextPointer tpEnd = range.IsEmpty ? tp : range.End;
             CreateHyperLink(tpStart, tpEnd, new(uri));
@@ -102,9 +126,9 @@ public partial class NoteViewer : Window
     Image CreateImage(FileInfo fi) {
         Image image = new();
         try {
-            var temp = Path.GetTempFileName();
-            File.Copy(fi.FullName, temp, true);
-            BitmapImage bitmap = new(new(temp));
+            var tempFileName = Path.GetTempFileName();
+            File.Copy(fi.FullName, tempFileName, true);
+            BitmapImage bitmap = new(new(tempFileName));
             image.Source = bitmap;
             image.Width = Math.Min(bitmap.PixelWidth, Width);
             image.Height = Math.Min(bitmap.PixelHeight, Height - uxToolBar.ActualHeight);
@@ -140,30 +164,6 @@ public partial class NoteViewer : Window
         hyperlink.Tag = image;
     }
 
-    public void OnMediaElement_MediaEnded(object sender, RoutedEventArgs e) {
-        if (sender is MediaElement me) {
-            me.Position = TimeSpan.FromSeconds(0);
-        }
-    }
-
-    public void OnMediaElement_MediaOpened(object sender, RoutedEventArgs e) {
-        if (sender is MediaElement me && me.Position == TimeSpan.FromSeconds(0)) {
-            me.Position = TimeSpan.FromSeconds(0);
-        }
-    }
-
-    public void OnMediaElement_MediaFailed(object sender, ExceptionRoutedEventArgs e) {
-        if (sender is MediaElement me) {
-            // Ignore {System.Runtime.InteropServices.COMException(0xC00D109B): 0xC00D109B}
-            if (e.ErrorException.HResult != -1072885605) {   // Erroneous error before MediaOpen is OK
-                var error = $"{STR("strMediaFailedMsg")} {me.Source} : ";
-                var iuic = me.Parent as InlineUIContainer;
-                iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error} {e.ErrorException.Message}"));
-                //EX.LogException(e.ErrorException, error);
-            }
-        }
-    }
-
     // Image Element was Loaded
     public void OnImageElement_Loaded(object sender, RoutedEventArgs e) {
         if (sender is Image im) {
@@ -175,7 +175,7 @@ public partial class NoteViewer : Window
                     im.Source = i.Source;
                 } else {
                     // Inform the user that the image file no longer found
-                    string error = $"{STR("strImageFailedMsg")} {uri.AbsolutePath}";
+                    string error = $"{S("strImageFailedMsg")} {uri.AbsolutePath}";
                     InlineUIContainer iuic = im.Parent as InlineUIContainer;
                     if (iuic.ContentStart.Paragraph.Inlines.Count < 2) {
                         iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error}"));
@@ -232,13 +232,6 @@ public partial class NoteViewer : Window
             Debug.WriteLine($"OnHyperlink_MouseWheel Delta={e.Delta:F0} newWidth {newWidth:F0} Thumbnail {thumbnail.Width} scaled by {image.Tag:F2}");
         }
     }
+    
 
-    // Set the Note Title from given file if NOT already set
-    public void SetNoteTitle(FileInfo fi) {
-        if (VM.Note.Title.Contains("New Note", StringComparison.InvariantCultureIgnoreCase)) {
-            VM.Note.Title = fi.Name; Title = fi.Name;
-            uxNoteTitleLabel.Content = fi.Name;
-            uxSettingsPropertyGrid.Update();
-        }
-    }
 }

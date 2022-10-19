@@ -21,7 +21,7 @@ public class Note : Entity
     }
 
     public Note(Guid guid) : base(guid) {
-        Document = new();
+        Document = new FlowDocument(new Paragraph(new Run("")));
         Task = new();
     }
 

@@ -251,7 +251,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
             </StackPanel>
 
             <StackPanel >
-                <oz:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}"  PreviewDragOver="uxRichTextBox_PreviewDragOver" PreviewDrop="uxRichTextBox_PreviewDrop" TextChanged="uxRichTextBox_TextChanged" PreviewKeyUp= "uxRichTextBox_PreviewKeyUp"  Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
+                <oz:RichTextBox x:Name="uxRichTextBox" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Height="{Binding ActualHeight, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Background="{x:Null}" BorderBrush="{x:Null}" BorderThickness="0" FontSize="14" HorizontalAlignment="Left" FontFamily="{DynamicResource {x:Static SystemFonts.MessageFontFamilyKey}}" Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" >
                     <xctk:RichTextBoxFormatBarManager.FormatBar >
                         <xctk:RichTextBoxFormatBar x:Name="RTBFB"/>
                     </xctk:RichTextBoxFormatBarManager.FormatBar>
@@ -287,9 +287,6 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
                                 <Setter Property="Cursor" Value="Hand" />
                             </Trigger>
                             </Style.Triggers>
-                            <EventSetter Event="MediaFailed" Handler="OnMediaElement_MediaFailed" />
-                            <EventSetter Event="MediaEnded" Handler="OnMediaElement_MediaEnded" />
-                            <EventSetter Event="MediaOpened" Handler="OnMediaElement_MediaOpened" />
                         </Style>
 
                     </oz:RichTextBox.Resources>

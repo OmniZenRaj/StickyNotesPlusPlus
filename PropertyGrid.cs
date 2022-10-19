@@ -90,12 +90,10 @@ public partial class NoteViewer : Window
                     SetFont(uxRichTextBox.FontFamily, uxRichTextBox.FontSize, foregroundColor, (FontStyle)e.NewValue);
                     break;
                 case "Topmost":
-                    Topmost = (bool)e.NewValue;
-                    UpdatePinTabUX();
+                    SetTopMost((bool)e.NewValue);
                     break;
                 case "Title":
-                    Title = (string)e.NewValue;
-                    uxNoteTitleLabel.Content = Title;
+                    SetNoteTitle((string)e.NewValue);
                     break;
 
                 default: break;

@@ -75,8 +75,8 @@ public partial class NoteViewer : Window
 
     void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
         if (!IsExiting && App.NoteViewers.Count == 1 && VM.Note != null) {
-            string title = $"{STR("strCloseLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
-            string msg = $"{STR("strCloseLastNoteConfirmPrompt")}";
+            string title = $"{S("strCloseLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+            string msg = $"{S("strCloseLastNoteConfirmPrompt")}";
             e.Cancel = !ConfirmUserAction(title, msg);
         }
 
@@ -105,29 +105,6 @@ public partial class NoteViewer : Window
         }
     }
  */
-    // RND with SignalR Comms
-    void uxRichTextBox_PreviewKeyUp(object sender, KeyEventArgs e) {
-        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {
-            TextPointer tp = uxRichTextBox.CaretPosition;
-            Paragraph p = tp.Paragraph;
-            SetParagraphProperties(uxRichTextBox.Document, p, VM.Note);
-            string xaml = XamlWriter.Save(p);
-            SignalRClient.OnSendSignalR(this, xaml);
-
-        }
-        // TODO: Get formatting properties from paragraph being sent (not the doc)
-        static void SetParagraphProperties(FlowDocument doc, Paragraph p, Note note) {
-            p.Background = doc.Background;
-            p.FontFamily = doc.FontFamily;
-            p.FontSize = doc.FontSize;
-            p.FontStyle = doc.FontStyle;
-            p.FontStretch = doc.FontStretch;
-            p.FontWeight = doc.FontWeight;
-            p.Foreground = doc.Foreground;
-            p.Tag = note.ID;
-        }
-        
-    }
 
     void OnToolBar_MouseDown(object sender, MouseButtonEventArgs e) {
         if (e.LeftButton == MouseButtonState.Pressed) {
@@ -201,9 +178,26 @@ public partial class NoteViewer : Window
     }
 
     void SetFont(FontFamily fontFamily, double fontSize, Color fontColor, FontStyle fontStyle, bool updateUXSettings = true) {
-        RichTextBox.SetFont(uxRichTextBox, fontFamily, fontSize, fontColor, fontStyle, updateUXSettings);
+        uxRichTextBox.SetFont(fontFamily, fontSize, fontColor, fontStyle, updateUXSettings);
     }
 
+    void SetTopMost(bool topMost) {
+        Topmost = topMost; 
+        UpdatePinTabUX();        
+    }
+    void SetNoteTitle(string title) {
+        Title = title;
+        VM.Note.Title = title;
+        uxNoteTitleLabel.Content = Title;
+        uxSettingsPropertyGrid.Update();
+    }
+    // Set the Note Title from given file if NOT already set
+    public void SetNoteTitle(FileInfo fi) {
+        if (VM.Note.Title.Contains("New Note", StringComparison.InvariantCultureIgnoreCase)) {
+            SetNoteTitle(fi.Name);
+        }
+    }    
+    
     void OnFillBackgroundButton_Click(object sender, RoutedEventArgs e) {
 
         using System.Windows.Forms.ColorDialog cd = new();
@@ -375,13 +369,13 @@ public partial class NoteViewer : Window
 
         // Add a Colors... Menu Item to bring up Colors Dialog box
         // TODO: Try to use the newer Wpf Toolkit ColorPicker
-        MenuItem item = new() { Header = "Colors...", ToolTip = $"{STR("strSetBackgroundFromColorDialogTip")}" };
+        MenuItem item = new() { Header = "Colors...", ToolTip = $"{S("strSetBackgroundFromColorDialogTip")}" };
         item.Click += (object sender, RoutedEventArgs e) => {
             if (sender is MenuItem mi) { OnFillBackgroundButton_Click(sender, e); }
         };
         uxSelectBackgroundMenuItem.Items.Add(item);
 
-        item = new() { Header = "Insert Image...", ToolTip = $"{STR("strSetBackgroundFromImageTip")}" };
+        item = new() { Header = "Insert Image...", ToolTip = $"{S("strSetBackgroundFromImageTip")}" };
         item.Click += (object sender, RoutedEventArgs e) => {
             // TODO: Add Open File Dialog to Select an Image to Insert
         };
@@ -395,7 +389,7 @@ public partial class NoteViewer : Window
                 Tag = color,
                 Background = new SolidColorBrush(color),
                 Foreground = new SolidColorBrush(AdjustColor(color)),
-                ToolTip = $"{STR("strSetBackgroundToColorTip")} {prop.Name}",
+                ToolTip = $"{S("strSetBackgroundToColorTip")} {prop.Name}",
             };
 
             // Handle color selection from auto generated submenu
@@ -557,10 +551,10 @@ public partial class NoteViewer : Window
                 Child = i
             };
             if (doToolTip) {
-                b.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
+                b.ToolTip = $@"{user}: {text}   (sent {date.ToLocalTime().FriendlyText()})";
                 b.ToolTipOpening += (object sender, ToolTipEventArgs e) => {
                     if (sender is Border b) {
-                        b.ToolTip = $@"{user}: {text}   (sent {U.Extensions.DateTimeFriendlyText(date.ToLocalTime())})";
+                        b.ToolTip = $@"{user}: {text}   (sent {date.ToLocalTime().FriendlyText()})";
                     }
                 };
             }
@@ -602,7 +596,7 @@ public partial class NoteViewer : Window
             image.Source = new BitmapImage(hubUri.Uri);
         } else {
             // 2nd look for for the avatar image in the local resources  (if above not found/accessable)
-            Uri assetsUri = new(S.Default.Avatar_Uri, UriKind.Relative);
+            Uri assetsUri = new(Properties.Settings.Default.Avatar_Uri, UriKind.Relative);
             image.Source = new BitmapImage(assetsUri);
         }
 
@@ -620,11 +614,8 @@ public partial class NoteViewer : Window
         return mbr == MessageBoxResult.Yes || mbr == MessageBoxResult.OK;
     }
 
-    public string STR(string resourceKey) {
-        if (TryFindResource(resourceKey) is System.Windows.Documents.Run run) {
-            return run.Text;
-        };
-        return "*** NOT FOUND ***";
+    public string S(string resourceKey) {
+        return this.STR(resourceKey);
     }
     #endregion
 }

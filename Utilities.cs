@@ -691,9 +691,26 @@ public static class Exceptions
 
 public static class Extensions
 {
+    // Retrieve a String from FrameworkElement's Application resource
+    public static string STR(this System.Windows.FrameworkElement self, string resourceKey) {
+        if (self.TryFindResource(resourceKey) is System.Windows.Documents.Run run) {
+            return run.Text;
+        };
+        return "*** NOT FOUND ***";
+    }
 
+    public static T GetVisualParent<T>(this System.Windows.FrameworkElement self) {
+        var parent = self.Parent;
+        while (parent is System.Windows.FrameworkElement p)
+            if (p is T t) {
+                return t;
+            } else {
+                parent = p.Parent;
+            }
+        return default;
+    }
+    
     // ListBox Generic Extension Methods:
-
     // Run an Action delegate on all the Selected Items of the ListBox
     public static void RunAction<T>(this System.Windows.Controls.ListBox self, Action<T> action) {
         if (self.DataContext is ICollection<T>) {

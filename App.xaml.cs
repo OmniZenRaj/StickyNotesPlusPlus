@@ -7,6 +7,7 @@ global using S = OmniZenNotes.Properties.Settings;
 global using G = Utilities.Graphics;
 global using SH = Utilities.Shell;
 global using EX = Utilities.Exceptions;
+global using Utilities; // needed to access Extension methods 
 
 using System.Windows;
 using System.Windows.Resources;
