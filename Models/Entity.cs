@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using System.Data.SQLite;
 using System.Security.Principal;
+using System.Collections;
 
 namespace OmniZenNotes.Models;
 
@@ -13,8 +14,8 @@ public class Entity
     public string Description { get; private set; }
 
     // Inheritance & Composition Fields
-    public Guid SuperID { get; private set; }
-    public Guid ParentID { get; private set; }
+    public Guid SuperID { get; set; }   // Inheritance Super
+    public Guid ParentID { get; set; }  // Composition Parent
 
     // UX Fields:
     [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
@@ -37,12 +38,42 @@ public class Entity
     public Entity() {
     }
 
+    public bool InheritsFrom(Note super) {
+        return super.ID == SuperID;
+    }
+
+    public static ArrayList InheritedChildren(Note super) {
+        ArrayList subNotes = new();
+        foreach( var note in Repository.Notes) {
+            if (note.InheritsFrom(super)) {
+                subNotes.Add(note);
+            }
+        }
+        return subNotes;
+    }
+
+    public bool IsComposedBy(Note parent) {
+        return ParentID == parent.ID;
+    }
+
+    public static ArrayList CompositionChildren(Note parent) {
+        ArrayList childNotes = new();
+        foreach (var note in Repository.Notes) {
+            if (note.IsComposedBy(parent)) {
+                childNotes.Add(note);
+            }
+        }
+        return childNotes;
+    }
+
     protected void LoadFromSQL(SQLiteDataReader reader) {
         // Load common Entity fields:
         try {
 
             ID = GetGuid(reader, "ID");
-
+            SuperID = GetGuid(reader, "SuperID");
+            ParentID = GetGuid(reader, "ParentID");            
+            
             Name = GetString(reader, "Name");
             Description = GetString(reader, "Description");
 
@@ -65,9 +96,12 @@ public class Entity
     public void LoadToSQL(SQLiteCommand cmd) {
         try {
             cmd.Parameters.AddWithValue("@ID", ID.ToString());
+            cmd.Parameters.AddWithValue("@SuperID", SuperID.ToString());
+            cmd.Parameters.AddWithValue("@ParentID", ParentID.ToString());
+
             cmd.Parameters.AddWithValue("@Name", Name);
             cmd.Parameters.AddWithValue("@Description", Description);
-            cmd.Parameters.AddWithValue("@UXSettings", Utilities.Json.GetJsonFromObject(UXSettings));
+            cmd.Parameters.AddWithValue("@UXSettings", Json.GetJsonFromObject(UXSettings));
             cmd.Parameters.AddWithValue("@OwnerSID", Security.OwnerSID);
             cmd.Parameters.AddWithValue("@Permissions", Security.Permissions.ToString());
             cmd.Parameters.AddWithValue("@CreatedBy", Security.CreatedBy);

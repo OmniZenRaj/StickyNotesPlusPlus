@@ -49,9 +49,11 @@ internal class Repository
             SQLiteConnection conn = GetDBConnection();
 
             string query = $@"INSERT INTO Note
-                    (ID, Name, Description , Title, Document, TaskID, UXSettings, OwnerSID, Permissions, CreatedBy, UpdatedBy )
-                    VALUES(@ID, @Name, @Description, @Title, @Document, @TaskID, @UXSettings, @OwnerSID, @Permissions, @CreatedBy, @UpdatedBy)
+                    (ID, SuperID, ParentID, Name, Description , Title, Document, TaskID, UXSettings, OwnerSID, Permissions, CreatedBy, UpdatedBy )
+                    VALUES(@ID, @SuperID, @ParentID, @Name, @Description, @Title, @Document, @TaskID, @UXSettings, @OwnerSID, @Permissions, @CreatedBy, @UpdatedBy)
                     ON CONFLICT(ID) DO UPDATE SET
+                        SuperID=excluded.SuperID,
+                        ParentID=excluded.ParentID,
                         Name=excluded.Name,
                         Description=excluded.Description,
                         Title=excluded.Title,
@@ -112,16 +114,24 @@ internal class Repository
         }
     }
 
-    public static Note CreateNote(Note copy = null, Notebook notebook = null) {
+    public static Note CreateNote(Note copy = null, Notebook notebook = null, bool inherit = false) {
 
         notebook ??= DefaultNotebook;
 
-        Note note = new() { Title = $"New Note {Notes.Count + 1}", };
+        Note note = new();
 
         if (copy != null) {
+            if (inherit) { note.SuperID = copy.ID; }
             note.UXSettings.CloneFrom(copy.UXSettings);
-            note.Document.Background = copy.Document.Background;
+            note.Document.Background = copy.Document.Background;            
         }
+        int maxTitleNum = App.GetMaxWindowTitleNumber(note);
+        string title = $"New Note { maxTitleNum + 1}";
+        if (note.SuperID != Guid.Empty) {
+            Note super = GetNote(note.SuperID);
+            title = $"{super.Title} (copy { maxTitleNum + 1})";
+       }
+        note.Title = title;
 
         notebook.Notes.Add(note);           // Add to owner notebook
         Notes.Add(note);                    // Add to App wide Notes collection
@@ -185,9 +195,11 @@ internal class Repository
             SQLiteConnection conn = GetDBConnection();
 
             string query = $@"INSERT INTO Task
-                    (ID, Name, Description, Subject, Status, Priority, StartDTS, DueDTS, CompletedDTS, TotalWork, ActualWork, Reminder, UXSettings, OwnerSID, CreatedBy, UpdatedBy )
-                    VALUES(@ID, @Name, @Description, @Subject, @Status, @Priority, @StartDTS, @DueDTS, @CompletedDTS, @TotalWork, @ActualWork, @Reminder, @UXSettings, @OwnerSID, @CreatedBy, @UpdatedBy)
+                    (ID, SuperID, ParentID, Name, Description, Subject, Status, Priority, StartDTS, DueDTS, CompletedDTS, TotalWork, ActualWork, Reminder, UXSettings, OwnerSID, CreatedBy, UpdatedBy )
+                    VALUES(@ID, @SuperID, @ParentID, @Name, @Description, @Subject, @Status, @Priority, @StartDTS, @DueDTS, @CompletedDTS, @TotalWork, @ActualWork, @Reminder, @UXSettings, @OwnerSID, @CreatedBy, @UpdatedBy)
                     ON CONFLICT(ID) DO UPDATE SET
+                        SuperID=excluded.SuperID,
+                        ParentID=excluded.ParentID,
                         Name=excluded.Name,
                         Description=excluded.Description,
                         Subject=excluded.Subject,
