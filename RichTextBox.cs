@@ -25,7 +25,6 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
         FlowDocument = document;
     }    
     
-
     NoteViewer GetNoteViewer() {
         var parent = Parent;
         while (parent is FrameworkElement p)
@@ -104,9 +103,9 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
                         FlowDocument.CreateMediaElement(fi, CaretPosition);
                         break;
                     default: {
-                            // Try to insert it into the Note as Text:
-                            FlowDocument.InsertTextFromFile(fi, CaretPosition);
-                            break;
+                        // Try to insert it into the Note as Text:
+                        FlowDocument.InsertTextFromFile(fi, CaretPosition);
+                        break;
                         }
                 }
             } else if (args.KeyStates == DragDropKeyStates.AltKey) {
@@ -138,26 +137,23 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
 
             // Create a TextRange for the Selected Text or the entire document.
             TextRange range = Selection;
-            if (string.IsNullOrEmpty(Selection.Text)) {
-                range = new(doc.ContentStart, doc.ContentEnd);
-                range.Select(range.Start, range.End);
+            if (Selection.IsEmpty) {
+                // Get the current text cursor insertion point                
+                range = new(doc.ContentEnd, doc.ContentEnd);
             }
 
             // Set the Font for the Selected Text or the whole RichTextBox:
-            if (!range.IsEmpty) {
-                range.ApplyPropertyValue(FlowDocument.FontSizeProperty, fontSize);
-                range.ApplyPropertyValue(FlowDocument.FontStyleProperty, fontStyle.ToString());
-                range.ApplyPropertyValue(FlowDocument.ForegroundProperty, fontColor.ToString());
-                range.ApplyPropertyValue(FlowDocument.FontFamilyProperty, U.Graphics.GetFamilyFontName(fontFamily));
-            }
+            range.ApplyPropertyValue(FontSizeProperty, fontSize);
+            range.ApplyPropertyValue(FontStyleProperty, fontStyle.ToString());
+            range.ApplyPropertyValue(ForegroundProperty, fontColor.ToString());
+            range.ApplyPropertyValue(FontFamilyProperty, Graphics.GetFamilyFontName(fontFamily));
 
             // Set the Font for the whole RichTextBox when no Text was selected
             if (string.IsNullOrEmpty(Selection?.Text)) {
-                FontFamily = fontFamily;
-                FontSize = fontSize;
-                Foreground = new SolidColorBrush(fontColor);
-                FontStyle = fontStyle;
-                Foreground = new SolidColorBrush(fontColor);
+                doc.FontFamily = fontFamily;
+                doc.FontSize = fontSize;
+                doc.Foreground = new SolidColorBrush(fontColor);
+                doc.FontStyle = fontStyle;
             }
         }
 

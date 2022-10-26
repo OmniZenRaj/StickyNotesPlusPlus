@@ -1,6 +1,5 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
-using System.Diagnostics;
 
 namespace OmniZenNotes;
 

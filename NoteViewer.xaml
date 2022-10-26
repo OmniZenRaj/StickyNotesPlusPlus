@@ -57,7 +57,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         </Style>
         <!-- NLS: Globalization with x:Uid & Translation into satellite resource assembly -->
         <!-- NLS: ToolTip Strings -->
-        <Run x:Key="strAddNoteTip" Text="Create a new Note using current Note as template."/>
+        <Run x:Key="strAddNoteTip" Text="Create a new Note using a copy of current Note. Hold Control key to create a Child Note from current Note as template."/>
         <Run x:Key="strExpandTip" Text="Press to Expand or Collapse additional Toolbar actions"/>
         <Run x:Key="strFontsTip" Text="Select Note Text Font Properties"/>
         <Run x:Key="strBackgroundsTip" Text="Select and Customize Note Background Color Properties"/>
@@ -154,7 +154,7 @@ Loaded="OnLoaded" MouseDoubleClick="OnMouseDoubleClick" Activated="OnActivated" 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <DockPanel x:Name="uxToolBar" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Grid.Row="0" MouseDown="OnToolBar_MouseDown" >
+        <DockPanel x:Name="uxToolBar" HorizontalAlignment="Left" Width="{Binding ActualWidth, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type oz:NoteViewer}}}" Grid.Row="0" MouseDown="OnToolBar_MouseDown" >
             <DockPanel.ToolTip>
                 <TextBlock>
                     <Ellipse Fill="Green" Width="4" Height="4" Margin="4"/>

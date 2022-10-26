@@ -125,13 +125,7 @@ internal class Repository
             note.UXSettings.CloneFrom(copy.UXSettings);
             note.Document.Background = copy.Document.Background;            
         }
-        int maxTitleNum = App.GetMaxWindowTitleNumber(note);
-        string title = $"New Note { maxTitleNum + 1}";
-        if (note.SuperID != Guid.Empty) {
-            Note super = GetNote(note.SuperID);
-            title = $"{super.Title} (copy { maxTitleNum + 1})";
-       }
-        note.Title = title;
+        note.Title = App.GetNextWindowTitle(note);
 
         notebook.Notes.Add(note);           // Add to owner notebook
         Notes.Add(note);                    // Add to App wide Notes collection

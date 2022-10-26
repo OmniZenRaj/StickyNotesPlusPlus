@@ -16,15 +16,9 @@
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false,
-            // Note that JetBrains dotPeek symbol server will not allow debugging into MS code because
-            // The .pdb files that it generates are Windows PDB files and not supported by .NET Core debugger.
-            "logging": {"moduleLoad": false},
+            "logging": {"moduleLoad": false, "threadExit": false, "exceptions": true , "processExit": false},
             "justMyCode": true,
             "requireExactSource": false,
-            "symbolOptions": {
-                "searchPaths": ["http://localhost:33417/"],
-                "searchMicrosoftSymbolServer": false
-            }
         },
         {
             "name": ".NET Core Attach",

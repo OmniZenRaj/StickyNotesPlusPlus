@@ -13,7 +13,7 @@ public class NoteViewModel
         Note = note;
     }
     
-    public static Note CreateNewNote(Note copy) {
-        return Repository.CreateNote(copy);
+    public static Note CreateNewNote(Note copy, bool inherit = false) {
+        return Repository.CreateNote(copy: copy, inherit: inherit);
     }
 }

@@ -1,5 +1,6 @@
 ﻿global using System;
 global using System.IO;
+global using System.Diagnostics;
 
 global using OmniZenNotes.Models;
 global using U = Utilities;
@@ -13,7 +14,7 @@ using System.Windows;
 using System.Windows.Resources;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace OmniZenNotes;
 
@@ -116,6 +117,62 @@ public partial class App : Application
 
         foreach (NoteViewer nv in NoteViewers) {
             nv.SaveSettings();
+        }
+    }
+
+    internal static NoteViewer GetOverlappingWindow(Rect placement) {
+        foreach (var nv in NoteViewers) {
+            placement.Inflate(1, 1); // Accounts for rounding
+            if( placement.Contains(nv.RestoreBounds)) {
+                return nv;
+            }
+        }
+        return null;
+    }
+
+    internal static NoteViewer GetWindowByTitle(string title, bool exactMatch = true) {
+        foreach (var nv in NoteViewers) {
+            if (exactMatch && nv.Title.EqualsIC(title)) { return nv; }
+            if (!exactMatch && nv.Title.ContainsIC(title)) { return nv; }
+        }
+        return null;
+    }
+    
+    // Create a smart new Title based on existing Notes and Inheritance     
+    internal static string GetNextWindowTitle(Note note) {
+
+        int maxRootTitleNum = 0; int maxChildTitleNum = 0;
+        foreach (var nv in NoteViewers) {
+            if (nv.VM.Note.SuperID == Guid.Empty) {
+                maxRootTitleNum = ParseMaxTitleNum(maxRootTitleNum, nv.VM.Note.Title, @"(\d+)");
+            }
+            if(note.SuperID == nv.VM.Note.SuperID) {
+                maxChildTitleNum = ParseMaxTitleNum(++maxChildTitleNum, nv.VM.Note.Title, @"copy (\d+)");
+            }
+        }
+
+        string nextTitle = $"New Note {maxRootTitleNum + 1}";
+        if (note.SuperID != Guid.Empty) { 
+            Note super = Repository.Notes.Find((n) => { return n.ID == note.SuperID; });
+            if (super != null) {
+                nextTitle = $"{super.Title} (copy {(maxChildTitleNum == 0 ? "" : maxChildTitleNum + 1) })";
+                Note dup = Repository.Notes.Find((n) => { return n.Title.EqualsIC(nextTitle); });
+                nextTitle = $"{super.Title} (copy {(maxChildTitleNum == 0 ? "" : maxChildTitleNum + 1) })";
+                if (dup != null) { nextTitle = $"{super.Title} (copy {maxChildTitleNum+1:x2})"; }
+            }
+        }
+        
+        return nextTitle;
+        
+        static int ParseMaxTitleNum( int max, string title, string pattern) {
+            Match match = Regex.Match(title, pattern, RegexOptions.IgnoreCase);
+            if (match.Success) {
+                string value = match.Groups[^1].Value; // get last group in Groups[] in the match pattern
+                if (int.TryParse(value, out int titleNum)) {
+                    max = Math.Max(max, titleNum);
+                }
+            }
+            return max;
         }
     }
 }

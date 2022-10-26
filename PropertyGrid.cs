@@ -38,8 +38,10 @@ public partial class NoteViewer : Window
     }
 
     void uxColorPicker_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e) {
-        SetBackgroundColor((Color)e.NewValue);
-        uxSettingsPropertyGrid.Update();
+        if (e.NewValue is Color color) {
+            SetBackgroundColor(color);
+            PropogateBackgroundColor(color);
+        }
     }
 
     void uxReminderPanel_KeyDown(object sender, KeyEventArgs e) {
@@ -74,7 +76,7 @@ public partial class NoteViewer : Window
             }
 
             switch (item.PropertyName) {
-                case "BackgroundColor":
+                case "BackgroundColor":                
                     SetBackgroundColor((Color)e.NewValue);
                     break;
                 case "FontFamily":

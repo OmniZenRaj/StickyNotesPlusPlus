@@ -1,19 +1,27 @@
 Developer Notes:
 
-    Visual Studo Code (v1.38.0) can cause superfulous error message Problems when editing .cshtml or .cs files
-    This happens due to the OmniSharp C# Extension's use of intermediate/cache files for IDE IntelliSence features
-    The errors usually involve some kind of 'Duplicate' something error that can be ignored such as:
-        Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute [Project]  or
-        Ambiguity between 'Views_Shared_VideoViewer.Html' and 'Views_Shared_VideoViewer.Html'
-    To fix these issues, you should close the Project Workspace and run the clean.cmd script.
-    This will clear the IntelliSense, debug cache folders and usually clear up the error messages
-    Re open the Project Workspace and the superfulous errors should be cleared
-    The errors may reappear once you start editing the project files (this is a known VS Code issue)
-    Dont worry about the VS Code IDE error messages too much, just ensure dotnet build completes without errors or warnings
+Visual Studo Code (v1.60.2) can cause superfulous error message Problems when editing .cshtml or .cs files
+This happens due to the OmniSharp C# Extension's use of intermediate/cache files for IDE IntelliSence features
+The errors usually involve some kind of 'Duplicate' something error that can be ignored such as:
+    Duplicate 'System.Reflection.AssemblyConfigurationAttribute' attribute [Project]  or
+    Ambiguity between 'Views_Shared_VideoViewer.Html' and 'Views_Shared_VideoViewer.Html'
+To fix these issues, you should close the Project Workspace and run the clean.cmd script.
+This will clear the IntelliSense, debug cache folders and usually clear up the error messages
+Re open the Project Workspace and the superfulous errors should be cleared
+The errors may reappear once you start editing the project files (this is a known VS Code issue)
+Dont worry about the VS Code IDE error messages too much, just ensure dotnet build completes without errors or warnings
 
 Exception Handling during DEBUG and TESTing can be problematic with Visual Studo Code (1.60.2)
     If you check the Debug BREAKPOINTS All Exceptions option ON, it will kill the app
     This seems to be when it happens inside MS code on another thread
+
+Visual Studo Code (v1.60.2) can cause superfulous error message even after you fix the problem(s)
+This is usually accompanied by an extra .proj file in the folder.
+Fix with VS Code Close Folder/Workspace & open dotnet command prompt in project folder to :
+    0) remove extraneous .proj file(s) 
+    1) rd bin /s /q & rd obj /s /q
+    2) dotnet clean & dotnet build 
+Re Open the VS Code project folder/workspace and all s/b OK again.
 
 To build Project as self contained EXE, add the following entries under <PropertyGroup> in the .csproj file:
 
@@ -27,3 +35,10 @@ Run the following command:
 dotnet publish -r win-x64 -c release --self-contained
 
 * Don't forget the EXe will be in ..\bin\release\netcoreapp3.1\win-x64\publish & s/b a larger size than before *
+
+* Note that JetBrains dotPeek symbol server will not allow debugging into MS code because the .pdb files that it generates are Windows PDB files and not supported by .NET Core debugger. Tried by adding this to launch.json :
+    "symbolOptions": {
+        "searchPaths": ["http://localhost:33417/"],
+        "searchMicrosoftSymbolServer": false
+    }
+

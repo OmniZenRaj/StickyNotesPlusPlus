@@ -5,7 +5,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections;
-using System.Diagnostics;
 using System.Windows.Navigation;
 using Microsoft.WindowsAPICodePack.Shell;
 
@@ -175,7 +174,7 @@ public partial class NoteViewer : Window
                     im.Source = i.Source;
                 } else {
                     // Inform the user that the image file no longer found
-                    string error = $"{S("strImageFailedMsg")} {uri.AbsolutePath}";
+                    string error = $"{SK("strImageFailedMsg")} {uri.AbsolutePath}";
                     InlineUIContainer iuic = im.Parent as InlineUIContainer;
                     if (iuic.ContentStart.Paragraph.Inlines.Count < 2) {
                         iuic.ContentStart.Paragraph.Inlines.Add(new Run($"{error}"));

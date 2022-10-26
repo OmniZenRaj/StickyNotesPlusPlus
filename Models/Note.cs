@@ -21,7 +21,7 @@ public class Note : Entity
     }
 
     public Note(Guid guid) : base(guid) {
-        Document = new FlowDocument(new Paragraph(new Run("")));
+        Document = new FlowDocument();
         Task = new();
     }
 
@@ -45,7 +45,8 @@ public class Note : Entity
 
         try {
             Title = GetString(reader, "Title");
-            Document = (FlowDocument)XamlReader.Parse(GetString(reader, "Document"));
+            object xaml = XamlReader.Parse(GetString(reader, "Document"));
+            if (xaml is FlowDocument fd) { Document = fd;}
             Task = Repository.GetTask(GetGuid(reader, "TaskID"));
         } catch (Exception ex) {
             EX.LogException(ex, "Note LoadFromSQL FAILED:");

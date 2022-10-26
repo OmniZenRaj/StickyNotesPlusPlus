@@ -225,6 +225,17 @@ namespace OmniZenNotes.Properties {
                 this["Avatar_Uri"] = value;
             }
         }
-
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("MSStickyNotes+Enhancements")]
+        public string NewWindowPlacementStrategy {
+            get {
+                return ((string)(this["NewWindowPlacementStrategy"]));
+            }
+            set {
+                this["NewWindowPlacementStrategy"] = value;
+            }
+        }
     }
 }

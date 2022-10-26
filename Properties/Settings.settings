@@ -53,6 +53,9 @@
     <Setting Name="Avatar_Uri" Type="System.String" Scope="User">
       <Value Profile="(Default)">assets/images/avatars/default.png</Value>
     </Setting>
+    <Setting Name="NewWindowPlacementStrategy" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MSStickyNotes+Enhancements</Value>
+    </Setting>
     
   </Settings>
 </SettingsFile>

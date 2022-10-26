@@ -134,8 +134,8 @@ public partial class NoteViewer : Window
         }
 
         if (visibleNotes == 1) {
-            string title = $"{S("strHideLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
-            string msg = $"{S("strHideLastNoteConfirmPrompt")}";
+            string title = $"{SK("strHideLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+            string msg = $"{SK("strHideLastNoteConfirmPrompt")}";
             if (ConfirmUserAction(title, msg)) {
                 Close();
             }
@@ -153,8 +153,8 @@ public partial class NoteViewer : Window
 
     void OnDeleteCommand(object sender, RoutedEventArgs e) {
         if (App.NoteViewers.Count == 1) {
-            string title = $"{S("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
-            string msg = $"{S("strDeleteLastNoteConfirmPrompt")} ";
+            string title = $"{SK("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+            string msg = $"{SK("strDeleteLastNoteConfirmPrompt")} ";
 
             if (ConfirmUserAction(title, msg)) {
                 ConfirmDeleteNote();
@@ -165,8 +165,8 @@ public partial class NoteViewer : Window
         }
 
         void ConfirmDeleteNote() {
-            string title = $"{S("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
-            string msg = $"{S("strDeleteNoteConfirmPrompt")}";
+            string title = $"{SK("strDeleteLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+            string msg = $"{SK("strDeleteNoteConfirmPrompt")}";
             if (ConfirmUserAction(title, msg, MessageBoxButton.YesNoCancel, MessageBoxImage.Stop, MessageBoxResult.Cancel)) {
                 VM.Note.Delete();
                 VM.Note = null;
