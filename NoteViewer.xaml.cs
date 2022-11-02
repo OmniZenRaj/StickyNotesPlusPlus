@@ -143,22 +143,38 @@ public partial class NoteViewer : Window
         if (string.IsNullOrEmpty(range.Text)) {
             range = new(uxRichTextBox.Document.ContentStart, uxRichTextBox.Document.ContentEnd);
         }
-        
-        Debug.Write($"FontFamilyProperty={range.GetPropertyValue(FontFamilyProperty)} ");
-        Debug.Write($"ForegroundProperty={range.GetPropertyValue(ForegroundProperty)} ");
-        Debug.Write($"FontSizeProperty={range.GetPropertyValue(FontSizeProperty)} ");
-        Debug.Write($"FontStyleProperty={range.GetPropertyValue(FontStyleProperty)} \n");
 
+        // TODO: Create Utility routines to convert from System.Windows.Media Fonts to System.Drawing.Fonts etc.
+        Trace.Write($"FontFamilyProperty={range.GetPropertyValue(FontFamilyProperty)} ");
+        Trace.Write($"ForegroundProperty={range.GetPropertyValue(ForegroundProperty)} ");
+        Trace.Write($"FontSizeProperty={range.GetPropertyValue(FontSizeProperty)} ");
+        Trace.Write($"FontStyleProperty={range.GetPropertyValue(FontStyleProperty)} \n");
+        Trace.Write($"FontWeightProperty={range.GetPropertyValue(FontWeightProperty)} \n");
+        Trace.Write($"FontWeightProperty={range.GetPropertyValue(FontWeightProperty)} \n");
+        // TODO: Add support for reading TextDecorations Underline & Strikethrough
+        
         FontFamily fontFamilyProperty = (FontFamily)range.GetPropertyValue(FontFamilyProperty);
         var foreGroundProperty = range.GetPropertyValue(ForegroundProperty);
+        var fontStyle = range.GetPropertyValue(FontStyleProperty);
         System.ComponentModel.TypeConverter cv = System.ComponentModel.TypeDescriptor.GetConverter(typeof(System.Drawing.Font));
         System.Drawing.Font font = (System.Drawing.Font)cv.ConvertFromInvariantString($"{fontFamilyProperty}, {range.GetPropertyValue(FontSizeProperty)}pt");
         Color c = (Color)ColorConverter.ConvertFromString(foreGroundProperty.ToString());
         System.Drawing.Color color = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
+        System.Drawing.FontStyle fs = fontStyle.ToString() switch {
+            "Italic" => System.Drawing.FontStyle.Italic,
+            "Oblique" => System.Drawing.FontStyle.Italic,            
+            "Normal" => System.Drawing.FontStyle.Regular,
+            _ => System.Drawing.FontStyle.Regular
+        };
 
-        Debug.Write($"FontDialog -> font={font} "); Debug.Write($"c={c} color={color} \n");
+        if (range.GetPropertyValue(FontWeightProperty) is object fw && fw.ToString().Equals("Bold")) {
+            fs |= System.Drawing.FontStyle.Bold;
+        }
+        
+        Trace.Write($"FontDialog -> font={font} fontStyle={fs} c={c} color={color} \n");
         using var fd = new System.Windows.Forms.FontDialog {
-            Font = font, Color = color, ShowColor = true,
+            Font = new(font, fs), 
+            Color = color, ShowColor = true,
             ShowEffects = true, ShowApply = true
         };
 
@@ -168,14 +184,15 @@ public partial class NoteViewer : Window
             Color fontColor = Color.FromArgb(fd.Color.A, fd.Color.R, fd.Color.G, fd.Color.B);
             float fontSize = fd.Font.Size;
             FontStyleConverter fsConverter = new ();
-            FontStyle fontStyle =  fd.Font.Style switch {
+            FontStyle fdfs =  fd.Font.Style switch {
                 System.Drawing.FontStyle.Italic => (FontStyle)fsConverter.ConvertFromString("Italic"),
                 System.Drawing.FontStyle.Regular => (FontStyle)fsConverter.ConvertFromString("Normal"),
+                // TODO: Add more Font support for FontWeight(Bold) and TextDecorators (Underline/Strikethrough)
                 _ => (FontStyle)fsConverter.ConvertFromString("Normal"),
             };
-            
-            Debug.WriteLine($"SetFont( fontFamily={fontFamily}, fontSize={fontSize}, fontColor={fontColor}, fontStyle={fontStyle})");
-            SetFont(fontFamily, fontSize, fontColor: fontColor, fontStyle);
+
+            Trace.WriteLine($"SetFont( fontFamily={fontFamily}, fontSize={fontSize}, fontColor={fontColor}, fontStyle={fontStyle})");
+            SetFont(fontFamily, fontSize, fontColor: fontColor, fdfs);
             uxSettingsPropertyGrid.Update();
         }
     }
@@ -279,6 +296,7 @@ public partial class NoteViewer : Window
             3. If enough space on right, place new note padW from right side of other note
             4. TODO: Fill in rest of algorithm (when notes get placed on left )
             Enhancements:
+            4. New Note goes slightly lower then current Note placement
             5. If new Note would overlap another existing Note, place it below current Note
             6. If not enough space on either side, then go lower and to the right
                 If another note occupies the wanted space, then try to go to left side
@@ -288,54 +306,45 @@ public partial class NoteViewer : Window
         */
 
         NoteViewer overLappingNV = null;
-        Rect newLocation = GetNewWindowPlacement(this);
+        Rect newLocation = GetNewWindowPlacement(this, Rect.Empty);
         do {
+            Rect prevLocation = newLocation;
             overLappingNV = App.GetOverlappingWindow(newLocation);
-            if (overLappingNV != null) {
-                newLocation = GetNewWindowPlacement(overLappingNV, newLocation);
-            }
-        } while (overLappingNV != null);    //BUG: Gaurd against infinite loop if newLocation don't change (due to right screen alignment)
+            if (overLappingNV != null) { newLocation = GetNewWindowPlacement(overLappingNV, newLocation);}
+            if (prevLocation == newLocation) { break; } // BUG: Gaurd infinite loop if newLocation doesn't change
+        } while (overLappingNV != null);
         
         Debug.WriteLine($"Window Placement @ Top:{newLocation.Top} Left:{newLocation.Left} based on Top:{Top} Left:{Left} ");
         Create(note, newLocation);
 
-        static Rect GetNewWindowPlacement(NoteViewer nv, Rect? placement = null) {
+        static Rect GetNewWindowPlacement(NoteViewer nv, Rect placement) {
             var screen = System.Windows.Forms.Screen.FromHandle(new WindowInteropHelper(nv).Handle);
-            var area = screen.WorkingArea;
+            var vs = new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
 
-            // 1 MS Strategy to place note to the right of existing Note with padding
-            double padW = area.Width * 0.005, padH = area.Height * 0.005;
+            // 1. MS Strategy to place note to the right of existing Note with padding
+            double padW = vs.Width * 0.005, padH = vs.Height * 0.005;
             double newLeft = Math.Round(nv.Left + nv.Width + padW, 0); double newTop = nv.Top;
             double right = Math.Round(nv.Left + nv.Width, 0);
 
-            if (newLeft + nv.Width > area.Right) {
-                Debug.WriteLine($"Window Placement @ Left:{newLeft} + Width:{nv.Width} > Right of Screen {area.Right}");
-                if (right + padW <= area.Right) { newLeft = area.Right - nv.Width - padW; }     // 2a - align to right of screen
-                if (right + padW >= area.Right) { newLeft = nv.Left - nv.Width - padW; }        // 2b - place left of note
+            if (newLeft + nv.Width > vs.Right) {
+                Debug.WriteLine($"Window Placement @ Left:{newLeft} + Width:{nv.Width} > Right of VirtualScreen {vs.Right}");
+                if (right + padW <= vs.Right) { newLeft = vs.Right - nv.Width - padW; }     // 2a. - align to right of vscreen
+                if (right + padW >= vs.Right) { newLeft = nv.Left - nv.Width - padW; }      // 2b. - place left of note
             }
             
             // StickyNote++ Ehancments to MS Sticky Notes placement strategy algorithm
             if (S.Default.NewWindowPlacementStrategy == "MSStickyNotes+Enhancements") {
-                newTop = nv.Top + nv.uxToolBar.ActualHeight + padH; 
-                if (right + padW >= area.Right && IsScreenAdjacentToARightScreen(screen)) {
-                    newLeft = nv.Left + nv.Width + padW; // 7a - placement on adjacent screen
-                }
-                if (nv.Top + nv.Height > area.Bottom) {
-                    newTop = area.Bottom - nv.Height - padH; // 8 - align Note bottom with bottom of screen
+                newTop = nv.Top + nv.uxToolBar.ActualHeight + padH; // 4. - lower than current note
+                if (nv.Top + nv.Height > vs.Bottom) {               // 8. - if new placement goes below screen,
+                    newTop = vs.Bottom - nv.Height - padH;          // 8. - align Note bottom with bottom of screen
                 }
             }
-            // Assure new Location is NOT the same as placment passed in (to prevent overlapping)
-            Rect newLocation = new Rect(newLeft, newTop, nv.Width, nv.Height);            
-            if (newLocation == placement) { newLocation.Offset(-5, -5);}
+            // 5. Assure new Location is NOT the same as placment passed in (to prevent overlapping)
+            Rect newLocation = new Rect(newLeft, newTop, nv.Width, nv.Height);
+            newLocation.Inflate(1, 1); // Accounts for rounding            
+            if (newLocation.Contains(placement)) { newLocation.Offset(-5, -5);}
             
             return newLocation;
-        }
-        
-        static bool IsScreenAdjacentToARightScreen(System.Windows.Forms.Screen screen) {
-            foreach (var s in System.Windows.Forms.Screen.AllScreens) {
-                if (screen.WorkingArea.Right <= s.WorkingArea.Left) { return true; }
-            }
-            return false;
         }
     }
 
@@ -574,10 +583,17 @@ public partial class NoteViewer : Window
         var range = new TextRange(paragraph.ContentStart, paragraph.ContentEnd);
         var text = range.Text;
 
+        // Create a Circular Viewbox to contain the Avatar Image 
         if (GetAvatarImage(user) is Image i) {
+            double iconWidth = SystemParameters.IconWidth;
+            double iconHeight = SystemParameters.IconHeight;
+            double padding = SystemParameters.BorderWidth * 2;
+            double radius = iconHeight / 2;
+            Point center = new Point(radius + padding, radius + padding);
+
             Viewbox viewbox = new Viewbox {
-                Clip = new EllipseGeometry(new Point(18, 18), 16, 16), ClipToBounds = true,
-                Width = 36, Height = 36,
+            Clip = new EllipseGeometry(center, radius, radius), ClipToBounds = true,
+                Width = iconWidth + (padding*2), Height = iconHeight + (padding* 2),
                 Child = i,
         };
 

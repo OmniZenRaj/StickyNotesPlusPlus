@@ -238,6 +238,8 @@ public static class Graphics
 
     public static Rectangle GetWorkingArea(System.Windows.Window window) {
 
+        // TODO: Use SystemParameters such as VirtualScreenLeft, Top, Height & Width
+        // @see https://learn.microsoft.com/en-us/dotnet/api/System.Windows.SystemParameters?view=windowsdesktop-6.0
         RECT lprc = new() {
             Left = (int)window.Left,
             Top = (int)window.Top,
