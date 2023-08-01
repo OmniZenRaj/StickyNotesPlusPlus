@@ -46,7 +46,7 @@ public partial class App : Application
     public void InitNotifyIconArea() {
         try {
             Assembly assembly = Assembly.GetEntryAssembly();
-            System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+            System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(SH.GetEXEFileInfo()?.FullName);
             bool rc = SH.AddNotifyIcon(MainWindow, GUID, appIcon, assembly.FullName);
             if (rc is true) { SH.ModifyNotifyIcon(MainWindow, GUID, appIcon, appIcon);}
         } catch (Exception ex) {
@@ -74,9 +74,8 @@ public partial class App : Application
         var roamingAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var assemblyName = Assembly.GetEntryAssembly().GetName().Name;
         var userName = Environment.UserName;
-
-        foreach (string noteBookDBFilePath in S.Default?.NoteBooks) {
-            string nbDBFilePath = noteBookDBFilePath;
+        
+        if( S.Default.DefaultNoteBook is string nbDBFilePath) {
             // Replace template tokens with actual file path locations:
             nbDBFilePath = nbDBFilePath.Replace("{LocalApplicationData}", localAppData);
             nbDBFilePath = nbDBFilePath.Replace("{RoamingApplicationData}", roamingAppData);
@@ -99,6 +98,7 @@ public partial class App : Application
 
             Repository.NoteBooks.Add(new(nbDBFilePath));
         }
+
         // The Application GUID is used currently only for Shell NotifyIcon API (@see Utilities.Shell.AddNotifyIcon)
         // The FileSettingsProvider we use creates a new user.config per Application path location
         // This works OK since NotifyIcon API requires unique GUID per App path location
@@ -110,11 +110,6 @@ public partial class App : Application
     }
 
     static void SaveAppSettings() {
-        S.Default.NoteBooks.Clear();
-        foreach (Notebook nb in Repository.NoteBooks) {
-            S.Default.NoteBooks.Add(nb.DbPathUri);
-        }
-
         foreach (NoteViewer nv in NoteViewers) {
             nv.SaveSettings();
         }

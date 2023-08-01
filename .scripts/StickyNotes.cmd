@@ -1,6 +1,6 @@
 @echo off
 rem Update latest version of StickyNotes
-set STICKYNOTESFOLDER="S:\Metal Products\PROGRAMS\StickyNotes"
+set STICKYNOTESFOLDER="S:\Metal Products\MainOffice\PROGRAMS\StickyNotes"
 IF EXIST %STICKYNOTESFOLDER% robocopy %STICKYNOTESFOLDER% "%~dp0\" /MIR /NJH /NJS /NFL /NDL
 set DOTNET6BASE=%~dp0\runtimes\
 set PATH=%DOTNET6BASE%;%PATH%

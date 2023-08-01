@@ -202,7 +202,7 @@ public partial class NoteViewer : Window
             $"Commit: {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion} \n";
 
         string title = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyTitleAttribute>()?.Title;
-        MessageBox.Show(msg, title, MessageBoxButton.OK);
+        // MessageBox.Show(msg, title, MessageBoxButton.OK);
     }
     
     void OnSelectFontCommand(object sender, RoutedEventArgs e) {

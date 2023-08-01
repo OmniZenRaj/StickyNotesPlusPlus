@@ -19,11 +19,10 @@
             }
         },
         {
-            "label": "publish",
-            "command": "dotnet",
+            "label": "publish self contained release",
+            "command": "dotnet publish -r win-x64 -c release --self-contained",
             "type": "process",
             "args": [
-                "publish",
                 "${workspaceFolder}/OmniZenNotes.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"

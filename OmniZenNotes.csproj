@@ -10,15 +10,13 @@
     <!--Use the latest language features of C# that are compatible with TargetFramework version -->
     <LangVersion>latest</LangVersion>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
+    <UseWindowsForms>true</UseWindowsForms>    
 
-    <!--Setup for Self Published EXE 
-    <PublishTrimmed>true</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <!--Setup for Self Published EXE
     <PublishSingleFile>true</PublishSingleFile>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
--->
-
+    -->
+  
   <!--Ignore Nuget package WARNINGS: -->
   <!--Turn the Lint IDE/CA Warnings back ON for major builds to verify everything OK -->  
     <NoWarn>
@@ -69,7 +67,7 @@
   </Target>
 
   <PropertyGroup>
-    <InformationalVersion>@(GitCommitID)</InformationalVersion>
+    <!-- <InformationalVersion>@(GitCommitID)</InformationalVersion> -->
   </PropertyGroup>
   
   <!-- Post Publish Steps for Release of Published App -->
@@ -80,7 +78,6 @@
     <ItemGroup>
       <DotNetHostFiles Include="X:\OPT\dotnet6.0\host\**\*.*" />
       <DotNetSharedFiles Include="X:\OPT\dotnet6.0\shared\**\*.*" />
-      <SQLiteDB Include="DB/**\*.*" />
     </ItemGroup>
 
     <!-- Copy Required DotNet Runtime Files into Publish Folder -->

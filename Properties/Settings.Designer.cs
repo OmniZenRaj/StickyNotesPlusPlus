@@ -46,22 +46,19 @@ namespace OmniZenNotes.Properties {
                 this["WindowState"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<ArrayOfString xmlns:xsi=\"http://www.w3." +
-            "org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <s" +
-            "tring>{LocalApplicationData}\\{AssemblyName}\\{UserName}.oznotebook</string>\r\n</Ar" +
-            "rayOfString>")]
-        public global::System.Collections.Specialized.StringCollection NoteBooks {
+        [global::System.Configuration.DefaultSettingValueAttribute("{LocalApplicationData}\\{AssemblyName}\\{UserName}.oznotebook")]
+        public string DefaultNoteBook {
             get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["NoteBooks"]));
+                return ((string)(this["DefaultNoteBook"]));
             }
             set {
-                this["NoteBooks"] = value;
+                this["DefaultNoteBook"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Segoe UI")]
@@ -124,7 +121,7 @@ namespace OmniZenNotes.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("14")]
+        [global::System.Configuration.DefaultSettingValueAttribute("18")]
         public double FontSize {
             get {
                 return ((double)(this["FontSize"]));
@@ -160,7 +157,7 @@ namespace OmniZenNotes.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        [global::System.Configuration.DefaultSettingValueAttribute("600")]
         public int PlugInRunInterval {
             get {
                 return ((int)(this["PlugInRunInterval"]));
@@ -172,13 +169,13 @@ namespace OmniZenNotes.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("S:\\Metal Products")]
-        public string PlugInDir {
+        [global::System.Configuration.DefaultSettingValueAttribute("S:\\Metal Products\\MainOffice\\PROGRAMS\\PlugIns")]
+        public string PlugInDirMP {
             get {
-                return ((string)(this["PlugInDir"]));
+                return ((string)(this["PlugInDirMP"]));
             }
             set {
-                this["PlugInDir"] = value;
+                this["PlugInDirMP"] = value;
             }
         }
         [global::System.Configuration.UserScopedSettingAttribute()]

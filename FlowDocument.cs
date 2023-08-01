@@ -114,8 +114,8 @@ public partial class NoteViewer : Window
         Hyperlink hyperlink = new(tpStart, tpEnd) { NavigateUri = uri, };
         if (tpStart.CompareTo(tpEnd) == 0) {
             // Add an Image and Display Name text inside the Hyperlink
-            double height = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Medium.Height : DefaultIconSize.Large.Height;
-            double width = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Medium.Width : DefaultIconSize.Large.Width;
+            double height = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Small.Height : DefaultIconSize.Small.Height;
+            double width = hyperlink.NavigateUri.IsFile ? DefaultThumbnailSize.Small.Width : DefaultIconSize.Small.Width;
             AddImageToHyperLink(hyperlink, height, width, addText: true);
         }
         return hyperlink;

@@ -42,7 +42,7 @@ internal class SignalRClient
     internal static void Init(NoteViewer nv) {
         try {
 #if DEBUG
-            HubURL = S.Default.HUB_URL_DEBUG;
+            //HubURL = S.Default.HUB_URL_DEBUG;
 #endif
             nv.CollaborateHubConnection = new HubConnectionBuilder()
             .WithUrl(HubURL)
@@ -67,7 +67,7 @@ internal class SignalRClient
             try {
                 string text = nv.AddCollaborationMessage(date, id, user, message);
 
-                if (!nv.IsActive || !nv.IsVisible) {
+                if (user != SH.GetUserName() && nv.IsActive && nv.IsVisible ) {
                     NotifyUserOfMessage(nv, date, id, user, text);
                 }
 
@@ -80,14 +80,14 @@ internal class SignalRClient
     internal static void OnSendSignalR(NoteViewer nv, string xaml) {
         int retries = 0;
         while (retries++ <= MAX_SIGNALR_SEND_RETRIES){
-            if (nv.CollaborateHubConnection.State == HubConnectionState.Connected) {
+            if (nv.CollaborateHubConnection?.State == HubConnectionState.Connected) {
                 string user = SH.GetUserName();
                 string guid = Guid.NewGuid().ToString();
                 nv.CollaborateHubConnection.InvokeAsync(SEND_HUB_METHOD, DateTime.UtcNow, guid, user, xaml);
                 retries = MAX_SIGNALR_SEND_RETRIES + 1; // exit while
             }
         }
-        if (nv.CollaborateHubConnection.State != HubConnectionState.Connected) {
+        if (nv.CollaborateHubConnection?.State != HubConnectionState.Connected) {
             MessageBox.Show($"ERROR: Cannot Send. Connection to Hub Server {S.Default.HUB_URL } could NOT be Established.", "Server Connection Problem.");
         }
     }
@@ -169,10 +169,10 @@ internal class SignalRClient
         UpdateTaskBar(window, totalNotifications);
         
         Assembly assembly = Assembly.GetEntryAssembly();
-        System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+        System.Drawing.Icon appIcon = System.Drawing.Icon.ExtractAssociatedIcon(SH.GetEXEFileInfo()?.FullName);
         SH.AddNotifyIcon(window, App.GUID, appIcon, assembly.GetName().Name);
 
-        System.Drawing.Icon balloonIcon = System.Drawing.Icon.ExtractAssociatedIcon(assembly.Location);
+        System.Drawing.Icon balloonIcon = System.Drawing.Icon.ExtractAssociatedIcon(SH.GetEXEFileInfo()?.FullName);
         SH.ModifyNotifyIcon(window, App.GUID, appIcon, balloonIcon, user, message);
 
         Vanara.PInvoke.RECT R = SH.GetNotifyIconLocation(window, App.GUID);

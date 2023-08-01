@@ -31,7 +31,7 @@ public partial class NoteViewer : Window
         InitializeCommands();
 
         LoadSettings();
-        SignalRClient.Init(this);
+        // SignalRClient.Init(this);
 
         if (!placement.IsEmpty && placement.Height != 0 && placement.Width != 0) {
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -80,9 +80,12 @@ public partial class NoteViewer : Window
 
     void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
         if (!IsExiting && App.NoteViewers.Count == 1 && VM.Note != null) {
-            string title = $"{SK("strCloseLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
-            string msg = $"{SK("strCloseLastNoteConfirmPrompt")}";
-            e.Cancel = !ConfirmUserAction(title, msg);
+            SystemCommands.MinimizeWindow(this);
+            e.Cancel = true;
+            /*             string title = $"{SK("strCloseLastNoteTitle")} {Assembly.GetExecutingAssembly().GetName().Name}";
+                        string msg = $"{SK("strCloseLastNoteConfirmPrompt")}";
+                        e.Cancel = !ConfirmUserAction(title, msg);
+             */
         }
 
         if (VM.Note != null) { Save(saveAsync: false); }
@@ -105,6 +108,7 @@ public partial class NoteViewer : Window
     void OnActivated(object sender, EventArgs e) {
         ToggleToolBar(Visibility.Visible);
         uxRichTextBox.Focus();
+        SystemCommands.RestoreWindow(this);
         SignalRClient.UpdateTaskBar(this, 0); // Cancel any notifications
     }
 
@@ -565,13 +569,16 @@ public partial class NoteViewer : Window
 
         Border textBlockBorder = new() {
             BorderBrush = textBlock.Foreground,
-            BorderThickness = new Thickness(1.0f),
+            BorderThickness = new Thickness(0.5f),
             CornerRadius = new CornerRadius(1.0f),
             Child = textBlock
         };
         
         BlockUIContainer buc = new (textBlockBorder);
         uxRichTextBox.Document.Blocks.Add(buc);
+        uxRichTextBox.CaretPosition = buc.ContentEnd;
+        uxRichTextBox.CaretPosition.InsertTextInRun("");
+        uxRichTextBox.CaretPosition = uxRichTextBox.Document.ContentEnd;
 
         return text;
     }
@@ -598,10 +605,10 @@ public partial class NoteViewer : Window
         };
 
             if (doToolTip) {
-                viewbox.ToolTip = $@"{user}: {text}   (sent {date.ToLocalTime().FriendlyText()})";
+                viewbox.ToolTip = $@"{user} @ {date.ToLocalTime().FriendlyText()} : {text}";
                 viewbox.ToolTipOpening += (object sender, ToolTipEventArgs e) => {
                     if (sender is Border b) {
-                        b.ToolTip = $@"{user}: {text}   (sent {date.ToLocalTime().FriendlyText()})";
+                        b.ToolTip = $@"{user} @ {date.ToLocalTime().FriendlyText()} : {text}";
                     }
                 };
             }

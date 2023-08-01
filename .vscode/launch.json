@@ -17,7 +17,7 @@
             "console": "internalConsole",
             "stopAtEntry": false,
             "logging": {"moduleLoad": false, "threadExit": false, "exceptions": true , "processExit": false},
-            "justMyCode": true,
+            "justMyCode": false,
             "requireExactSource": false,
         },
         {

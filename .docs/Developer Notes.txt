@@ -30,9 +30,11 @@ To build Project as self contained EXE, add the following entries under <Propert
     <PublishSingleFile>true</PublishSingleFile>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
-Run the following command:
+Run the following command in Terminal:
 
 dotnet publish -r win-x64 -c release --self-contained
+
+Or F1 Tasks: Run Task   publish self contained release
 
 * Don't forget the EXe will be in ..\bin\release\netcoreapp3.1\win-x64\publish & s/b a larger size than before *
 

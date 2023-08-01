@@ -3,15 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Windows.Interop;
 using System.Windows.Markup;
-using Microsoft.AspNetCore.SignalR.Client;
-using System.Windows.Media.Imaging;
-using System.Net.Http;
-using System.Windows.Controls.Primitives;
-using Xceed.Wpf.Toolkit;
 
 namespace OmniZenNotes;
 
@@ -165,11 +157,13 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
         }
     }
 
-    protected override void OnPreviewKeyUp(KeyEventArgs e) {
+    /* protected override void OnPreviewKeyUp(KeyEventArgs e) {
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter) {
             SetParagraphProperties(Document, CaretPosition.Paragraph);
             string xaml = XamlWriter.Save(CaretPosition.Paragraph);
+            Document.Blocks.Remove(CaretPosition.Paragraph);
             SignalRClient.OnSendSignalR(GetNoteViewer(), xaml);
+            
             base.OnPreviewKeyUp(e);
         }
 
@@ -183,7 +177,7 @@ public class RichTextBox : Xceed.Wpf.Toolkit.RichTextBox
             p.Foreground = doc.Foreground;
             if (DataContext is Note note) { p.Tag = note.ID; }
         }
-    }
+    } */
     
     /*     protected override Size MeasureOverride(Size constraint) {
             if (this.Parent is System.Windows.Controls.StackPanel sp) {

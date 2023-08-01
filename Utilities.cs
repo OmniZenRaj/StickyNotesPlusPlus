@@ -215,13 +215,16 @@ public static class Graphics
     }
 
     // Get the Screen associated with the JSON monitor information
+    // BUG: Json Serialization NOT working correctly. Exception thrown & quick exit abort occurs
+    // To recreate BUG, Check All Exceptions in Debug View and Set Breakpoint at var monitor = ...
+    // It wierdly exit aborts the entire App at Debug Step Into line if( monitorInfo != null ... etc)
     public static Screen GetScreen(string monitorInfo) {
-        try {
+         try {
             var monitor = Json.GetObjectFromJson<dynamic>(monitorInfo);
-            if (monitor != null) {
+            if (monitorInfo != null && monitor?.DeviceName != null) {
                 ArrayList allScreens = new(Screen.AllScreens);
                 foreach (Screen screen in allScreens) {
-                    if (screen.DeviceName?.Equals(monitor.DeviceName?.Value, StringComparison.OrdinalIgnoreCase)) {
+                    if (screen.DeviceName?.Equals(monitor?.DeviceName?.Value, StringComparison.OrdinalIgnoreCase)) {
                         return screen;
                     }
                 }
@@ -312,6 +315,44 @@ public static class Shell
     static readonly Dictionary<string, Icon> IconCache = new();
     public enum DocumentType { All, Access, Acrobat, Excel, PowerPoint, Publisher, Word, Other }
 
+    // Safely Attempt to Create a Directory and Silently Eat all Exceptions
+    public static DirectoryInfo CreateDirectory(string path) {
+        try {
+           return Directory.CreateDirectory(path);
+        } catch { }
+        
+        return null;
+    }
+
+    // Securely Delete a file by 3x random data writes & random rename/delete 
+    public static void SecureDelete( FileInfo fi) {
+
+        if (!fi.Exists) return;
+        
+        try {
+            int n = 3; // Overwrite data/code with random data n times
+            do {
+                n--;
+                using var fs = fi.OpenWrite();
+                byte[] bytes = new byte[fi.Length];
+                Random rnd = new Random(); rnd.NextBytes(bytes);
+                fs.Write(bytes, 0, bytes.Length);
+            } while (n >= 0);
+
+            string rfPath = Path.Combine(fi.DirectoryName, Guid.NewGuid().ToString()); // Rename to new GUID
+            File.Move(fi.FullName, rfPath);
+            File.Delete(rfPath);
+        }   catch { }
+    }
+    
+    // Return the Assembly File Path by using AppContext & LoadedModules. Use this instead of 'System.Reflection.Assembly.Location' (or .FullName) which always returns an empty string for assemblies embedded in a single-file app.
+    public static FileInfo GetEXEFileInfo() {
+        var assembly = System.Reflection.Assembly.GetEntryAssembly();
+        var baseDirectory = AppContext.BaseDirectory;
+        System.Reflection.Module[] modules = assembly.GetLoadedModules(false);
+        return new FileInfo(Path.Combine(baseDirectory, modules?[0]?.ScopeName));
+    }
+    
     public static string GetUserName() { return System.Security.Principal.WindowsIdentity.GetCurrent()?.Name; }
     public static DocumentType GetDocumentType(FileInfo fi) {
         try {
@@ -403,7 +444,7 @@ public static class Shell
             The problem is that Windows starts up Acrobat Reader to generate a thumbnail if one does not exist for the file.
             Adobe Acrobat is so slow that the Shell API times out waiting for it - and we crash inside WindowsBase.dll.
         */
-
+        if (Path.GetExtension(localPath).ToLower() != ".pdf") {
         try {
             using ShellObject shellObject = ShellObject.FromParsingName(localPath);
             var o = shellObject.Thumbnail?.LargeIcon; // check Thumbnail OK
@@ -415,10 +456,11 @@ public static class Shell
                 double w when w >= DefaultThumbnailSize.Small.Width => M < S ? shellObject?.Thumbnail.MediumBitmapSource : shellObject?.Thumbnail.SmallBitmapSource,
                 _ => shellObject?.Thumbnail.SmallBitmapSource
             };
-        } catch {
-            Icon icon = GetShellIcon(new FileInfo(localPath));
-            return Graphics.GetBitmapImage(icon);
+        } catch {}
         }
+
+        Icon icon = GetShellIcon(new FileInfo(localPath));
+        return Graphics.GetBitmapImage(icon);
     }
 
     public static void ShellOpenDirectory(FileInfo fileInfo) {
@@ -812,12 +854,12 @@ public static class Extensions
             int d when d >= 28 && m >= 1 => $"{m} month(s) ago",
             int d when d >= 7  && w >= 1 => $"{w} week(s) ago",
             int d when d == 1 => "yesterday",
-            int d when d == 0 => "today",
+            int d when d == 0 => "",
             int d when d >= 2 => $"{d} days ago",
             _ => $"on {self.ToShortDateString()}"
         };
 
-        text += $" @ {self.ToShortTimeString()}";
+        text += $" {self.ToShortTimeString()}";
         return text;
     }
 #endregion
